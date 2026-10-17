@@ -144,6 +144,24 @@
 7. `chore: wire Makefile and docker compose`
 8. `docs: architecture in README and AGENTS.md files`
 
+### Progress
+
+There was no existing application to migrate (the repo held only docs and the HTML prototype in
+`docs/discovery/`), so the monorepo was built in its target shape in one pass.
+
+| Phase (commit) | Status | Evidence |
+|---|---|---|
+| 1 Spec + plan (`ba15380`) | ✅ done | committed before code |
+| 2 Workspace tooling (`75169dd`) | ✅ done | `make lint` / `make typecheck` pass |
+| 3 core (`a6c6aba`) | ✅ done | 5 unit tests |
+| 4 db + migration 1 (`b2614e8`) | ✅ done | up → down → up rehearsed; 2 tests |
+| 5 ui (`443a3d1`) | ✅ done | 1 test; styles verified in headless Chrome |
+| 6 app (`6fd2491`) | ✅ done | 3 tests; live `/api/health` 200/503; `/admin` 3 states |
+| 7 Makefile + docker compose (`ca6d72f`) | ✅ done | `make install && make check` exit 0 (fresh clone 26 s) |
+| 8 Docs (`6117daa`) | ✅ done | root + nested AGENTS.md, README architecture |
+
+**All phases complete.** Remaining work is outside this spec: CI safety net, auth spec.
+
 ### Riskiest assumption
 
 **Assumption:** MikroORM 7 runs inside the Next.js 16 server runtime (Turbopack build) without
