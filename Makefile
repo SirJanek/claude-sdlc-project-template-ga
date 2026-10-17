@@ -7,7 +7,7 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: install test lint typecheck build check dev db-up db-down db-migrate db-migration rollback quarantine
+.PHONY: install test lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
 
 install:   ## Install dependencies from the lockfile
 	pnpm install --frozen-lockfile
@@ -24,10 +24,13 @@ typecheck: ## Static type check in every package
 build:     ## Production build of the Next.js app
 	pnpm build
 
-check: lint typecheck test build   ## Everything CI runs. "Done" means this passed.
+audit:     ## Dependency vulnerabilities (high and above); exceptions live in pnpm-workspace.yaml
+	pnpm audit --audit-level high
 
-dev: db-up ## Run locally: database in Docker + Next.js dev server on :3000
-	pnpm dev
+check: lint typecheck test build audit   ## Everything CI runs. "Done" means this passed.
+
+dev: db-up ## Run locally: database in Docker + Next.js dev server on :3000 (dev-admin access on)
+	ALLOW_DEV_ADMIN=1 pnpm dev
 
 db-up:     ## Start local PostgreSQL (docker compose, port 5433) and wait until healthy
 	docker compose up -d --wait db

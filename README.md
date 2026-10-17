@@ -3,7 +3,7 @@
 Marketplace **mentoringu 1:1 przez wideo**: osoby rozwijające karierę w produkcie, inżynierii, AI i UX rezerwują sesje z praktykami, którzy „już to zrobili”. Projekt kursowy programu **AI Tech Leaders** (12.10–13.11.2026), prowadzony według AI-native SDLC.
 
 > [!NOTE]
-> **Status (2026-10-17):** discovery zakończone, [`intent.md`](docs/sdlc/intent.md) w wersji **draft** czeka na akceptację product ownera. Stack postawiony ([specyfikacja](.ai/specs/2026-10-17-stack-bootstrap.md)): monorepo pnpm z aplikacją Next.js, bazą PostgreSQL przez MikroORM, DI na Awilix, Tailwind i shadcn/ui. Funkcji produktu jeszcze nie ma — jest szkielet: strona publiczna, panel admina z listą użytkowników (**bez logowania, tylko lokalnie**) i `/api/health`.
+> **Status (2026-10-17):** discovery zakończone, [`intent.md`](docs/sdlc/intent.md) w wersji **draft** czeka na akceptację product ownera. Stack postawiony ([specyfikacja](.ai/specs/2026-10-17-stack-bootstrap.md)): monorepo pnpm z aplikacją Next.js, bazą PostgreSQL przez MikroORM, DI na Awilix, Tailwind i shadcn/ui. Wdrożony [standard inżynieryjny](.ai/docs/engineering-standards.md) ([specyfikacja](.ai/specs/2026-10-18-engineering-standards.md)). Funkcji produktu jeszcze nie ma — jest szkielet: strona publiczna, panel admina `/admin/users` z listą użytkowników (**dostęp tylko deweloperski, bez logowania**), `/api/users` i `/api/health`.
 
 ## Od czego zacząć
 
@@ -25,8 +25,8 @@ Wymagane: Node ≥ 22 (`.nvmrc`: 26), pnpm 10, Docker.
 make install        # zależności z lockfile
 make db-up          # PostgreSQL 17 w Dockerze na porcie 5433
 make db-migrate     # migracje
-make dev            # http://localhost:3000  ·  /admin  ·  /api/health
-make check          # to, co uruchamia CI: lint, typecheck, testy, build
+make dev            # http://localhost:3000  ·  /admin/users  ·  /api/health
+make check          # to, co uruchamia CI: lint, typecheck, testy, build, audit
 ```
 
 Domyślne ustawienia bazy pasują do `docker-compose.yml`, więc plik `.env` nie jest potrzebny. Inne wartości (zob. `.env.example`) podaj w zmiennych środowiskowych powłoki albo w `packages/app/.env.local` dla aplikacji. Next.js czyta pliki `.env` z katalogu pakietu `app`, a skrypty migracji tylko ze środowiska.
@@ -35,29 +35,30 @@ Domyślne ustawienia bazy pasują do `docker-compose.yml`, więc plik `.env` nie
 
 ```mermaid
 flowchart TD
-  B[Przeglądarka] --> R["packages/app<br/>Next.js App Router<br/>strony, API routes"]
-  R -->|"createRequestScope()"| C["Kontener Awilix<br/>(composition root)"]
-  C --> S["Serwisy<br/>health, users…"]
-  S -->|"EntityManager (fork na request)"| D["packages/db<br/>MikroORM: encje, migracje"]
+  B[Przeglądarka] -->|"apiCall (jedyny fetch)"| R["packages/app<br/>Next.js: trasy API i strony"]
+  R -->|"apiHandler / makeCrudRoute<br/>CSRF → requireSession → Zod"| C["packages/core<br/>kontener Awilix, serwisy, http/, env, logger"]
+  C -->|"EntityManager (fork na request)"| D["packages/db<br/>MikroORM: encje, migracje"]
   D --> PG[(PostgreSQL)]
-  S --> CO["packages/core<br/>reguły biznesowe"]
-  R --> UI["packages/ui<br/>shadcn/ui (panel admina)"]
+  R --> UI["packages/ui<br/>shadcn/ui + backend/ (DataTable, CrudForm, feedback)"]
 ```
 
-| Pakiet | Odpowiada za | Zależy od |
+Kierunek zależności: **`app → core → db`**, `ui` importuje tylko `app`. Pilnuje tego ESLint.
+
+| Pakiet | Odpowiada za | Może importować |
 |---|---|---|
-| `packages/app` | aplikacja Next.js: trasy, strony, API, kontener DI, serwisy | core, db, ui |
-| `packages/core` | logika wielokrotnego użytku bez frameworka: reguły i polityki biznesowe (`RULES`) | — |
-| `packages/db` | konfiguracja MikroORM, encje, migracje, singleton ORM | — (dozwolone: core) |
-| `packages/ui` | komponenty shadcn/ui i tokeny motywu (Tailwind 4) | — |
+| `packages/app` | trasy API i strony Next.js (tylko HTTP i renderowanie) | core, ui |
+| `packages/core` | serwisy (klasy), kontener Awilix, warstwa `http/` (`apiHandler`, `makeCrudRoute`, `auth`, błędy), `env.ts`, `RULES`, logger | db |
+| `packages/db` | encje MikroORM, migracje; jedyny pakiet z `@mikro-orm/*` | — |
+| `packages/ui` | prymitywy shadcn/ui (z CLI), komponenty domenowe, warstwa `backend/` (`apiCall`, `DataTable`, `CrudForm`, `feedback`) | — |
 
 **Kluczowe decyzje**
 
-- **Monorepo pnpm:** cały kod (aplikacja i biblioteki) w jednym repo, więc agent ma kod pakietów pod ręką. Pakiety wewnętrzne są konsumowane jako źródło TypeScript (`transpilePackages`).
-- **Awilix:** jedyne miejsce, które dotyka singletona ORM, to `packages/app/src/server/container.ts`. Serwisy dostają zależności wstrzyknięte, a każdy request własny `EntityManager`.
-- **MikroORM 7** z encjami przez `defineEntity` (bez dekoratorów, działa z buildem Next.js). Pula połączeń z `DATABASE_URL`, singleton trzymany na `globalThis`, żeby hot reload nie mnożył połączeń. ORM łączy się leniwie, więc health check wykonuje `select 1`.
-- **Tailwind** na stronach publicznych, **shadcn/ui** (z `@mentorhub/ui`) w panelu admina.
-- Parametry biznesowe tylko w `RULES` w `@mentorhub/core`; wartości z discovery są propozycją, dopóki nie przyjmie ich specyfikacja.
+- **Standard inżynieryjny:** [.ai/docs/engineering-standards.md](.ai/docs/engineering-standards.md). Zawiera nazewnictwo, zasady, minimum bezpieczeństwa i checklistę review.
+- **Foldery domen** (`entities/auth/`, `services/auth/`, `api/users/`) zamiast modułów; folder powstaje razem z pierwszym plikiem.
+- **Wspólne warstwy:** każda trasa przechodzi przez `apiHandler` albo `makeCrudRoute`, a każda strona pobiera dane przez `apiCall`. Bez ręcznych `try/catch` i bez surowego `fetch`.
+- **Brak logowania:** `/admin/users` i `/api/users` działają tylko z `ALLOW_DEV_ADMIN=1` poza produkcją (fail closed, `make dev` ustawia flagę). Logowanie przyjdzie z osobną specyfikacją.
+- **MikroORM 7** z encjami przez `defineEntity`, tabele w liczbie mnogiej (`users`), migracje sprawdzane ręcznie.
+- **`make check`** obejmuje także `pnpm audit` (wyjątki opisane w `pnpm-workspace.yaml`).
 
 Reguły dla agentów: [AGENTS.md](AGENTS.md) oraz `AGENTS.md` w każdym pakiecie.
 

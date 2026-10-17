@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { createOrmConfig } from './config';
-import { User } from './entities/User';
+import { User } from './entities';
 
 describe('ORM config', () => {
-  it('maps the User entity to table "user" with the expected columns (no DB connection)', async () => {
+  it('maps the User entity to table "users" with the expected columns (no DB connection)', async () => {
     const orm = new MikroORM(createOrmConfig({ DATABASE_URL: 'postgresql://x:y@localhost:1/none' }));
     const meta = orm.getMetadata().get(User);
-    expect(meta.tableName).toBe('user');
+    expect(meta.tableName).toBe('users');
     expect(Object.keys(meta.properties).sort()).toEqual(['createdAt', 'email', 'id', 'name', 'role', 'updatedAt']);
     expect(meta.properties.email.unique).toBe(true);
     expect(meta.properties.role.items).toEqual(['mentee', 'mentor', 'admin']);

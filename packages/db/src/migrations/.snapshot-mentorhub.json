@@ -5,7 +5,7 @@
   ],
   "tables": [
     {
-      "name": "user",
+      "name": "users",
       "schema": "public",
       "columns": {
         "created_at": {
@@ -122,7 +122,7 @@
           ],
           "composite": false,
           "constraint": true,
-          "keyName": "user_email_unique",
+          "keyName": "users_email_unique",
           "primary": false,
           "unique": true
         },
@@ -132,14 +132,14 @@
           ],
           "composite": false,
           "constraint": true,
-          "keyName": "user_pkey",
+          "keyName": "users_pkey",
           "primary": true,
           "unique": true
         }
       ],
       "checks": [
         {
-          "name": "user_role_check",
+          "name": "users_role_check",
           "expression": "\"role\" in ('mentee', 'mentor', 'admin')",
           "definition": "check (\"role\" in ('mentee', 'mentor', 'admin'))",
           "columnName": "role"

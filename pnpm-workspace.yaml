@@ -6,3 +6,11 @@ onlyBuiltDependencies:
   - esbuild
   - sharp
   - unrs-resolver
+
+# `pnpm audit` runs in `make check` (engineering standards › Dependency hygiene).
+# Every ignored advisory needs a reason and a revisit condition — keep this list short.
+auditConfig:
+  ignoreGhsas:
+    # braces ReDoS (high) — only via lint tooling (eslint-config-next → fast-glob → micromatch),
+    # never shipped to users; no patched version exists. Revisit when eslint-config-next updates.
+    - GHSA-vfj7-8cjw-p6xm

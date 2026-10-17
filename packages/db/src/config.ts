@@ -1,7 +1,7 @@
 import { defineConfig, type Options } from '@mikro-orm/postgresql';
-import { User } from './entities/User';
+import { entities } from './entities';
 
-export const entities = [User];
+export { entities };
 
 export const DEFAULT_DATABASE_URL = 'postgresql://mentorhub:mentorhub@localhost:5433/mentorhub';
 

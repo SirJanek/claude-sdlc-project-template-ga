@@ -13,7 +13,7 @@
   "aliases": {
     "components": "@mentorhub/ui/components",
     "utils": "@mentorhub/ui/lib/utils",
-    "ui": "@mentorhub/ui/components",
+    "ui": "@mentorhub/ui/components/ui",
     "lib": "@mentorhub/ui/lib",
     "hooks": "@mentorhub/ui/hooks"
   }

@@ -15,8 +15,8 @@ const globalForOrm = globalThis as unknown as { __mentorhubOrm?: Promise<Orm> };
  * one pool instead of opening a new one on every change. Only the app's composition root
  * should call this.
  */
-export function getOrm(): Promise<Orm> {
-  globalForOrm.__mentorhubOrm ??= createOrm().catch((error: unknown) => {
+export function getOrm(options?: Options): Promise<Orm> {
+  globalForOrm.__mentorhubOrm ??= createOrm(options).catch((error: unknown) => {
     globalForOrm.__mentorhubOrm = undefined;
     throw error;
   });
