@@ -1,4 +1,4 @@
-# SDLC — {{PROJECT_NAME}}
+# SDLC — MentorHub
 
 Jak pracujemy. Sześć etapów, każdy zostawia artefakt, który czyta następny.
 Historia commitów jest audit trailem — nie ma osobnego procesu „na zgodność".

@@ -1,4 +1,4 @@
-# Prompty — {{PROJECT_NAME}}
+# Prompty — MentorHub
 
 Prompty do **skopiowania ręcznie**. Skille (`.claude/skills/`) odpalają się same po triggerze,
 komendy (`/sdlc-*`) są skrótem na typowy przebieg — te tutaj są do sytuacji, gdy chcesz

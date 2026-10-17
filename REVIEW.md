@@ -1,4 +1,4 @@
-# Review policy — {{PROJECT_NAME}}
+# Review policy — MentorHub
 
 Read by the PR review agent (`.github/workflows/claude-review.yml`) and by `/code-review`.
 Humans still approve through branch protection; this file decides what the agent says first.

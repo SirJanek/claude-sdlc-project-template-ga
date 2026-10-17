@@ -1,4 +1,4 @@
-# Evals — {{PROJECT_NAME}}
+# Evals — MentorHub
 
 Zmiana `CLAUDE.md`, skilla albo hooka jest zmianą zachowania systemu. Testujemy ją tak
 samo jak zmianę kodu — inaczej przez miesiąc nikt nie zauważy, że agent zaczął pisać
