@@ -46,7 +46,7 @@ cichu zawężeniem zakresu. Od tego jest człowiek.
 **Wynik:** pliki do zmiany, testy per kryterium, kolejność commitów, najbardziej ryzykowne
 założenie i jak je tanio sprawdzić.
 
-Pamięć projektu siedzi w `CLAUDE.md`. Zasada: **ta sama poprawka drugi raz → do pliku.**
+Pamięć projektu siedzi w `AGENTS.md` (wspólna dla wszystkich agentów, Claude Code wczytuje ją przez `CLAUDE.md`). Zasada: **ta sama poprawka drugi raz → do pliku.**
 Trzeci raz → do hooka, bo widocznie nie wystarcza prośba.
 
 **Tryb auto** (bez zatwierdzania każdej edycji) włączamy dopiero, gdy hooki i testy
@@ -67,7 +67,7 @@ Dwie rzeczy, bez których ten etap nie działa:
 - **Jedna komenda, kod wyjścia ≠ 0 przy błędzie.** Bez tego Claude nie ma pętli zwrotnej.
 - **Każdy incydent produkcyjny zostaje evalem** w `evals/tasks/`. Inaczej regresja wraca.
 
-Evale chodzą w CI na zmianę `CLAUDE.md` albo `.claude/**` — bo zmiana guardraila jest
+Evale chodzą w CI na zmianę `AGENTS.md`, `CLAUDE.md` albo `.claude/**` — bo zmiana guardraila jest
 zmianą zachowania systemu i wymaga testu tak samo jak zmiana kodu.
 
 **Metryki:** first-pass CI success · czas review · change failure rate · pass rate evali ·

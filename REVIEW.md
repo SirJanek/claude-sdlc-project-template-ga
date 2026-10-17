@@ -47,7 +47,7 @@ the scenario, it is not a finding.
 When the same class of finding appears in three PRs, it stops being a review item and
 becomes either:
 
-- a line in **`CLAUDE.md` → Things Claude gets wrong**, or
+- a line in **`AGENTS.md` → Things agents get wrong** (or **`CLAUDE.md` → Things Claude gets wrong** if Claude-only), or
 - a **hook** / lint rule, if it is non-negotiable.
 
 Reviews that keep catching the same thing mean the guardrail is in the wrong place.

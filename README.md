@@ -36,7 +36,7 @@ Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.
 
 ## Konwencje
 
-- **UI aplikacji po angielsku**; dokumentacja dla ludzi po polsku; pliki czytane przez Claude (`CLAUDE.md`, skille, hooki, artefakty `docs/sdlc/`) po angielsku.
+- **UI aplikacji po angielsku**; dokumentacja dla ludzi po polsku; pliki czytane przez agentów (`AGENTS.md`, `CLAUDE.md`, skille, hooki, artefakty `docs/sdlc/`) po angielsku.
 - Gałęzie od `develop`, zmiany przez PR. Commity w trybie rozkazującym, z odwołaniem do nagłówka `intent.md`, któremu służą.
 - „Done” znaczy zweryfikowane: wklejony output `make check`, nie deklaracja.
 - Preply.com jest wyłącznie benchmarkiem funkcjonalnym i UX. Nie kopiujemy identyfikacji wizualnej, treści ani kodu.
@@ -48,7 +48,8 @@ Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.
 | `docs/discovery/` | Analiza wstępna i klikalny prototyp (materiał wejściowy) |
 | `docs/sdlc/` | Artefakty SDLC: `intent.md`, `spec.md`, `plan.md`, `LESSONS.md`, `bands.yaml` |
 | `src/`, `tests/` | Kod produktu i testy (po wyborze stacku) |
-| `CLAUDE.md` | Pamięć projektu dla Claude: komendy, konwencje, architektura |
+| `AGENTS.md` | Pamięć projektu dla wszystkich agentów (Codex, Claude Code): komendy, konwencje, architektura, twarde reguły |
+| `CLAUDE.md` | Import `@AGENTS.md` + specyfika Claude Code (tryb plan, komendy `/sdlc-*`, hooki) |
 | `.claude/` | Komendy `/sdlc-*`, skille, subagenty, hooki strażników |
 | `evals/`, `.github/workflows/` | Evale guardraili i review PR w CI |
 
