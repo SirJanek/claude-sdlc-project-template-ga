@@ -10,6 +10,11 @@ Keep both files to ONE page combined: they are read on every turn.
 
 ## Claude Code specifics
 
+- The `.ai/` workspace rules in AGENTS.md apply to Claude Code too: read `.ai/lessons.md`
+  first, specs in `.ai/specs/YYYY-MM-DD-slug.md`, a log in `.ai/runs/` for every autonomous
+  run (including `claude -p`, subagents doing multi-step work and auto mode), lessons in
+  `.ai/lessons.md`.
+
 - Start in **plan mode** (Shift+Tab) with the relevant `docs/sdlc/spec.md`.
 - Stage commands: `/sdlc-intent`, `/sdlc-spec`, `/sdlc-plan`, `/sdlc-verify`, `/sdlc-incident`.
   Subagents: `spec-reviewer` (before planning), `verifier` (checks, never fixes).

@@ -71,6 +71,35 @@ Wire them up in the first build plan; until then nothing counts as verified.
 - Never read `.env*`, `secrets/`, `*.pem` or `id_rsa*`. Never force-push.
 - Nothing reaches production without a named human release approval.
 
+## Agent workspace: `.ai/` (mandatory)
+
+| Path | What goes there | Name format |
+|---|---|---|
+| `.ai/specs/` | Specifications for spec-driven development (SDD), one per change | `YYYY-MM-DD-slug.md` |
+| `.ai/specs/implemented/` | Specs whose change is merged — move the file here, keep its name | same |
+| `.ai/specs/archive/` | Specs abandoned or superseded — move here with a line saying why | same |
+| `.ai/runs/` | Log of every autonomous AI run | `YYYY-MM-DD-slug.md` |
+| `.ai/lessons.md` | One-line findings, conclusions and improvements written by agents (long-term memory) | newest on top |
+| `.ai/lessons/` | Longer write-ups linked from `lessons.md` | `YYYY-MM-DD-slug.md` |
+
+Rules — follow them on every task, without being reminded:
+
+1. **Before starting:** read `.ai/lessons.md` and the spec in `.ai/specs/` that the task belongs to.
+2. **Specs:** write new specs only in `.ai/specs/` with the date of creation and a kebab-case
+   slug. Never rename a spec; when the change merges, move it to `implemented/`.
+3. **Runs:** every autonomous AI run creates `.ai/runs/YYYY-MM-DD-slug.md` at the start and
+   keeps it current: goal, spec link, steps done, files changed, verification evidence,
+   status, and a **Handoff** section (exact next step, open questions) so an interrupted
+   run can be resumed by another agent or person. Commit it with the work.
+4. **Lessons:** after fixing a bug, after a human corrects you, or when you learn something
+   non-obvious about this project, add a line to `.ai/lessons.md` (details in `.ai/lessons/`).
+   A lesson that keeps recurring is promoted to "Things agents get wrong" below.
+5. **Keep this file current:** when you introduce a convention or a structure, make sure
+   `AGENTS.md` contains the instruction for it — that is how the system persists.
+
+`docs/sdlc/` (template SDLC artifacts and `/sdlc-*` commands) still exists alongside `.ai/`;
+how the two relate is not decided yet — do not merge or move content between them unasked.
+
 ## Things agents get wrong
 
 <!--
