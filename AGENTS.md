@@ -12,23 +12,40 @@ belongs here (or in CLAUDE.md if it is Claude-only).
 plan on credits). Course project for AI Tech Leaders. Preply.com is a functional/UX benchmark
 only — never copy its visual identity, copy or code.
 
-## Commands
+## Stack (assumptions every agent keeps to)
 
-The stack is not chosen yet: every target below is a stub that exits 1 on purpose.
-Wire them up in the first build plan; until then nothing counts as verified.
+- **Next.js** (latest, App Router) + **React** + **TypeScript** (strict) — one Next.js app.
+- **PostgreSQL** with **MikroORM** (entities via `defineEntity`, no decorators; migrations;
+  connection pool from `DATABASE_URL`). Local DB: `docker compose` (port 5433).
+- **Awilix** for dependency injection — composition root `packages/app/src/server/container.ts`.
+- **Tailwind CSS** for public (frontend) pages; **shadcn/ui** for admin (backend) pages.
+- **pnpm workspaces monorepo** — code lives in `packages/*`; each package has its own
+  `AGENTS.md` with local rules (read it when you work there) and a one-line `CLAUDE.md`
+  importing it for Claude Code. Start agents at the repo root so root and package rules both apply.
+
+| Package | Purpose | May depend on |
+|---|---|---|
+| `packages/app` (`@mentorhub/app`) | Next.js application: routes, pages, API, DI container, services | core, db, ui |
+| `packages/core` (`@mentorhub/core`) | Reusable, framework-free logic: business rules and policies | nothing internal |
+| `packages/db` (`@mentorhub/db`) | MikroORM config, entities, migrations, ORM helpers | core |
+| `packages/ui` (`@mentorhub/ui`) | Reusable UI components (shadcn/ui) and theme tokens | nothing internal |
+
+## Commands
 
 | Task | Command |
 |---|---|
-| Install | `make install` |
-| Test | `make test` |
-| Lint + format | `make lint` |
+| Install | `make install` (pnpm, from the lockfile) |
+| Test | `make test` (Vitest in every package, no DB needed) |
+| Lint + format | `make lint` (ESLint + Prettier check; fix with `pnpm format`) |
 | Typecheck | `make typecheck` |
-| Run locally | `make dev` |
-| Full check (what CI runs) | `make check` |
+| Build | `make build` |
+| Full check (what CI runs) | `make check` — lint, typecheck, test, build |
+| Run locally | `make dev` (starts the DB, then Next.js on :3000) |
+| Database | `make db-up`, `make db-down`, `make db-migrate`, `make db-migration NAME=<slug>` |
 
 ## Conventions
 
-- Source lives in `src/`, tests mirror it under `tests/`.
+- Tests sit next to the code as `*.test.ts` inside each package's `src/`.
 - Product UI text is English. Human-facing docs are Polish; files agents read
   (`AGENTS.md`, `CLAUDE.md`, skills, hooks, `docs/sdlc/*`) are English.
 - Never edit files under `docs/sdlc/` without being asked — they are SDLC artifacts, not docs.
@@ -36,17 +53,26 @@ Wire them up in the first build plan; until then nothing counts as verified.
   T*, A*) and API catalogue are proposals until a spec in `.ai/specs/` adopts them; when they
   disagree, the spec wins. Reuse the screen IDs so artifacts stay traceable.
 - `docs/discovery/mockups/` is a throwaway prototype (mock API in the browser). Do not import
-  from it into `src/`, and do not treat its mock as a contract.
-- Business parameters (prices, notice periods, fees) are configuration, never literals
-  scattered through code.
+  from it into `packages/`, and do not treat its mock as a contract.
+- Business parameters (prices, notice periods, fees) live only in `RULES` in `@mentorhub/core`,
+  never as literals elsewhere.
+- Services never import the ORM singleton: they receive `em` (request-scoped) or other
+  dependencies from the Awilix container. Only `container.ts` calls `getOrm()`.
+- Schema changes only through migrations (`make db-migration`); never edit an applied migration.
+- Workspace packages are consumed as TypeScript source: relative imports without `.js`.
+- Respect package boundaries in the table above; a new internal dependency needs a spec.
 - Branch from `develop`, merge via PR. Commit messages: imperative mood, reference the
   `intent.md` heading they serve.
 
 ## Architecture
 
-- Planned, not built. Roles: guest, mentee, mentor, admin.
-- Domains (from discovery): catalogue, booking & holds, payments & plans, sessions & video
-  room, messaging, mentor onboarding, payouts, admin moderation & disputes.
+- Request → Next.js route/page (`packages/app/src/app`) → request scope from the Awilix
+  container → service (`packages/app/src/server/services`) → MikroORM `EntityManager` fork →
+  PostgreSQL. Pure rules come from `@mentorhub/core`; admin UI from `@mentorhub/ui`.
+- Roles: guest, mentee, mentor, admin. Built so far: `/` (public), `/admin` (users list,
+  **no auth yet — local only**), `/api/health`; table `user`.
+- Domains to come (from discovery): catalogue, booking & holds, payments & plans, sessions &
+  video room, messaging, mentor onboarding, payouts, admin moderation & disputes.
 - External systems (to be chosen in spec): payment provider (source of truth for charges and
   refunds), video provider (room tokens; join/leave logs are dispute evidence), email/push,
   KYC for mentors.
