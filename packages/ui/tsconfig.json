@@ -1,5 +1,10 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "jsx": "react-jsx" },
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "paths": {
+      "@mentorhub/ui/*": ["./src/*"]
+    }
+  },
   "include": ["src"]
 }

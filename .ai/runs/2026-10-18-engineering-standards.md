@@ -17,7 +17,7 @@
 
 - [x] Phase 1 docs
 - [x] Phase 2 structure & direction (migration 2 hand-written: generator emitted drop+create — lesson recorded)
-- [ ] Phase 3 shared layers
+- [x] Phase 3 shared layers (shadcn CLI emits `import { cn } from "cn"` — the new `cn` npm package, installed by the CLI; not a bug)
 - [ ] Phase 4 reference example
 
 ## Handoff
