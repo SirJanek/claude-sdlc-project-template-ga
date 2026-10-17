@@ -1,0 +1,20 @@
+# Local PostgreSQL for development. Port 5433 avoids clashing with a native Postgres on 5432.
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: mentorhub
+      POSTGRES_PASSWORD: mentorhub
+      POSTGRES_DB: mentorhub
+    ports:
+      - '5433:5432'
+    volumes:
+      - mentorhub-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mentorhub -d mentorhub']
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  mentorhub-db:

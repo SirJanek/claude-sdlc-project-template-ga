@@ -1,28 +1,45 @@
-# Single-command interface. Everything else in this template calls these targets —
-# CLAUDE.md, the evals, the verifier subagent, CI.
+# Single-command interface. Everything else in this repo calls these targets —
+# AGENTS.md, CLAUDE.md, the evals, the verifier subagent, CI.
 #
 # The one rule that matters: EVERY TARGET MUST EXIT NON-ZERO ON FAILURE.
-# A check that prints errors and exits 0 gives Claude a green light on broken code, and it
-# will confidently build on top of it. Wrap your real tooling below; keep the names.
+# Stack: pnpm workspaces (packages/app, core, db, ui) — see README.md › Architecture.
 
-.PHONY: install test lint typecheck check dev rollback quarantine
+# Builds never phone home.
+export NEXT_TELEMETRY_DISABLED := 1
 
-install:   ## Install dependencies
-	@echo "TODO: wire up this project's installer" && exit 1
+.PHONY: install test lint typecheck build check dev db-up db-down db-migrate db-migration rollback quarantine
 
-test:      ## Run the test suite
-	@echo "TODO: wire up this project's test runner" && exit 1
+install:   ## Install dependencies from the lockfile
+	pnpm install --frozen-lockfile
 
-lint:      ## Lint and format-check
-	@echo "TODO: wire up this project's linter" && exit 1
+test:      ## Unit tests in every package (Vitest, no database needed)
+	pnpm -r test
 
-typecheck: ## Static type check
-	@true
+lint:      ## ESLint + Prettier check
+	pnpm lint
 
-check: lint typecheck test   ## Everything CI runs. "Done" means this passed.
+typecheck: ## Static type check in every package
+	pnpm typecheck
 
-dev:       ## Run locally
-	@echo "TODO: wire up this project's dev server" && exit 1
+build:     ## Production build of the Next.js app
+	pnpm build
+
+check: lint typecheck test build   ## Everything CI runs. "Done" means this passed.
+
+dev: db-up ## Run locally: database in Docker + Next.js dev server on :3000
+	pnpm dev
+
+db-up:     ## Start local PostgreSQL (docker compose, port 5433) and wait until healthy
+	docker compose up -d --wait db
+
+db-down:   ## Stop local PostgreSQL (data stays in the volume)
+	docker compose stop db
+
+db-migrate: ## Apply pending migrations
+	pnpm db:migrate
+
+db-migration: ## Generate a migration from entity changes: make db-migration NAME=add-x
+	pnpm db:migration $(NAME)
 
 # --- Stage 6 runbooks, referenced from docs/sdlc/bands.yaml ---------------------------
 # Rehearse both in staging before listing them as pre-approved. A runbook that has never
