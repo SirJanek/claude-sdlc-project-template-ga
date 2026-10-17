@@ -58,9 +58,24 @@ Wire them up in the first build plan; until then nothing counts as verified.
 - Process: `docs/sdlc/intent.md` → `spec.md` → `plan.md` → code. No accepted `spec.md`, nothing
   to plan; commit the accepted `plan.md` before editing code. Anything the diff does that the
   plan does not describe is a review finding.
+- **Plan complex work first.** Anything touching more than one module, or with an unclear
+  approach, starts as a plan detailed enough to implement in one pass. Get the plan reviewed by
+  a second agent or model acting as a skeptical staff engineer. If implementation goes
+  sideways, stop and re-plan — do not stack patches on a broken plan.
 - "Done" means verified: paste the output of `make check` as evidence, do not assert success.
+  For every acceptance criterion, say how it was checked; UI changes are checked in the
+  running app, not only by tests. Before a PR, challenge your own diff: what could break,
+  and what proves it does not.
+- **Prefer the elegant fix.** If a fix works but is a hack, say so, discard it and implement
+  the clean solution while the context is fresh.
 - Bug fixes are TDD: failing test first, committed separately, then the fix. Never edit the
-  test to make it pass.
+  test to make it pass. Given a bug report, failing CI or logs, investigate and fix from
+  that evidence yourself instead of asking how.
+- **Keep the main context clean.** Delegate research, broad code search and independent
+  sub-tasks to subagents; verification runs in a separate agent that checks, never fixes.
+  Parallel work uses one git worktree per agent — never two agents in one working tree.
+- **Automate repetition.** A task done more than once a day becomes a skill or command in
+  `.claude/skills/` or `.claude/commands/`, committed to git — propose it, do not wait to be asked.
 
 ## Hard rules (Claude Code enforces these with hooks; every other agent must follow them unaided)
 
@@ -92,8 +107,10 @@ Rules — follow them on every task, without being reminded:
    status, and a **Handoff** section (exact next step, open questions) so an interrupted
    run can be resumed by another agent or person. Commit it with the work.
 4. **Lessons:** after fixing a bug, after a human corrects you, or when you learn something
-   non-obvious about this project, add a line to `.ai/lessons.md` (details in `.ai/lessons/`).
-   A lesson that keeps recurring is promoted to "Things agents get wrong" below.
+   non-obvious about this project, add a line to `.ai/lessons.md` (details in `.ai/lessons/`)
+   **immediately, in the same commit as the fix** — not at the end of the session.
+   A lesson that keeps recurring is promoted to "Things agents get wrong" below; keep doing
+   this until the same mistake stops appearing.
 5. **Keep this file current:** when you introduce a convention or a structure, make sure
    `AGENTS.md` contains the instruction for it — that is how the system persists.
 
