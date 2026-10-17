@@ -16,7 +16,7 @@
 ## Steps
 
 - [x] Phase 1 docs
-- [ ] Phase 2 structure & direction
+- [x] Phase 2 structure & direction (migration 2 hand-written: generator emitted drop+create — lesson recorded)
 - [ ] Phase 3 shared layers
 - [ ] Phase 4 reference example
 

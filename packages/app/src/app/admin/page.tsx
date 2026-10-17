@@ -12,8 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from '@mentorhub/ui';
-import { createRequestScope } from '@/server/container';
-import type { UserListItem } from '@/server/services/users';
+import { withScope, type UserListItem } from '@mentorhub/core';
 
 // Admin (backend) page — built from shadcn/ui components in @mentorhub/ui.
 // WARNING: no authentication yet (see spec 2026-10-17-stack-bootstrap › Concerns). Local use only.
@@ -21,8 +20,7 @@ export const dynamic = 'force-dynamic';
 
 async function loadUsers(): Promise<{ users: UserListItem[] } | { error: string }> {
   try {
-    const scope = await createRequestScope();
-    return { users: await scope.cradle.userService.list() };
+    return { users: await withScope((cradle) => cradle.userService.list()) };
   } catch {
     return { error: 'The database is not reachable. Start it with `make db-up` and try again.' };
   }

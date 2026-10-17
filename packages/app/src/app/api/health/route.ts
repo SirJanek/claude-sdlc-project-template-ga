@@ -1,4 +1,4 @@
-import { getContainer } from '@/server/container';
+import { getContainer } from '@mentorhub/core';
 
 export const dynamic = 'force-dynamic';
 

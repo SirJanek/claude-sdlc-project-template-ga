@@ -138,6 +138,6 @@ Rehearse up → down → up with one row present; the row must survive.
 | Phase | Status | Evidence |
 |---|---|---|
 | 1 Docs | ✅ done | this commit |
-| 2 Structure & direction | ⏳ | |
+| 2 Structure & direction | ✅ done | `make check` exit 0; core 13 tests; 13/13 lint-boundary mutations caught; migration 2 up→down→up keeps 2 rows |
 | 3 Shared layers | ⏳ | |
 | 4 Reference example | ⏳ | |

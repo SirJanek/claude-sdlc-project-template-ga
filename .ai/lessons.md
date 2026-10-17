@@ -8,6 +8,8 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — Never silence `git add` (`2>/dev/null`) or pass it a deleted path: one missing pathspec aborts the whole add and the commit goes out with only what was staged before (f25fdf0 shipped without its new files; fixed by a follow-up commit, history not rewritten). Check `git status --short` is empty after committing.
+- 2026-10-18 — Review every generated migration: MikroORM turns a table rename into `create` + `drop … cascade` (data loss). Write renames by hand (`alter table … rename`, plus constraint renames), rehearse up → down → up with rows, then confirm `make db-migration` reports no changes.
 - 2026-10-17 — Start agents at the repo root. Claude Code reads AGENTS.md only through `@AGENTS.md` in a CLAUDE.md; each package has its own CLAUDE.md importing its AGENTS.md, loaded when the agent touches files there. Launched inside a package, `claude -p` skips imports from parent CLAUDE.md files (outside the working dir), so root rules go missing — verify instructions from the root.
 - 2026-10-17 — Health checks must run a real query (`select 1`): MikroORM 7 connects lazily and `checkConnection()` reports "Connection not established" until the first query, so a fake that returns ok hides the bug (unit tests were green, the live server said "down").
 - 2026-10-17 — In workspace packages consumed by Next.js (Turbopack) write relative imports without `.js` (`from './rules'`); Turbopack does not map `.js` to `.ts`, `tsc` with `moduleResolution: Bundler` and `tsx` accept both.

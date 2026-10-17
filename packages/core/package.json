@@ -12,5 +12,11 @@
   },
   "devDependencies": {
     "vitest": "^5.0.5"
+  },
+  "dependencies": {
+    "@mentorhub/db": "workspace:*",
+    "awilix": "^13.0.5",
+    "pino": "^10.4.0",
+    "zod": "^4.6.7"
   }
 }
