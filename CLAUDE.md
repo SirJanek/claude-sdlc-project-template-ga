@@ -15,7 +15,8 @@ Keep both files to ONE page combined: they are read on every turn.
   run (including `claude -p`, subagents doing multi-step work and auto mode), lessons in
   `.ai/lessons.md`; check `.ai/skills/<skill-name>/` before running a skill or `/sdlc-*` command.
 
-- Start in **plan mode** (Shift+Tab) with the relevant spec in `.ai/specs/`.
+- Start in **plan mode** (Shift+Tab) with the relevant spec in `.ai/specs/`. Nested `packages/*/AGENTS.md`
+  files are loaded when you work in a package — read the one for the package you touch.
 - Stage commands: `/sdlc-intent`, `/sdlc-spec`, `/sdlc-plan`, `/sdlc-verify`, `/sdlc-incident`.
   Subagents: `spec-reviewer` (before planning), `verifier` (checks, never fixes).
 - Hooks enforce the hard rules from AGENTS.md (`protect-paths`, `no-test-edits`,
