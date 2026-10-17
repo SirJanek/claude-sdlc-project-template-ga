@@ -1,18 +1,20 @@
 ---
 name: spec-writer
-description: Turn an accepted docs/sdlc/intent.md into docs/sdlc/spec.md with testable acceptance criteria, applying the org's security, compliance, UX and brand skills and flagging their concerns. Use when an intent.md exists and the work moves into design, or when asked to write requirements, a spec, or acceptance criteria. Do not use to write an implementation plan — that is plan mode and /sdlc-plan.
+description: Turn an accepted docs/sdlc/intent.md into a spec at .ai/specs/YYYY-MM-DD-slug.md with testable acceptance criteria, applying the org's security, compliance, UX and brand skills and flagging their concerns. Use when an intent.md exists and the work moves into design, or when asked to write requirements, a spec, or acceptance criteria. Do not use to write an implementation plan — that is plan mode and /sdlc-plan.
 ---
 
 # Write the spec
 
-Second stage. One session should be enough: `intent.md` in, `spec.md` out. If it takes
+Second stage. One session should be enough: `intent.md` in, a spec out — a new file
+`.ai/specs/YYYY-MM-DD-<slug>.md` (date of creation, kebab-case slug, never renamed) using the
+section format in `docs/sdlc/spec.md`. That template is a format, not a place to write. If it takes
 more than one, the intent was too weak — say so and send it back rather than inventing
 the missing decisions.
 
 ## Read first
 
 1. `docs/sdlc/intent.md` — the problem you are solving.
-2. Every other skill in `.claude/skills/` that touches this change (security, compliance,
+2. Every other skill in `.claude/skills/` (plus extensions in `.ai/skills/`) that touches this change (security, compliance,
    UX, brand, domain rules). These constrain the spec; they are not optional reading.
 3. The code that already exists in the area. A spec that ignores the current design
    produces a plan full of surprises.
@@ -41,7 +43,8 @@ human sees the trade-off.
 
 ## Hand off
 
-Commit as `docs: spec for <slug>`. Raise it as a PR if the team reviews specs that way.
+Commit as `docs: spec for <slug>`; specs reach `develop` through a PR like code. When the
+change merges, the spec moves to `.ai/specs/implemented/`.
 Next step is plan mode with `/sdlc-plan`.
 
 ## Done means

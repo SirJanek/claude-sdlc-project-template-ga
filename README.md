@@ -22,14 +22,14 @@ Marketplace **mentoringu 1:1 przez wideo**: osoby rozwijające karierę w produk
 Każdy etap zostawia w repo plik czytany przez następny, a historia commitów jest audit trailem:
 
 ```
-discovery  →  intent.md  →  spec.md  →  plan.md  →  diff + testy  →  PR z review  →  incydent
+discovery  →  intent.md  →  .ai/specs  →  + plan  →  diff + testy  →  PR z review  →  incydent
  propozycja    problem      wymagania    plan        implementacja    wdrożenie      produkcja
 ```
 
 1. **Discovery** (`docs/discovery/`): analiza i prototyp. To propozycja, a nie wymagania.
 2. **Plan:** [`docs/sdlc/intent.md`](docs/sdlc/intent.md) (`/sdlc-intent`). Akceptuje i commituje product owner.
-3. **Design:** `docs/sdlc/spec.md` (`/sdlc-spec`, potem subagent `spec-reviewer`). Kryteria akceptacji, każde testowalne osobno.
-4. **Build:** `docs/sdlc/plan.md` (`/sdlc-plan` w trybie plan), commitowany przed kodem.
+3. **Design:** nowy plik `.ai/specs/YYYY-MM-DD-slug.md` (`/sdlc-spec`, potem subagent `spec-reviewer`; format w `docs/sdlc/spec.md`), scalany przez PR. Kryteria akceptacji, każde testowalne osobno.
+4. **Build:** sekcja `## Implementation plan` dopisana do specyfikacji (`/sdlc-plan` w trybie plan; format w `docs/sdlc/plan.md`), commitowana przed kodem.
 5. **Test i Deploy:** `make check` z wklejonym outputem, PR do `develop` z review według [REVIEW.md](REVIEW.md).
 
 Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.md). Gotowe prompty: [PROMPTS.md](PROMPTS.md).
@@ -47,7 +47,7 @@ Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.
 |---|---|
 | `.ai/` | Przestrzeń agentów: `specs/` (specyfikacje SDD `YYYY-MM-DD-slug.md`, `implemented/`, `archive/`), `runs/` (log każdego przebiegu AI: decyzje z uzasadnieniem, handoff), `lessons.md` + `lessons/` (wnioski zapisywane przez agentów), `skills/` (rozszerzenia i nadpisania skilli), `analyses/README.md` (indeks analiz trzymanych w `docs/`) |
 | `docs/discovery/` | Analiza wstępna i klikalny prototyp (materiał wejściowy) |
-| `docs/sdlc/` | Artefakty SDLC: `intent.md`, `spec.md`, `plan.md`, `LESSONS.md`, `bands.yaml` |
+| `docs/sdlc/` | Proces SDLC: `intent.md`, wzorce formatu `spec.md` i `plan.md` (same specyfikacje są w `.ai/specs/`), `LESSONS.md`, `bands.yaml` |
 | `src/`, `tests/` | Kod produktu i testy (po wyborze stacku) |
 | `AGENTS.md` | Pamięć projektu dla wszystkich agentów (Codex, Claude Code): komendy, konwencje, architektura, twarde reguły |
 | `CLAUDE.md` | Import `@AGENTS.md` + specyfika Claude Code (tryb plan, komendy `/sdlc-*`, hooki) |

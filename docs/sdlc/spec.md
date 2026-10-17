@@ -1,11 +1,15 @@
 <!--
-STAGE 2 — Design. Written with /sdlc-spec from an accepted intent.md, reviewed by the
-spec-reviewer subagent. Every acceptance criterion must be independently testable.
+STAGE 2 — Design. FORMAT TEMPLATE — do not fill it in here.
+Each spec is a new file .ai/specs/YYYY-MM-DD-<slug>.md written with /sdlc-spec from the accepted
+docs/sdlc/intent.md, reviewed by the spec-reviewer subagent, and merged through a PR. After
+the change merges, the spec moves to .ai/specs/implemented/. Every acceptance criterion must
+be independently testable. /sdlc-plan later appends a "## Implementation plan" section
+(format: docs/sdlc/plan.md) to the same file.
 -->
 
 # Spec: <short name>
 
-**Intent:** [intent.md](./intent.md) · **Status:** draft | reviewed | accepted
+**Intent:** [intent.md](../../docs/sdlc/intent.md) · **Status:** draft | reviewed | accepted
 
 ## Scope
 

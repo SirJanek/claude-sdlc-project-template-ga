@@ -7,13 +7,13 @@ Humans still approve through branch protection; this file decides what the agent
 
 Run in order. Stop reporting a finding once it has been reported by an earlier pass.
 
-1. **Correctness** — does the diff do what `docs/sdlc/plan.md` says it does? Off-by-one,
+1. **Correctness** — does the diff do what the spec's `## Implementation plan` (`.ai/specs/YYYY-MM-DD-<slug>.md`) says it does? Off-by-one,
    null/empty handling, error paths that swallow failures, concurrency on shared state,
    migrations that are not reversible.
 2. **Security** — injection through unvalidated input, authz checks missing on a new route,
    secrets or tokens in the diff, new dependency with no pinned version, logging of PII.
 3. **Spec compliance** — does the diff satisfy every acceptance criterion in
-   `docs/sdlc/spec.md`, and does it do anything the spec did not ask for? Scope creep is a
+   the spec in `.ai/specs/`, and does it do anything the spec did not ask for? Scope creep is a
    finding, not a bonus.
 4. **Tests** — is each behaviour change covered? For a bug fix, is there a test that fails
    without the fix? A test edited in the same commit as the fix it validates is a finding.
@@ -24,7 +24,7 @@ Report as **Important** only if at least one holds:
 
 - It can produce wrong data, data loss, or an outage.
 - It can be reached by an untrusted input.
-- It contradicts `spec.md` or `plan.md`.
+- It contradicts the spec or its implementation plan.
 - It leaves a behaviour change untested.
 
 Everything else is a nit.

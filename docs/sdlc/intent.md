@@ -1,6 +1,6 @@
 <!--
 STAGE 1 — Plan. Written with /sdlc-intent, accepted and committed by the product owner.
-Describes a PROBLEM. If a solution appears below, it belongs in spec.md instead.
+Describes a PROBLEM. If a solution appears below, it belongs in a spec (.ai/specs/) instead.
 
 DRAFT NOTE (2026-10-17): drafted from the discovery package in docs/discovery/, not from an
 /sdlc-intent interview. The interview questions that discovery did not answer are carried
@@ -63,7 +63,7 @@ Candidate measures from discovery — **targets are not set yet** (see Open ques
 Product rules proposed in discovery (intro session, weekly plans on credits, 12-hour
 reschedule rule, fee tiers, payout terms, contact-detail blocking) are **solutions**, not
 constraints. They are listed with their parameters in `docs/discovery/02-Use-case-i-przeplywy.md`
-and are decided in `spec.md`.
+and are decided in a spec under `.ai/specs/`.
 
 ## Open questions
 
@@ -89,4 +89,4 @@ Interview questions that discovery did not answer:
 - Group sessions, courses, recorded content, marketplace for materials
 - Native mobile apps (responsive web only)
 - Two-factor authentication beyond a placeholder
-- Choosing the tech stack and vendors (payment, video, KYC) — that is spec.md / plan.md work
+- Choosing the tech stack and vendors (payment, video, KYC) — that is spec and implementation-plan work (`.ai/specs/`)

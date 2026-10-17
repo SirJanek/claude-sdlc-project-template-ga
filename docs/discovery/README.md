@@ -14,7 +14,7 @@ sources: brief zadania z 2026-10-17 (benchmark funkcjonalny Preply.com)
 > - **klikalny prototyp** HTML/CSS/TypeScript z 26 ekranami, 4 rolami i 4 stanami danych.
 
 > [!IMPORTANT]
-> **Miejsce w procesie SDLC.** To jest materiał wejściowy (discovery), a nie artefakt SDLC. Na jego podstawie powstał szkic [`docs/sdlc/intent.md`](../sdlc/intent.md), który akceptuje product owner. Wymagania wiążące dla implementacji powstaną dopiero w `docs/sdlc/spec.md` (`/sdlc-spec`). Do tego czasu reguły biznesowe, ekrany i katalog API są **propozycją**: przy rozbieżności wygrywa `spec.md`. Prototyp w `mockups/` służy do dyskusji i nie jest kodem produktu, bo ten będzie w `src/`.
+> **Miejsce w procesie SDLC.** To jest materiał wejściowy (discovery), a nie artefakt SDLC. Na jego podstawie powstał szkic [`docs/sdlc/intent.md`](../sdlc/intent.md), który akceptuje product owner. Wymagania wiążące dla implementacji powstaną dopiero w specyfikacjach `.ai/specs/YYYY-MM-DD-slug.md` (`/sdlc-spec`). Do tego czasu reguły biznesowe, ekrany i katalog API są **propozycją**: przy rozbieżności wygrywa specyfikacja. Prototyp w `mockups/` służy do dyskusji i nie jest kodem produktu, bo ten będzie w `src/`.
 
 ## Dokumenty
 

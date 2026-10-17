@@ -33,8 +33,8 @@ Wire them up in the first build plan; until then nothing counts as verified.
   (`AGENTS.md`, `CLAUDE.md`, skills, hooks, `docs/sdlc/*`) are English.
 - Never edit files under `docs/sdlc/` without being asked — they are SDLC artifacts, not docs.
 - `docs/discovery/` is input, not requirements. Its business rules, screens (IDs P*, M*, C*,
-  T*, A*) and API catalogue are proposals until `docs/sdlc/spec.md` adopts them; when they
-  disagree, `spec.md` wins. Reuse the screen IDs so artifacts stay traceable.
+  T*, A*) and API catalogue are proposals until a spec in `.ai/specs/` adopts them; when they
+  disagree, the spec wins. Reuse the screen IDs so artifacts stay traceable.
 - `docs/discovery/mockups/` is a throwaway prototype (mock API in the browser). Do not import
   from it into `src/`, and do not treat its mock as a contract.
 - Business parameters (prices, notice periods, fees) are configuration, never literals
@@ -58,8 +58,9 @@ Wire them up in the first build plan; until then nothing counts as verified.
 
 ## Workflow
 
-- Process: `docs/sdlc/intent.md` → `spec.md` → `plan.md` → code. No accepted `spec.md`, nothing
-  to plan; commit the accepted `plan.md` before editing code. Anything the diff does that the
+- Process: `docs/sdlc/intent.md` → spec `.ai/specs/YYYY-MM-DD-slug.md` (format: `docs/sdlc/spec.md`)
+  → its `## Implementation plan` section (format: `docs/sdlc/plan.md`) → code. No accepted spec,
+  nothing to plan; commit the accepted plan before editing code. Anything the diff does that the
   plan does not describe is a review finding.
 - **Plan complex work first.** Anything touching more than one module, or with an unclear
   approach, starts as a plan detailed enough to implement in one pass. Get the plan reviewed by
@@ -123,15 +124,17 @@ Rules — follow them on every task, without being reminded:
 6. **Keep this file current:** when you introduce a convention or a structure, make sure
    `AGENTS.md` contains the instruction for it — that is how the system persists.
 
-`docs/sdlc/` (template SDLC artifacts and `/sdlc-*` commands) still exists alongside `.ai/`;
-how the two relate is not decided yet — do not merge or move content between them unasked.
+**Specs live only in `.ai/specs/`** (decided 2026-10-17). `docs/sdlc/` keeps the process:
+`intent.md`, the format templates `spec.md` and `plan.md` (never filled in place),
+`00-OVERVIEW.md`, `bands.yaml` and `LESSONS.md` (production incidents only — agent learnings
+go to `.ai/lessons.md`). The `/sdlc-*` commands read and write `.ai/specs/`.
 
 **Open Mercato skills (`om-*`) are not set up here yet — do not run `/om-setup-agent-pipeline`.**
 Order agreed with the course: stack and repo setup (L02) → safety net (CI, tests,
 `make check` wired) → Open Mercato pipeline and SDLC (L03). When L03 runs setup:
 `tracker: github`, `validation.commands: ["make check"]`, `paths.analysis: ".ai/analyses"`,
 `paths.prototypes: "docs/discovery/mockups"`, keep `runs`/`specs` defaults, and decide which
-SDLC description is primary (`docs/sdlc/` vs the generated `SDLC.md`). Until then the `om-*`
+process description is primary (`docs/sdlc/00-OVERVIEW.md` vs the generated `SDLC.md`). Until then the `om-*`
 skills stop on the missing `.ai/agentic.config.json` — that is expected.
 
 ## Things agents get wrong
