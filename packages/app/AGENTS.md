@@ -1,18 +1,22 @@
 # packages/app — Next.js application (`@mentorhub/app`)
 
-Read the root `AGENTS.md` first; this file adds rules for this package only.
+Read the root `AGENTS.md` and `.ai/docs/engineering-standards.md` first; this file adds rules
+for this package only.
 
-- **Layout:** `src/app/` routes (App Router) · `src/server/container.ts` Awilix composition
-  root · `src/server/services/` services (one factory function per service, `makeXService`).
-- **DI:** register every service in `container.ts`. Stateless and DB-independent → `.singleton()`;
-  anything that uses `em` → `.scoped()`. Pages and route handlers get a scope with
-  `createRequestScope()` and resolve from `scope.cradle`. Never import `getOrm` outside
-  `container.ts`; inject it.
-- **UI:** public pages use Tailwind utility classes directly; admin pages (`src/app/admin/**`)
-  use components from `@mentorhub/ui`. Add new shadcn components to `packages/ui`, not here.
-- **Data access** happens on the server only (server components, route handlers). Pages that
-  read the DB export `dynamic = 'force-dynamic'`.
-- `/admin` has **no authentication** yet — do not deploy it (see spec 2026-10-17-stack-bootstrap).
-- **Tests:** `src/**/*.test.ts` with Vitest; test services through `buildContainer({ getOrm })`
-  with fakes. Fakes must behave like the real dependency (see `.ai/lessons.md` on health checks).
-- Commands: `pnpm --filter @mentorhub/app dev | build | test | typecheck`.
+- **HTTP wiring and rendering only.** Business rules live in `core`, persistence in `db`,
+  presentation primitives in `ui`. May import `@mentorhub/core` and `@mentorhub/ui` — never
+  `@mikro-orm/*` (ESLint blocks it).
+- **Routes:** one `route.ts` per resource under `src/app/api/<concept>/`. Plain CRUD →
+  `export const { GET, POST, PUT, DELETE } = makeCrudRoute({ service, list, create, ... })`;
+  workflows → `apiHandler(async (req) => { requireSession(req); …withScope(...) })`. Never a
+  hand-written `try/catch` or `NextResponse.json`. Routes reading the DB export
+  `dynamic = 'force-dynamic'` (the app must build and boot with no database).
+- **Pages:** `<segment>/page.tsx`, default export `<Segment>Page`, under persona route groups
+  `(marketing)`, `(auth)`, `(mentee)`, `(mentor)` (create a group only with its first page).
+  Data via `apiCall`/`apiCallOrThrow` from `@mentorhub/ui` — no raw `fetch`. Lists →
+  `DataTable`; forms → `CrudForm` with the shared schema; states → `feedback/*`.
+- Reference example: `src/app/api/users/route.ts` + `src/app/admin/users/page.tsx`.
+- Public pages use Tailwind directly; admin pages use components from `@mentorhub/ui`.
+- `/admin/**` and `/api/users` have **no real auth** — dev flag only; do not deploy them.
+- After moving routes run `make dev` once (stale `.next/dev/types` break `tsc`).
+- Commands: `pnpm --filter @mentorhub/app dev | build | typecheck`.

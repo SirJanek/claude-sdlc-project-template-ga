@@ -31,7 +31,7 @@ async function readJsonBody(request: Request): Promise<unknown> {
 }
 
 async function readId(request: Request, context: RouteContext): Promise<string> {
-  const params = await context.params;
+  const params = (await context.params) as Record<string, unknown>;
   const fromPath = typeof params.id === 'string' ? params.id : undefined;
   const id = fromPath ?? new URL(request.url).searchParams.get('id') ?? undefined;
   if (!id) throw new NotFoundError('Missing resource id.');

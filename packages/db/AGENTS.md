@@ -1,17 +1,20 @@
 # packages/db — data layer (`@mentorhub/db`)
 
-Read the root `AGENTS.md` first; this file adds rules for this package only.
+Read the root `AGENTS.md` and `.ai/docs/engineering-standards.md` first; this file adds rules
+for this package only.
 
-- **Entities:** `src/entities/*.ts` with `defineEntity` + `setClass` (no decorators — they break
-  in the Next.js build). Register each new entity in `entities` in `src/config.ts`.
-- **Migrations:** change entities, then `make db-migration NAME=<slug>` (generates a file in
-  `src/migrations/` and updates the snapshot), review the SQL, then `make db-migrate`. Every
-  migration must have a working `down`; rehearse up → down → up locally. Never edit a
-  migration that has been applied anywhere.
-- **Config:** `createOrmConfig(env)` reads `DATABASE_URL` and `DB_POOL_MAX`; the web runtime
-  never loads the migrator (only `src/scripts/migrate.ts` adds it).
-- **Connections:** MikroORM 7 connects lazily — to check the DB, run a query; do not trust
-  `checkConnection()` before the first query.
-- `getOrm()` is the process singleton for the app's composition root only.
-- Tests run without a database (metadata checks); DB-dependent checks need `make db-up`.
+- **The only package that imports `@mikro-orm/*`.** Imports nothing internal (no core/app/ui).
+- **Entities:** `src/entities/<concept>/<name>.entity.ts`, `defineEntity` + `setClass` (no
+  decorators), spreading `baseProperties` from `base.entity.ts` (UUID id, `createdAt`,
+  `updatedAt`). PascalCase singular class, **snake_case plural table** (`users`), snake_case
+  columns. Register each entity in `src/entities/index.ts` (explicit list, no scanning).
+- **Migrations:** change entities, `make db-migration NAME=<slug>`, then **read the SQL** —
+  renames come out as `create` + `drop … cascade` and must be rewritten by hand
+  (`alter table … rename`). Every migration has a working `down`; rehearse up → down → up with
+  rows present; afterwards `make db-migration` must report no changes. Never edit an applied one.
+- **Config:** `createOrmConfig(env)` reads `DATABASE_URL`/`DB_POOL_MAX`; the web runtime never loads
+  the migrator (only `src/scripts/migrate.ts` adds it). MikroORM 7 connects lazily — check the DB
+  with a query, not `checkConnection()`.
+- `getOrm()` is the process singleton for core's composition root only.
+- All access through entity/query APIs — no raw SQL with interpolated input.
 - Commands: `pnpm --filter @mentorhub/db test | typecheck | migrate | migrate:down | migrate:status | migration:create <name>`.

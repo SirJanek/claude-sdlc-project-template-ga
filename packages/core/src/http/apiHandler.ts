@@ -9,8 +9,9 @@ export const REQUEST_HEADER = 'x-mentorhub-request';
 export type ApiEnvelope<T> =
   { ok: true; data: T } | { ok: false; error: { code: string; message: string; fieldErrors?: FieldErrors } };
 
+/** Next.js passes route params as a promise; the shape depends on the route, so handlers narrow it. */
 export interface RouteContext {
-  params: Promise<Record<string, string | string[] | undefined>>;
+  params: Promise<object>;
 }
 
 export type RouteHandler = (request: Request, context: RouteContext) => Promise<Response>;

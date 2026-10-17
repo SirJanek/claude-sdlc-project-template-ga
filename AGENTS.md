@@ -17,18 +17,75 @@ only — never copy its visual identity, copy or code.
 - **Next.js** (latest, App Router) + **React** + **TypeScript** (strict) — one Next.js app.
 - **PostgreSQL** with **MikroORM** (entities via `defineEntity`, no decorators; migrations;
   connection pool from `DATABASE_URL`). Local DB: `docker compose` (port 5433).
-- **Awilix** for dependency injection — composition root `packages/app/src/server/container.ts`.
+- **Awilix** DI — composition root `packages/core/src/container/{container,cradle}.ts`.
 - **Tailwind CSS** for public (frontend) pages; **shadcn/ui** for admin (backend) pages.
+- **Zod** for validation and `env.ts`; **pino** for logging (secrets redacted).
 - **pnpm workspaces monorepo** — code lives in `packages/*`; each package has its own
   `AGENTS.md` with local rules (read it when you work there) and a one-line `CLAUDE.md`
   importing it for Claude Code. Start agents at the repo root so root and package rules both apply.
+- **Engineering standards:** [.ai/docs/engineering-standards.md](.ai/docs/engineering-standards.md)
+  — naming table, principles, security minimums, review checklist. Follow it; it wins over habit.
 
-| Package | Purpose | May depend on |
+### Monorepo layout and dependency direction
+
+`app → core → db`; `ui` is importable by `app` only. ESLint enforces it (`no-restricted-imports`).
+
+| Package | Purpose | May import |
 |---|---|---|
-| `packages/app` (`@mentorhub/app`) | Next.js application: routes, pages, API, DI container, services | core, db, ui |
-| `packages/core` (`@mentorhub/core`) | Reusable, framework-free logic: business rules and policies | nothing internal |
-| `packages/db` (`@mentorhub/db`) | MikroORM config, entities, migrations, ORM helpers | core |
-| `packages/ui` (`@mentorhub/ui`) | Reusable UI components (shadcn/ui) and theme tokens | nothing internal |
+| `packages/app` (`@mentorhub/app`) | Next.js routes, pages, API route files (HTTP wiring only) | core, ui |
+| `packages/core` (`@mentorhub/core`) | services, container, `http/` layer, config (`env`, `rules`), logger | db |
+| `packages/db` (`@mentorhub/db`) | MikroORM config, entities, migrations — the only package importing `@mikro-orm/*` | nothing internal |
+| `packages/ui` (`@mentorhub/ui`) | shadcn/ui primitives, concept components, `backend/` panel layer | nothing internal |
+
+### Domain concept convention
+
+Domain code is not organized into `modules/`. Each concept (`auth`, `mentors`,
+`availability`, `bookings`, `payments`, `messages`, `favorites`, `reviews`, ...) is a
+same-named sub-folder repeated across the layers that need it:
+
+- `packages/db/src/entities/<concept>/<name>.entity.ts`
+- `packages/core/src/services/<concept>/<name>.service.ts`
+- `packages/core/src/validators/<concept>/` (shared Zod schemas, when needed)
+- `packages/app/src/app/api/<concept>/route.ts` and the matching `page.tsx` under
+  the relevant persona route group (`(marketing)`, `(auth)`, `(mentee)`, `(mentor)`)
+
+Create a concept folder only when its first file is added — never scaffold empty
+ones. This is a directory convention, not a module runtime: there is no per-concept
+setup/ACL/auto-discovery. See `.ai/docs/engineering-standards.md` for the full
+naming table and the payments-port/event-emitter patterns.
+
+Event IDs follow `concept.entity.action` (e.g. `bookings.booking.created`) and are
+emitted through the typed emitter in `packages/core/src/events`, registered on the
+`Cradle` — this is in-process only; there is no queue/worker in this project.
+(`events/` and `validators/` are created with the first feature that needs them.)
+
+### Reusable API & UI layer
+
+Every route and every page reuses two shared layers instead of re-implementing
+fetch/validation/auth/error-handling per feature:
+
+- `packages/core/src/http/` — `errors.ts` (typed `AppError` hierarchy),
+  `apiHandler.ts` (wraps a route: catches `AppError`s, maps to status + JSON
+  envelope, logs unexpected failures, rejects state-changing requests without the
+  `x-mentorhub-request` header), `makeCrudRoute.ts` (schema + service in,
+  `{ GET, POST, PUT, DELETE }` out, for plain CRUD resources), `auth.ts`
+  (`requireSession`, `requireRole`, ownership assertions).
+- `packages/ui/src/backend/` — `api/apiCall.ts` (the only sanctioned `fetch()` call
+  site), `forms/CrudForm.tsx`, `tables/DataTable.tsx`,
+  `feedback/{LoadingMessage,ErrorMessage,EmptyState}.tsx`.
+
+New reusable components have one designated home each — never scattered ad hoc:
+
+1. Shadcn primitive → `ui/src/components/ui/` (via `npx shadcn@latest add`, never
+   hand-written).
+2. Generic, concept-agnostic panel pattern → `ui/src/backend/<category>/`.
+3. Component tied to one concept's domain shape → `ui/src/components/<concept>/`,
+   named after the same concept folder used in `db`/`core`.
+4. Used by exactly one page → colocate next to that `page.tsx` until a second
+   consumer appears.
+
+Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
+`app/src/app/admin/users/page.tsx` (`apiCall` + `DataTable`).
 
 ## Commands
 
@@ -36,11 +93,12 @@ only — never copy its visual identity, copy or code.
 |---|---|
 | Install | `make install` (pnpm, from the lockfile) |
 | Test | `make test` (Vitest in every package, no DB needed) |
-| Lint + format | `make lint` (ESLint + Prettier check; fix with `pnpm format`) |
+| Lint + format | `make lint` (ESLint incl. package boundaries + Prettier check; fix with `pnpm format`) |
 | Typecheck | `make typecheck` |
 | Build | `make build` |
-| Full check (what CI runs) | `make check` — lint, typecheck, test, build |
-| Run locally | `make dev` (starts the DB, then Next.js on :3000) |
+| Audit | `make audit` (`pnpm audit --audit-level high`; documented exceptions in `pnpm-workspace.yaml`) |
+| Full check (what CI runs) | `make check` — lint, typecheck, test, build, audit |
+| Run locally | `make dev` (starts the DB, then Next.js on :3000 with dev-admin access) |
 | Database | `make db-up`, `make db-down`, `make db-migrate`, `make db-migration NAME=<slug>` |
 
 ## Conventions
@@ -54,25 +112,30 @@ only — never copy its visual identity, copy or code.
   disagree, the spec wins. Reuse the screen IDs so artifacts stay traceable.
 - `docs/discovery/mockups/` is a throwaway prototype (mock API in the browser). Do not import
   from it into `packages/`, and do not treat its mock as a contract.
-- Business parameters (prices, notice periods, fees) live only in `RULES` in `@mentorhub/core`,
-  never as literals elsewhere.
-- Services never import the ORM singleton: they receive `em` (request-scoped) or other
-  dependencies from the Awilix container. Only `container.ts` calls `getOrm()`.
-- Schema changes only through migrations (`make db-migration`); never edit an applied migration.
+- Business parameters (prices, notice periods, fees) live only in `RULES`
+  (`core/src/config/rules.ts`), never as literals elsewhere.
+- Services are classes registered by an explicit line in `container.ts` (+ type in `cradle.ts`);
+  they throw `AppError`s and never build HTTP responses. Only `container.ts` calls `getOrm()`.
+- Routes: wrap in `apiHandler` or build with `makeCrudRoute` — no hand-written `try/catch`;
+  authorize first (`requireSession`, ownership) and parse write bodies with a Zod schema.
+- **No real auth yet:** `requireSession` admits a dev admin only with `ALLOW_DEV_ADMIN=1` outside
+  production (fail closed). Never deploy `/admin` or `/api/users` before the auth spec.
+- Schema changes only through migrations (`make db-migration`); review the generated SQL (renames
+  come out as drop + create); never edit an applied migration.
 - Workspace packages are consumed as TypeScript source: relative imports without `.js`.
-- Respect package boundaries in the table above; a new internal dependency needs a spec.
 - Branch from `develop`, merge via PR. Commit messages: imperative mood, reference the
   `intent.md` heading they serve.
 
 ## Architecture
 
-- Request → Next.js route/page (`packages/app/src/app`) → request scope from the Awilix
-  container → service (`packages/app/src/server/services`) → MikroORM `EntityManager` fork →
-  PostgreSQL. Pure rules come from `@mentorhub/core`; admin UI from `@mentorhub/ui`.
-- Roles: guest, mentee, mentor, admin. Built so far: `/` (public), `/admin` (users list,
-  **no auth yet — local only**), `/api/health`; table `user`.
+- Request → route file in `app` (`apiHandler`/`makeCrudRoute`: CSRF check → `requireSession` →
+  Zod parse) → `withScope` from the `core` container → service class → MikroORM
+  `EntityManager` fork (`db`) → PostgreSQL. Client pages call `/api/*` only through `apiCall`.
+- Roles: guest, mentee, mentor, admin. Built so far: `/` (public, `(marketing)`),
+  `/admin/users` (users list, **dev access only**), `/api/users`, `/api/health`; table `users`.
 - Domains to come (from discovery): catalogue, booking & holds, payments & plans, sessions &
-  video room, messaging, mentor onboarding, payouts, admin moderation & disputes.
+  video room, messaging, mentor onboarding, payouts, admin moderation & disputes. External
+  integrations go behind a port in `core` with a mock adapter first.
 - External systems (to be chosen in spec): payment provider (source of truth for charges and
   refunds), video provider (room tokens; join/leave logs are dispute evidence), email/push,
   KYC for mentors.

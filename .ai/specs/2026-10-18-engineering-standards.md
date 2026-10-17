@@ -140,4 +140,6 @@ Rehearse up → down → up with one row present; the row must survive.
 | 1 Docs | ✅ done | this commit |
 | 2 Structure & direction | ✅ done | `make check` exit 0; core 13 tests; 13/13 lint-boundary mutations caught; migration 2 up→down→up keeps 2 rows |
 | 3 Shared layers | ✅ done | `make check` exit 0; core 27 tests (errors, apiHandler incl. CSRF, makeCrudRoute, auth fail-closed matrix); ui 11 tests; shadcn primitives from CLI 4.22 (uses the `cn` package) |
-| 4 Reference example | ⏳ | |
+| 4 Reference example | ✅ done | `make check` (incl. `pnpm audit`) exit 0; live: `/api/users` 200 with flag, 401 without, **401 in production even with the flag**; CSRF 403; 405; `/admin` 307 → `/admin/users`; health 200/503; headless 6/6 + unauthorized state; agent answers from AGENTS.md |
+
+**All phases complete.** Next, outside this spec: auth spec (replaces the dev-admin flag), CI safety net, events/validators with the first feature.
