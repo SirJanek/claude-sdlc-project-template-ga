@@ -7,3 +7,5 @@ Read this file before starting any task. Add a line after fixing a bug, after a 
 from a human, or when you learn something non-obvious about this project. Longer write-ups
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
+
+- 2026-10-17 — Run logs must record Decisions: what was decided, why, and rejected alternatives (gap found by Jan when checking the repo against the course description; rule 3 now requires it).

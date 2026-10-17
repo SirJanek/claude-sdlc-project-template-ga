@@ -96,6 +96,8 @@ Wire them up in the first build plan; until then nothing counts as verified.
 | `.ai/runs/` | Log of every autonomous AI run | `YYYY-MM-DD-slug.md` |
 | `.ai/lessons.md` | One-line findings, conclusions and improvements written by agents (long-term memory) | newest on top |
 | `.ai/lessons/` | Longer write-ups linked from `lessons.md` | `YYYY-MM-DD-slug.md` |
+| `.ai/skills/` | Project extensions/overrides of skills (rules in `.ai/skills/README.md`) | `<skill-name>/SKILL.md` |
+| `.ai/analyses/README.md` | Index of requirement analyses and project docs kept for humans in `docs/` | one row per analysis |
 
 Rules — follow them on every task, without being reminded:
 
@@ -103,15 +105,19 @@ Rules — follow them on every task, without being reminded:
 2. **Specs:** write new specs only in `.ai/specs/` with the date of creation and a kebab-case
    slug. Never rename a spec; when the change merges, move it to `implemented/`.
 3. **Runs:** every autonomous AI run creates `.ai/runs/YYYY-MM-DD-slug.md` at the start and
-   keeps it current: goal, spec link, steps done, files changed, verification evidence,
-   status, and a **Handoff** section (exact next step, open questions) so an interrupted
-   run can be resumed by another agent or person. Commit it with the work.
+   keeps it current: goal, spec link, steps done, **Decisions** (what was decided, why, and
+   which alternatives were rejected), files changed, verification evidence, status, and a
+   **Handoff** section (exact next step, open questions) so an interrupted run can be
+   resumed by another agent or person. Commit it with the work.
 4. **Lessons:** after fixing a bug, after a human corrects you, or when you learn something
    non-obvious about this project, add a line to `.ai/lessons.md` (details in `.ai/lessons/`)
    **immediately, in the same commit as the fix** — not at the end of the session.
    A lesson that keeps recurring is promoted to "Things agents get wrong" below; keep doing
    this until the same mistake stops appearing.
-5. **Keep this file current:** when you introduce a convention or a structure, make sure
+5. **Skills and analyses:** before running a skill, check `.ai/skills/<skill-name>/` and
+   apply it on top (it wins on conflict). Requirement analyses and project docs are written
+   to `docs/` for humans and get a row in `.ai/analyses/README.md` in the same commit.
+6. **Keep this file current:** when you introduce a convention or a structure, make sure
    `AGENTS.md` contains the instruction for it — that is how the system persists.
 
 `docs/sdlc/` (template SDLC artifacts and `/sdlc-*` commands) still exists alongside `.ai/`;

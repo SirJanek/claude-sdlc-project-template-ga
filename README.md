@@ -45,7 +45,7 @@ Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.
 
 | Ścieżka | Do czego |
 |---|---|
-| `.ai/` | Przestrzeń agentów: `specs/` (specyfikacje SDD `YYYY-MM-DD-slug.md`, `implemented/`, `archive/`), `runs/` (log każdego przebiegu AI z handoffem), `lessons.md` + `lessons/` (wnioski zapisywane przez agentów) |
+| `.ai/` | Przestrzeń agentów: `specs/` (specyfikacje SDD `YYYY-MM-DD-slug.md`, `implemented/`, `archive/`), `runs/` (log każdego przebiegu AI: decyzje z uzasadnieniem, handoff), `lessons.md` + `lessons/` (wnioski zapisywane przez agentów), `skills/` (rozszerzenia i nadpisania skilli), `analyses/README.md` (indeks analiz trzymanych w `docs/`) |
 | `docs/discovery/` | Analiza wstępna i klikalny prototyp (materiał wejściowy) |
 | `docs/sdlc/` | Artefakty SDLC: `intent.md`, `spec.md`, `plan.md`, `LESSONS.md`, `bands.yaml` |
 | `src/`, `tests/` | Kod produktu i testy (po wyborze stacku) |
