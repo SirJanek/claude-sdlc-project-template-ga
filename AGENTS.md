@@ -50,8 +50,11 @@ Wire them up in the first build plan; until then nothing counts as verified.
 - External systems (to be chosen in spec): payment provider (source of truth for charges and
   refunds), video provider (room tokens; join/leave logs are dispute evidence), email/push,
   KYC for mentors.
-- Source of truth per artifact: requirements live in `docs/sdlc/`, tickets live in GitHub
-  Issues. When these disagree, the repo wins for code and the tracker wins for scope.
+- **GitHub is the single source of truth** (chosen over GitHub Projects, Linear or Jira as
+  simple and good enough): tasks are GitHub Issues; code **and specs** (`.ai/specs/*.md`) land
+  through pull requests; issue and PR states are GitHub labels (taxonomy set in L03 by
+  `/om-setup-agent-pipeline`). Requirements history lives in the repo. When repo and tracker
+  disagree, the repo wins for code and the tracker wins for scope.
 
 ## Workflow
 
@@ -115,13 +118,21 @@ Rules — follow them on every task, without being reminded:
    A lesson that keeps recurring is promoted to "Things agents get wrong" below; keep doing
    this until the same mistake stops appearing.
 5. **Skills and analyses:** before running a skill, check `.ai/skills/<skill-name>/` and
-   apply it on top (it wins on conflict). Requirement analyses and project docs are written
+   apply it on top (project specifics win, but never relax safety or quality rules). Requirement analyses and project docs are written
    to `docs/` for humans and get a row in `.ai/analyses/README.md` in the same commit.
 6. **Keep this file current:** when you introduce a convention or a structure, make sure
    `AGENTS.md` contains the instruction for it — that is how the system persists.
 
 `docs/sdlc/` (template SDLC artifacts and `/sdlc-*` commands) still exists alongside `.ai/`;
 how the two relate is not decided yet — do not merge or move content between them unasked.
+
+**Open Mercato skills (`om-*`) are not set up here yet — do not run `/om-setup-agent-pipeline`.**
+Order agreed with the course: stack and repo setup (L02) → safety net (CI, tests,
+`make check` wired) → Open Mercato pipeline and SDLC (L03). When L03 runs setup:
+`tracker: github`, `validation.commands: ["make check"]`, `paths.analysis: ".ai/analyses"`,
+`paths.prototypes: "docs/discovery/mockups"`, keep `runs`/`specs` defaults, and decide which
+SDLC description is primary (`docs/sdlc/` vs the generated `SDLC.md`). Until then the `om-*`
+skills stop on the missing `.ai/agentic.config.json` — that is expected.
 
 ## Things agents get wrong
 
