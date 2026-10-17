@@ -1,11 +1,11 @@
-# SDLC — {{PROJECT_NAME}}
+# SDLC — MentorHub
 
 Jak pracujemy. Sześć etapów, każdy zostawia artefakt, który czyta następny.
 Historia commitów jest audit trailem — nie ma osobnego procesu „na zgodność".
 
 ```
 Plan        Design      Build       Test        Deploy        Maintain
-intent.md → spec.md  → plan.md  → diff+testy → PR z review → incydent
+intent.md → .ai/specs/  → +plan     → diff+testy → PR z review → incydent
    ↑                                                             │
    └─────────────────────────────────────────────────────────────┘
 ```
@@ -26,7 +26,10 @@ postęp i jest defektem.
 **Metryki:** czas do zacommitowanego `intent.md` · odsetek przyjętych do Design ·
 liczba edycji po akceptacji (wysoka = przesłuchanie było za płytkie).
 
-## 2. Design — `spec.md`
+## 2. Design — `.ai/specs/YYYY-MM-DD-slug.md`
+
+Każda zmiana ma własny plik specyfikacji w `.ai/specs/` (format: `docs/sdlc/spec.md`),
+który trafia do `develop` przez PR, a po wdrożeniu przechodzi do `.ai/specs/implemented/`.
 
 **Kto:** inżynier + skille organizacyjne (security, compliance, UX, brand).
 **Jak:** `/sdlc-spec`. Jedna sesja. Potem subagent `spec-reviewer`.
@@ -36,17 +39,20 @@ wymagania niefunkcjonalne z liczbami, ryzyka.
 Skill zgłasza zastrzeżenie jako `> **CONCERN (security):** …` — **nie** rozwiązuje go po
 cichu zawężeniem zakresu. Od tego jest człowiek.
 
-**Metryki:** czas `intent.md` → `spec.md` · liczba commitów do `spec.md` **po** pierwszym
-`plan.md` (to jest miara rework, najważniejsza liczba na tym etapie).
+**Metryki:** czas `intent.md` → specyfikacja · liczba commitów do specyfikacji **po** dopisaniu
+planu (to jest miara rework, najważniejsza liczba na tym etapie).
 
-## 3. Build — `plan.md`
+## 3. Build — sekcja „Implementation plan”
+
+Plan dopisujemy do tego samego pliku specyfikacji jako `## Implementation plan` (format:
+`docs/sdlc/plan.md`) i commitujemy przed kodem.
 
 **Kto:** inżynier w trybie plan (Shift+Tab).
 **Jak:** `/sdlc-plan`. Claude nie dotknie plików, dopóki plan nie zostanie przyjęty.
 **Wynik:** pliki do zmiany, testy per kryterium, kolejność commitów, najbardziej ryzykowne
 założenie i jak je tanio sprawdzić.
 
-Pamięć projektu siedzi w `CLAUDE.md`. Zasada: **ta sama poprawka drugi raz → do pliku.**
+Pamięć projektu siedzi w `AGENTS.md` (wspólna dla wszystkich agentów, Claude Code wczytuje ją przez `CLAUDE.md`). Zasada: **ta sama poprawka drugi raz → do pliku.**
 Trzeci raz → do hooka, bo widocznie nie wystarcza prośba.
 
 **Tryb auto** (bez zatwierdzania każdej edycji) włączamy dopiero, gdy hooki i testy
@@ -67,7 +73,7 @@ Dwie rzeczy, bez których ten etap nie działa:
 - **Jedna komenda, kod wyjścia ≠ 0 przy błędzie.** Bez tego Claude nie ma pętli zwrotnej.
 - **Każdy incydent produkcyjny zostaje evalem** w `evals/tasks/`. Inaczej regresja wraca.
 
-Evale chodzą w CI na zmianę `CLAUDE.md` albo `.claude/**` — bo zmiana guardraila jest
+Evale chodzą w CI na zmianę `AGENTS.md`, `CLAUDE.md` albo `.claude/**` — bo zmiana guardraila jest
 zmianą zachowania systemu i wymaga testu tak samo jak zmiana kodu.
 
 **Metryki:** first-pass CI success · czas review · change failure rate · pass rate evali ·
@@ -77,7 +83,7 @@ czas od incydentu do evala.
 
 **Kto:** agent review + człowiek przez branch protection.
 **Jak:** `.github/workflows/claude-review.yml` wg `REVIEW.md`. Komentarz `@claude` odpala poprawkę.
-**Wynik:** PR z findingami ocenionymi wobec `spec.md` i `plan.md`.
+**Wynik:** PR z findingami ocenionymi wobec specyfikacji i jej planu implementacji.
 
 Bramki (zatwierdzenie zmiany, autoryzacja release'u, ścieżki chronione) są **skryptami
 hooków**, nie punktem w procedurze. `release-gate.sh` blokuje produkcję bez
@@ -105,7 +111,7 @@ Claude wchodzi dopiero do interpretacji, nie do decyzji „czy to anomalia".
 
 ## Cztery zasady, które to spinają
 
-1. **Nie przeskakuj artefaktu.** Nie ma `spec.md` → nie ma czego planować.
+1. **Nie przeskakuj artefaktu.** Nie ma specyfikacji w `.ai/specs/` → nie ma czego planować.
 2. **Skill doradza, hook blokuje.** Polityka bez hooka albo checku na PR jest sugestią.
 3. **„Done" znaczy zweryfikowane** — wklejony output, nie deklaracja.
 4. **Człowiek zostaje nad pętlą, nie w niej.** Osąd, nie klikanie zatwierdzeń.

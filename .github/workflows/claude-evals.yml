@@ -1,6 +1,6 @@
 # STAGE 4 — Test. Evals run when the agent's instructions change.
 #
-# The trigger is the point: editing CLAUDE.md, a skill or a hook changes how the system
+# The trigger is the point: editing AGENTS.md, CLAUDE.md, a skill or a hook changes how the system
 # behaves just as surely as editing src/. Without this, a trimmed CLAUDE.md degrades output
 # for weeks before anyone connects the two.
 #
@@ -14,12 +14,14 @@ name: Claude evals
 on:
   push:
     paths:
+      - 'AGENTS.md'
       - 'CLAUDE.md'
       - '.claude/**'
       - 'evals/**'
       - 'Makefile'
   pull_request:
     paths:
+      - 'AGENTS.md'
       - 'CLAUDE.md'
       - '.claude/**'
       - 'evals/**'

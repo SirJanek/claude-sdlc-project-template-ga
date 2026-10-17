@@ -46,6 +46,6 @@ Check that the fix did not break a sibling case: run the whole suite, not just t
 ## Step 4 — close the loop
 
 - Did the bug exist because of something a reviewer would call a known trap? Add a line to
-  `CLAUDE.md` → **Things Claude gets wrong**.
+  `AGENTS.md` → **Things agents get wrong** (`CLAUDE.md` → **Things Claude gets wrong** if Claude-only).
 - Did it reach production? It becomes an eval task under `evals/tasks/` — see
   `evals/README.md`. Every production incident becomes an eval, or the regression returns.

@@ -39,9 +39,10 @@ jobs:
           prompt: |
             Review this pull request against REVIEW.md. Run every pass it defines, in order.
 
-            Judge the diff against docs/sdlc/spec.md and docs/sdlc/plan.md — not against
-            what you would have built. Anything the diff does that plan.md does not
-            describe is a finding, however sensible it looks.
+            Judge the diff against the spec for this change in .ai/specs/ (named
+            YYYY-MM-DD-slug.md, including its "## Implementation plan" section) — not
+            against what you would have built. Anything the diff does that the plan does
+            not describe is a finding, however sensible it looks.
 
             Post Important findings as inline comments. Cap nits at three, in a single
             summary comment. For each finding give file:line, the defect in one sentence,

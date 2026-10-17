@@ -1,59 +1,30 @@
-# {{PROJECT_NAME}}
+# MentorHub
 
 <!--
-Keep this file to ONE page. It is read on every turn — length costs attention, not just tokens.
-Run /init first to generate a draft from the codebase, then cut it down to the sections below.
-
-THE RULE THAT MATTERS: when you correct Claude on the same thing twice, the correction
-belongs here. That is what makes this file a memory instead of a README.
+Shared instructions for all agents live in AGENTS.md and are imported below — edit shared
+rules there, not here. This file adds only what is specific to Claude Code.
+Keep both files to ONE page combined: they are read on every turn.
 -->
 
-## Commands
+@AGENTS.md
 
-<!-- Single commands that exit non-zero on failure. This is Claude's feedback loop. -->
+## Claude Code specifics
 
-| Task | Command |
-|---|---|
-| Install | `make install` |
-| Test | `make test` |
-| Lint + format | `make lint` |
-| Typecheck | `make typecheck` |
-| Run locally | `make dev` |
-| Full check (what CI runs) | `make check` |
+- The `.ai/` workspace rules in AGENTS.md apply to Claude Code too: read `.ai/lessons.md`
+  first, specs in `.ai/specs/YYYY-MM-DD-slug.md`, a log in `.ai/runs/` for every autonomous
+  run (including `claude -p`, subagents doing multi-step work and auto mode), lessons in
+  `.ai/lessons.md`; check `.ai/skills/<skill-name>/` before running a skill or `/sdlc-*` command.
 
-## Conventions
-
-- Source lives in `src/`, tests mirror it under `tests/`.
-- <!-- naming, error handling, logging, dependency injection — the things a reviewer would flag -->
-- Never edit files under `docs/sdlc/` without being asked — they are SDLC artifacts, not docs.
-- Commit messages: imperative mood, reference the `intent.md` heading they serve.
-
-## Architecture
-
-<!-- 5-10 lines. What the system is, what the main boundaries are, what talks to what.
-     Enough that Claude does not have to re-derive it by reading twenty files. -->
-
-- Entry point: `src/main.*`
-- Data flows: <!-- request → handler → service → repository → store -->
-- External systems: <!-- name each one and what it is the source of truth for -->
-- Source of truth per artifact: requirements live in `docs/sdlc/`, tickets live in <!-- Jira/Linear/repo -->.
-  When these disagree, the repo wins for code and the tracker wins for scope.
+- Start in **plan mode** (Shift+Tab) with the relevant spec in `.ai/specs/`.
+- Stage commands: `/sdlc-intent`, `/sdlc-spec`, `/sdlc-plan`, `/sdlc-verify`, `/sdlc-incident`.
+  Subagents: `spec-reviewer` (before planning), `verifier` (checks, never fixes).
+- Hooks enforce the hard rules from AGENTS.md (`protect-paths`, `no-test-edits`,
+  `release-gate`) and format after each edit. When a hook blocks, do not work around it —
+  tell the human; protected paths need them to re-run with `SDLC_ALLOW_PROTECTED=1`.
 
 ## Things Claude gets wrong
 
 <!--
-Append-only. One line per mistake, phrased as the correction, not as a complaint.
-Delete an entry only when the underlying cause is gone (e.g. the API was removed).
-Entries here are also the best source of eval tasks — see evals/README.md.
+Append-only, Claude-only traps. Shared traps go to AGENTS.md → Things agents get wrong.
+One line per mistake, phrased as the correction. Both sections are eval sources.
 -->
-
-- <!-- e.g. "Do not add `async` to repository methods — the driver is synchronous." -->
-- <!-- e.g. "Config is read via `settings.get()`, never `os.environ` directly." -->
-
-## Workflow
-
-- Start in **plan mode** (Shift+Tab) with the relevant `docs/sdlc/spec.md`. Commit the
-  accepted plan as `docs/sdlc/plan.md` before editing code.
-- "Done" means verified: paste the output of `make check` as evidence, do not assert success.
-- Bug fixes are TDD: failing test first, committed separately, then the fix. Do not edit
-  the test to make it pass — a hook blocks that.

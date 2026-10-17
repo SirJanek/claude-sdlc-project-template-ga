@@ -12,10 +12,11 @@ meant. You only know what it did. That is the whole point of running you separat
 
 ## What to do
 
-1. Read `docs/sdlc/spec.md` and `docs/sdlc/plan.md` to learn what was supposed to happen.
-   If neither exists, say so and verify against the diff alone.
+1. Read the spec for this change (`.ai/specs/YYYY-MM-DD-<slug>.md`, including its
+   `## Implementation plan` section) to learn what was supposed to happen. If it does not
+   exist, say so and verify against the diff alone.
 2. Run the checks: build, `make check`, and the app itself if it can be started.
-3. Exercise each acceptance criterion in `spec.md` that can be exercised from outside.
+3. Exercise each acceptance criterion in the spec that can be exercised from outside.
 4. Record what you observed — commands run, exit codes, relevant output.
 
 ## Rules

@@ -1,4 +1,4 @@
-# Prompty — {{PROJECT_NAME}}
+# Prompty — MentorHub
 
 Prompty do **skopiowania ręcznie**. Skille (`.claude/skills/`) odpalają się same po triggerze,
 komendy (`/sdlc-*`) są skrótem na typowy przebieg — te tutaj są do sytuacji, gdy chcesz
@@ -26,42 +26,44 @@ Affected users, Constraints, Open questions, Out of scope.
 Anything I was vague about goes under Open questions verbatim — do not resolve it for me.
 ```
 
-## 2. Design — `intent.md` → `spec.md`
+## 2. Design — `intent.md` → `.ai/specs/YYYY-MM-DD-slug.md`
 
 Jedna sesja. Jeśli zajmuje więcej niż jedną, `intent.md` był za słaby — wróć do kroku 1.
 
 ```
-Read docs/sdlc/intent.md and turn it into docs/sdlc/spec.md.
+Read docs/sdlc/intent.md and turn it into a new spec .ai/specs/YYYY-MM-DD-<slug>.md,
+using the section format in docs/sdlc/spec.md.
 
 Apply every skill in .claude/skills/ that is relevant (security, compliance, UX,
 brand) and flag each concern inline as > **CONCERN (<skill>):** <what and why>.
 Do not silently resolve a concern — surface it.
 
-spec.md must contain: Scope (in / out), Acceptance criteria as a numbered list where
+The spec must contain: Scope (in / out), Acceptance criteria as a numbered list where
 each one is independently testable, Interfaces touched, Data and migrations,
 Non-functional requirements with numbers, Risks, Open questions carried over from intent.md.
 
 If an acceptance criterion cannot be stated as a test, say so instead of writing it.
 ```
 
-## 3. Build — tryb plan, commit `plan.md`
+## 3. Build — tryb plan, sekcja „Implementation plan” w specyfikacji
 
 Wejdź w tryb plan (Shift+Tab) i dopiero wtedy to wklej. Claude nie dotknie plików, dopóki
 nie zaakceptujesz planu.
 
 ```
-Read docs/sdlc/spec.md and produce an implementation plan.
+Read .ai/specs/YYYY-MM-DD-<slug>.md and produce an implementation plan.
 
 Before planning, read the files you will actually change — do not plan against guesses.
 
 The plan must list, in order: every file touched and why, the test added or changed for
-each acceptance criterion, the order of commits, and anything in spec.md you cannot
+each acceptance criterion, the order of commits, and anything in the spec you cannot
 implement as written.
 
 Then interrogate your own plan: what is the riskiest assumption, what breaks if it is
 wrong, and what is the cheapest way to find out before writing code? Answer that in the plan.
 
-When I accept it, write it to docs/sdlc/plan.md and commit it before editing anything else.
+When I accept it, append it to the spec as "## Implementation plan" (format: docs/sdlc/plan.md)
+and commit it before editing anything else.
 ```
 
 ## 4. Test — naprawa buga przez TDD
@@ -98,8 +100,8 @@ Prefer asserting on behaviour over asserting on implementation.
 ```
 Review the staged diff against REVIEW.md. Run every pass in order.
 
-Judge the diff against docs/sdlc/spec.md and docs/sdlc/plan.md, not against what you
-would have built. Anything the diff does that the plan did not ask for is a finding.
+Judge the diff against the spec in .ai/specs/ and its "## Implementation plan", not against
+what you would have built. Anything the diff does that the plan did not ask for is a finding.
 
 Report Important findings first, then at most 3 nits. For each: file:line, the defect in
 one sentence, and a concrete failure scenario. If you cannot name the scenario, drop it.
@@ -126,7 +128,7 @@ The loop restarts there.
 
 ## Zasady, które trzymają to w kupie
 
-- **Nie przeskakuj artefaktu.** Jeśli nie ma `spec.md`, nie ma czego planować. Brakujący
+- **Nie przeskakuj artefaktu.** Jeśli nie ma specyfikacji w `.ai/specs/`, nie ma czego planować. Brakujący
   artefakt to sygnał, że decyzja nie zapadła, a nie że da się ją pominąć.
 - **Robi się to samo drugi raz → do `CLAUDE.md`.** Trzeci raz → do hooka.
 - **„Done" znaczy zweryfikowane.** Wklejony output `make check`, nie zdanie „powinno działać".

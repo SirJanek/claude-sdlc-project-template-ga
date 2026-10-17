@@ -21,3 +21,6 @@ __pycache__/
 *.pyc
 .venv/
 target/
+
+# Discovery prototype ships its compiled bundle so it opens from file:// without a build
+!docs/discovery/mockups/dist/
