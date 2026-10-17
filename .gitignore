@@ -24,3 +24,9 @@ target/
 
 # Discovery prototype ships its compiled bundle so it opens from file:// without a build
 !docs/discovery/mockups/dist/
+
+# MentorHub app
+.next/
+next-env.d.ts
+*.tsbuildinfo
+coverage/
