@@ -44,3 +44,9 @@ PR: #15
 - [x] 1.3 main, cli and bin entry with unit tests — 83ccd4a
 - [x] 1.4 make target, root script and docs — fa7e490
 - [x] 1.5 Evidence runs — PR body (fresh-clone run, re-run, make path, no-Docker failure, unknown flag)
+
+### Review (om-auto-review-pr --autofix)
+
+- [x] R.1 Fresh-context review: request changes (2 major, 2 minor, 2 nits) — all fixed — d88ae3c
+- [x] R.2 Live stopped-container and other-checkout runs (PR comment); spec edge cases amended on PR #14
+
