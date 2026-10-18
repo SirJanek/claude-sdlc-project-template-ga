@@ -105,6 +105,16 @@ Verification (round 2): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 
 
 Verification (round 3): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 41 passed (41)` 30.90 s, run 2 `Tests 41 passed (41)` 29.75 s (auth 19, migrations 7, app 15).
 
+### Review fixes, round 4 (Codex on PR #46: two medium findings in the test helper's failure paths)
+
+| # | Finding | Fix | Proof |
+|---|---|---|---|
+| 1 | `finally` awaited the blocked competitor before releasing the lock (a failure before commit would hang) | `finally` calls `held.dispose()` FIRST, then `settleCompetitor(pending, cancel, 10 s)` — bounded, with cancellation (`AbortController` for the fetch, `SIGKILL` for the CLI child); never throws | new test: hold a lock, let an async psql writer block, dispose without committing → the writer finishes (`settled`, < 5 s), the held increment is rolled back, the writer's update is visible, `pg_stat_activity` no longer has the psql backend, the cleanup DELETE completes within 5 s |
+| 2 | readiness timeout rejected without terminating the child; polling `execFileSync` unbounded | on readiness failure `terminate()` runs before the rejection: `rollback` on stdin, `pg_cancel_backend(pid)` (a backend stuck on a lock would otherwise outlive a killed `docker exec` client), 5 s grace, then `pg_terminate_backend` + SIGKILL; `psql()` takes a `timeoutMs`, the blocking poll is bounded by what is left of its deadline | new test: a second `holdTransaction` on a row locked by the first, `timeoutMs: 1500` → rejects "holding the transaction timed out after 1500 ms" in ~2 s, and `pg_blocking_pids` shows nobody waiting on the blocker any more |
+| low | timers left armed after races settled | `deadline()` helper with `clear()` in every `finally` | — |
+
+Verification (round 4): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 43 passed (43)` 32.27 s, run 2 `Tests 43 passed (43)` 36.87 s (auth 21, migrations 7, app 15).
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
