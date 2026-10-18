@@ -72,6 +72,10 @@ export const AUTH_LIMITS = {
   sessionDays: 7,
   /** Token rows are kept 30 days for the first A07 read (grill-me Q9), then deleted by the next token creation. */
   tokenRetentionDays: 30,
+  /** A GitHub round trip (consent screen, maybe a 2FA prompt) takes minutes, not hours; the state cookie dies after 10. */
+  githubStateMinutes: 10,
+  /** GitHub down or slow: the callback gives up after 10 s and fails closed instead of hanging the sign-in (spec › Edge Cases). */
+  githubTimeoutMs: 10_000,
 } as const;
 
 export type AuthLimits = typeof AUTH_LIMITS;

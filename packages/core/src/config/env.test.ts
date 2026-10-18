@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH_SECRET_MIN_LENGTH, TEST_AUTH_SECRET, parseEnv } from './env';
+import { AUTH_SECRET_MIN_LENGTH, TEST_AUTH_SECRET, isGitHubEnabled, parseEnv } from './env';
 
 const SECRET = 'x'.repeat(AUTH_SECRET_MIN_LENGTH);
 
@@ -60,6 +60,60 @@ describe('MAIL_ADAPTER=mock in production', () => {
 
   it('reports both problems at once when the secret is missing too', () => {
     expect(() => parseEnv({ NODE_ENV: 'production' })).toThrow(/AUTH_SECRET.*MAIL_ADAPTER/);
+  });
+});
+
+describe('GITHUB_ADAPTER (Phase 2)', () => {
+  it('is off by default: no adapter, the button hidden, nothing else required', () => {
+    const env = parseEnv({ AUTH_SECRET: SECRET });
+    expect(env.GITHUB_ADAPTER).toBeUndefined();
+    expect(env.GITHUB_CLIENT_ID).toBeUndefined();
+    expect(env.GITHUB_FAKE_FILE).toBeUndefined();
+    expect(isGitHubEnabled(env)).toBe(false);
+  });
+
+  it('real needs both credentials: without them (or with one) the environment is invalid', () => {
+    expect(() => parseEnv({ AUTH_SECRET: SECRET, GITHUB_ADAPTER: 'real' })).toThrow(/GITHUB_ADAPTER: real needs/);
+    expect(() => parseEnv({ AUTH_SECRET: SECRET, GITHUB_ADAPTER: 'real', GITHUB_CLIENT_ID: 'id' })).toThrow(
+      /GITHUB_ADAPTER/,
+    );
+    expect(() => parseEnv({ AUTH_SECRET: SECRET, GITHUB_CLIENT_ID: 'id', GITHUB_CLIENT_SECRET: '' })).toThrow(
+      /GITHUB_CLIENT_SECRET/,
+    );
+    const real = parseEnv({
+      AUTH_SECRET: SECRET,
+      GITHUB_ADAPTER: 'real',
+      GITHUB_CLIENT_ID: 'id',
+      GITHUB_CLIENT_SECRET: 's',
+    });
+    expect(real.GITHUB_ADAPTER).toBe('real');
+    expect(isGitHubEnabled(real)).toBe(true);
+  });
+
+  it('both credentials alone mean real (a deployment sets only the two ids)', () => {
+    const env = parseEnv({ AUTH_SECRET: SECRET, GITHUB_CLIENT_ID: 'id', GITHUB_CLIENT_SECRET: 's' });
+    expect(env.GITHUB_ADAPTER).toBe('real');
+    expect(isGitHubEnabled(env)).toBe(true);
+    // One id alone configures nothing — the feature stays off rather than half on.
+    expect(parseEnv({ AUTH_SECRET: SECRET, GITHUB_CLIENT_ID: 'id' }).GITHUB_ADAPTER).toBeUndefined();
+  });
+
+  it('fake is refused in production unless ALLOW_TEST_ADAPTERS=1 (integration suite only), and rejects unknown names', () => {
+    expect(() =>
+      parseEnv({ NODE_ENV: 'production', AUTH_SECRET: SECRET, ALLOW_TEST_ADAPTERS: '1', GITHUB_ADAPTER: 'fake' }),
+    ).not.toThrow();
+    const prod = { NODE_ENV: 'production', AUTH_SECRET: SECRET, MAIL_ADAPTER: 'mock' };
+    expect(() => parseEnv({ ...prod, GITHUB_ADAPTER: 'fake' })).toThrow(/GITHUB_ADAPTER: the fake adapter is refused/);
+    const fake = parseEnv({
+      NODE_ENV: 'development',
+      AUTH_SECRET: SECRET,
+      GITHUB_ADAPTER: 'fake',
+      GITHUB_FAKE_FILE: '/tmp/x',
+    });
+    expect(fake.GITHUB_ADAPTER).toBe('fake');
+    expect(fake.GITHUB_FAKE_FILE).toBe('/tmp/x');
+    expect(isGitHubEnabled(fake)).toBe(true);
+    expect(() => parseEnv({ AUTH_SECRET: SECRET, GITHUB_ADAPTER: 'mock' })).toThrow(/GITHUB_ADAPTER/);
   });
 });
 

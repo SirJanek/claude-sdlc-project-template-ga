@@ -16,6 +16,10 @@ describe('logger', () => {
         cookies: { mh_session: 'eyJ.nested.jwt' },
         'set-cookie': 'mh_session=eyJ.set.jwt; Path=/',
         res: { headers: { 'set-cookie': 'mh_session=eyJ.res.jwt' } },
+        mh_github: 'eyJ.github.state',
+        cookies2: { mh_github: 'eyJ.nested.state' },
+        access_token: 'gho_raw',
+        tokens: { accessToken: 'gho_camel' },
       },
       'login',
     );
@@ -32,6 +36,10 @@ describe('logger', () => {
       'nested.jwt',
       'set.jwt',
       'res.jwt',
+      'github.state',
+      'nested.state',
+      'gho_raw',
+      'gho_camel',
     ])
       expect(out).not.toContain(secret);
     expect(out).toContain('[redacted]');

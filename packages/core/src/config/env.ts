@@ -27,8 +27,19 @@ const envSchema = z
     MAIL_ADAPTER: z.enum(['mock']).default('mock'),
     /** Where the mock adapter appends sent messages (JSON lines); unset → log only. */
     MAIL_OUTBOX_FILE: z.string().min(1).optional(),
-    /** Lets test adapters (mock mail) run under NODE_ENV=production — only the integration suite sets it. */
+    /** Lets test adapters (mock mail, fake GitHub) run under NODE_ENV=production — only the integration suite sets it. */
     ALLOW_TEST_ADAPTERS: z.enum(['0', '1']).default('0'),
+    /**
+     * GitHub sign-in adapter (spec, Phase 2). Unset → the feature is off and the button hidden; `real`
+     * needs both OAuth app credentials; `fake` (tests, local) obeys the same production rule as the mail mock.
+     * Both credentials without an adapter name mean `real` (the two ids are all a deployment has to set).
+     */
+    GITHUB_ADAPTER: z.enum(['real', 'fake']).optional(),
+    /** OAuth app credentials from github.com › Settings › Developer settings; callback `${APP_URL}/api/auth/github/callback`. */
+    GITHUB_CLIENT_ID: z.string().min(1).optional(),
+    GITHUB_CLIENT_SECRET: z.string().min(1).optional(),
+    /** Where the fake GitHub adapter reads the scenario it answers with (JSON); unset → a fixed verified user. */
+    GITHUB_FAKE_FILE: z.string().min(1).optional(),
   })
   .transform((env, ctx) => {
     if (env.AUTH_SECRET === undefined && env.NODE_ENV !== 'test') {
@@ -45,10 +56,31 @@ const envSchema = z
         message: 'the mock adapter is refused in production (ALLOW_TEST_ADAPTERS=1 is for test suites only)',
       });
     }
-    return { ...env, AUTH_SECRET: env.AUTH_SECRET ?? TEST_AUTH_SECRET };
+    const hasGitHubCredentials = env.GITHUB_CLIENT_ID !== undefined && env.GITHUB_CLIENT_SECRET !== undefined;
+    const githubAdapter = env.GITHUB_ADAPTER ?? (hasGitHubCredentials ? 'real' : undefined);
+    if (githubAdapter === 'real' && !hasGitHubCredentials) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['GITHUB_ADAPTER'],
+        message: 'real needs GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET (unset all three to hide GitHub sign-in)',
+      });
+    }
+    if (githubAdapter === 'fake' && env.NODE_ENV === 'production' && env.ALLOW_TEST_ADAPTERS !== '1') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['GITHUB_ADAPTER'],
+        message: 'the fake adapter is refused in production (ALLOW_TEST_ADAPTERS=1 is for test suites only)',
+      });
+    }
+    return { ...env, AUTH_SECRET: env.AUTH_SECRET ?? TEST_AUTH_SECRET, GITHUB_ADAPTER: githubAdapter };
   });
 
 export type Env = z.infer<typeof envSchema>;
+
+/** True when "Continue with GitHub" can work: an adapter is configured (`real` with credentials, or `fake`). */
+export function isGitHubEnabled(env: Pick<Env, 'GITHUB_ADAPTER'>): boolean {
+  return env.GITHUB_ADAPTER !== undefined;
+}
 
 /** Parses an environment object; throws a readable error listing every invalid variable. */
 export function parseEnv(source: Record<string, string | undefined>): Env {

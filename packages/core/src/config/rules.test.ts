@@ -57,6 +57,8 @@ describe('AUTH_LIMITS', () => {
     expect(AUTH_LIMITS.resendAfterSeconds).toBe(60);
     expect(AUTH_LIMITS.sessionDays).toBe(7);
     expect(AUTH_LIMITS.tokenRetentionDays).toBe(30);
+    expect(AUTH_LIMITS.githubStateMinutes).toBe(10);
+    expect(AUTH_LIMITS.githubTimeoutMs).toBe(10_000);
     // Security parameters stay out of the business RULES object.
     expect(Object.keys(RULES)).not.toContain('linksPerEmail');
   });
