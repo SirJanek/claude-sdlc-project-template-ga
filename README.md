@@ -63,7 +63,7 @@ Kierunek zależności: **`app → core → db`**, `ui` importuje tylko `app`. Pi
 
 ### Siatka bezpieczeństwa (CI)
 
-Każdy pull request uruchamia w GitHub Actions ([ci.yml](.github/workflows/ci.yml)) sześć osobnych checków: **Lint**, **Typecheck**, **Unit tests (100% coverage)**, **Build**, **Integration (testcontainers + agent-browser)** i **Audit**. Te same komendy działają lokalnie (`make …`).
+Każdy pull request uruchamia w GitHub Actions ([ci.yml](.github/workflows/ci.yml)) sześć osobnych checków: **Lint**, **Typecheck**, **Unit tests (100% coverage)**, **Build**, **Integration (testcontainers + agent-browser)** i **Audit**. Te same komendy działają lokalnie (`make …`). Workflow **Claude review** (review PR agentem) jest **wyłączony do L03**: token firmowej subskrypcji podlega polityce organizacji C&F i nie działa w GitHub Actions. Przywrócenie: `gh workflow enable "Claude review"` z tokenem spoza organizacji C&F w sekrecie `CLAUDE_CODE_OAUTH_TOKEN`.
 
 - **Testy jednostkowe:** Vitest z pokryciem v8, próg **100%** (linie, gałęzie, funkcje, instrukcje) w każdym pakiecie. Każda nowa funkcja musi go utrzymać, co jest regułą w `AGENTS.md`.
 - **Testy integracyjne** (`tests/integration/`): każdy przebieg stawia świeży kontener PostgreSQL, puszcza migracje, uruchamia aplikację w trybie dev i produkcyjnym, a agent-browser klika po niej we własnej sesji. Po przebiegu nic nie zostaje, więc kilku agentów na osobnych worktree może testować równolegle.
