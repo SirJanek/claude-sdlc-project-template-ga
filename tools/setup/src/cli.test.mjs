@@ -17,7 +17,7 @@ function setUpEnvironment(calls) {
   const deps = {
     write: (t) => (out += t),
     nodeVersion: 'v26.5.0',
-    readFile: (path) => (path.endsWith('lock.yaml') ? 'same lockfile' : null),
+    readFile: (path) => (['pnpm-lock.yaml', 'node_modules/.pnpm/lock.yaml'].includes(path) ? 'same lockfile' : null),
     exec: async (command, args) => {
       const key = [command, ...args].join(' ');
       calls.push(key);

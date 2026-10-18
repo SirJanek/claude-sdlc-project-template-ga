@@ -11,14 +11,10 @@ function fakeSpawn({
   error = '',
   streams = true,
 } = {}) {
-  /** @type {{ command: string, args: string[], options: Record<string, unknown> }[]} */
+  /** @type {unknown[][]} */
   const calls = [];
-  const spawn = (
-    /** @type {string} */ command,
-    /** @type {string[]} */ args,
-    /** @type {Record<string, unknown>} */ options,
-  ) => {
-    calls.push({ command, args, options });
+  const spawn = (/** @type {unknown[]} */ ...raw) => {
+    calls.push(raw);
     // Without streams the fake mimics a child that never got pipes (the `?.` branch in exec.mjs).
     const child = /** @type {EventEmitter & { stdout: EventEmitter, stderr: EventEmitter }} */ (
       Object.assign(new EventEmitter(), streams ? { stdout: new EventEmitter(), stderr: new EventEmitter() } : {})
@@ -44,13 +40,16 @@ describe('createExec', () => {
 
     expect(await exec('pnpm', ['--version'])).toEqual({ code: 3, output: 'hello world' });
     expect(written.join('')).toBe('hello world');
-    expect(calls[0]).toMatchObject({ command: 'pnpm', args: ['--version'], options: { cwd: '/repo', shell: false } });
+    expect(calls[0]).toEqual(['pnpm', ['--version'], { cwd: '/repo', env: process.env, shell: false }]);
   });
 
-  it('uses a shell only on Windows (to resolve .cmd shims)', async () => {
+  it('on Windows passes one command string with a shell (no args array → no DEP0190 warning)', async () => {
     const { spawn, calls } = fakeSpawn();
-    await createExec({ cwd: '/repo', write: () => {}, platform: 'win32', spawn })('pnpm', []);
-    expect(calls[0]?.options.shell).toBe(true);
+    await createExec({ cwd: 'C:\\repo', write: () => {}, platform: 'win32', spawn })('pnpm', [
+      'install',
+      '--frozen-lockfile',
+    ]);
+    expect(calls[0]).toEqual(['pnpm install --frozen-lockfile', { cwd: 'C:\\repo', env: process.env, shell: true }]);
   });
 
   it('turns a command that cannot start into code 127 instead of throwing', async () => {

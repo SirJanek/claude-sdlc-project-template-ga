@@ -10,8 +10,9 @@ import { spawn as nodeSpawn } from 'node:child_process';
  * Builds the command runner the steps use. Output is streamed to `write` (the user sees progress
  * of long installs) and captured (steps classify it). A command that cannot start — not installed —
  * resolves with code 127 instead of throwing, so a missing tool becomes a step failure with a hint.
- * Arguments are always an array: nothing is interpolated into a shell, except that Windows needs
- * `shell: true` to resolve the `pnpm.cmd` / `docker.exe` shims on PATH (the arguments are fixed).
+ * Arguments are fixed constants from steps.mjs — never user input. Windows needs a shell to resolve
+ * the `pnpm.cmd` shim; there the command is passed as one string, because `shell: true` with an args
+ * array is deprecated (DEP0190) and prints a security warning on Node ≥ 24.
  *
  * @param {{ cwd: string, write: (text: string) => void, platform?: string, spawn?: typeof nodeSpawn }} options
  * @returns {Exec}
@@ -20,7 +21,11 @@ export function createExec({ cwd, write, platform = process.platform, spawn = no
   return (command, args) =>
     new Promise((resolve) => {
       let output = '';
-      const child = spawn(command, args, { cwd, shell: platform === 'win32', env: process.env });
+      const options = { cwd, env: process.env };
+      const child =
+        platform === 'win32'
+          ? spawn([command, ...args].join(' '), { ...options, shell: true })
+          : spawn(command, args, { ...options, shell: false });
       const collect = (/** @type {Buffer} */ chunk) => {
         const text = chunk.toString();
         output += text;

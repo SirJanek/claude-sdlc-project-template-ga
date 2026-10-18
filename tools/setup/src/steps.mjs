@@ -30,6 +30,13 @@ export const BROWSER_ALREADY_INSTALLED = /is already installed/;
 export const NO_PENDING_MIGRATIONS = 'No pending migrations.';
 export const DB_PORT = '5433';
 
+export const LOCKFILE = 'pnpm-lock.yaml';
+/** pnpm's own copy of the lockfile node_modules was installed from (pnpm-internal, stable since pnpm 6). */
+export const INSTALLED_LOCKFILE = 'node_modules/.pnpm/lock.yaml';
+
+/** @param {string | null} text */
+const normaliseEol = (text) => (text === null ? null : text.replace(/\r\n/g, '\n'));
+
 /** @param {string} version e.g. "v26.5.0" or "10.34.5" */
 const major = (version) => Number.parseInt(version.replace(/^v/, ''), 10);
 
@@ -74,8 +81,9 @@ export const dependencies = {
   title: 'Dependencies (pnpm install)',
   async run({ exec, readFile }) {
     // pnpm keeps a copy of the lockfile it installed from; equal → node_modules matches the lockfile.
-    const lockfile = readFile('pnpm-lock.yaml');
-    if (lockfile !== null && lockfile === readFile('node_modules/.pnpm/lock.yaml')) {
+    // Line endings are normalised: a CRLF checkout (Windows autocrlf) still compares equal.
+    const lockfile = normaliseEol(readFile(LOCKFILE));
+    if (lockfile !== null && lockfile === normaliseEol(readFile(INSTALLED_LOCKFILE))) {
       return { status: 'skipped', detail: 'node_modules matches pnpm-lock.yaml' };
     }
     if ((await exec('pnpm', ['install', '--frozen-lockfile'])).code !== 0) {
@@ -109,15 +117,17 @@ export const browser = {
 };
 
 /**
- * @param {string} output `docker compose ps --format json` (one JSON object per line) or `docker ps` lines
- * @returns {{ Service?: string, State?: string, Health?: string, Names?: string }[]}
+ * `docker compose ps --format json`: one JSON object per line (Compose ≥ 2.21) or a single JSON
+ * array (older Compose v2). Non-JSON lines (warnings) are ignored.
+ * @param {string} output
+ * @returns {{ Service?: string, State?: string, Health?: string }[]}
  */
-function parseJsonLines(output) {
+function parseComposePs(output) {
   return output
     .split('\n')
     .map((line) => line.trim())
-    .filter((line) => line.startsWith('{'))
-    .map((line) => JSON.parse(line));
+    .filter((line) => line.startsWith('{') || line.startsWith('['))
+    .flatMap((line) => JSON.parse(line));
 }
 
 /** @type {Step} */
@@ -127,27 +137,17 @@ export const database = {
   async run({ exec }) {
     const ours = await exec('docker', ['compose', 'ps', '--format', 'json', 'db']);
     if (
-      parseJsonLines(ours.output).some((c) => c.Service === 'db' && c.State === 'running' && c.Health === 'healthy')
+      parseComposePs(ours.output).some((c) => c.Service === 'db' && c.State === 'running' && c.Health === 'healthy')
     ) {
       return { status: 'skipped', detail: 'db container running and healthy' };
     }
-    // Compose names the project after the folder, so another checkout (e.g. an agent worktree) may
-    // already serve a healthy PostgreSQL on the same port — the app connects to it just the same.
-    const other = await exec('docker', [
-      'ps',
-      '--filter',
-      `publish=${DB_PORT}`,
-      '--filter',
-      'health=healthy',
-      '--format',
-      'json',
-    ]);
-    const shared = parseJsonLines(other.output)[0];
-    if (shared) return { status: 'skipped', detail: `healthy PostgreSQL already on ${DB_PORT} (${shared.Names})` };
+    // Only *this* checkout's compose project counts. A database another checkout serves on the same
+    // port is deliberately not reused: migrations from this branch would land in that database.
     if ((await exec('docker', ['compose', 'up', '-d', '--wait', 'db'])).code !== 0) {
       throw new StepError(
         'Could not start PostgreSQL.',
-        `Is port ${DB_PORT} free? Stop the other service using it (or "make db-down"), then re-run the setup.`,
+        `Is port ${DB_PORT} free? Another service — e.g. the database of another checkout of this repo — may hold it: ` +
+          'stop it ("make db-down" there), or run with COMPOSE_PROJECT_NAME set to that checkout\'s project to share it knowingly.',
       );
     }
     return { status: 'done' };

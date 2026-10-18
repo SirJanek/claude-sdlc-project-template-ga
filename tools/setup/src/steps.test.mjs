@@ -98,11 +98,26 @@ describe('prerequisites', () => {
 describe('dependencies', () => {
   it('skips when node_modules was installed from the current lockfile', async () => {
     const { exec, calls } = fakeExec();
-    const readFile = (/** @type {string} */ path) => (path.endsWith('lock.yaml') ? 'lock v1' : null);
+    const read = /** @type {string[]} */ ([]);
+    const files = { 'pnpm-lock.yaml': 'lock v1', 'node_modules/.pnpm/lock.yaml': 'lock v1' };
+    const readFile = (/** @type {string} */ path) => (
+      read.push(path),
+      files[/** @type {keyof files} */ (path)] ?? null
+    );
     expect(await dependencies.run(ctx({ exec, readFile }))).toEqual({
       status: 'skipped',
       detail: 'node_modules matches pnpm-lock.yaml',
     });
+    expect(calls).toEqual([]);
+    // Exact paths: reading any other copy of the lockfile would break idempotency in real use.
+    expect(read).toEqual(['pnpm-lock.yaml', 'node_modules/.pnpm/lock.yaml']);
+  });
+
+  it("treats a CRLF checkout of the lockfile as equal to pnpm's LF copy (Windows autocrlf)", async () => {
+    const { exec, calls } = fakeExec();
+    const files = { 'pnpm-lock.yaml': 'a: 1\r\nb: 2\r\n', 'node_modules/.pnpm/lock.yaml': 'a: 1\nb: 2\n' };
+    const readFile = (/** @type {string} */ path) => files[/** @type {keyof files} */ (path)] ?? null;
+    expect((await dependencies.run(ctx({ exec, readFile }))).status).toBe('skipped');
     expect(calls).toEqual([]);
   });
 
@@ -157,7 +172,6 @@ describe('browser', () => {
 
 describe('database', () => {
   const OURS = 'docker compose ps --format json db';
-  const OTHER = 'docker ps --filter publish=5433 --filter health=healthy --format json';
   const UP = 'docker compose up -d --wait db';
   const healthy = JSON.stringify({ Service: 'db', State: 'running', Health: 'healthy' });
 
@@ -170,27 +184,33 @@ describe('database', () => {
     expect(calls).toEqual([OURS]);
   });
 
-  it('skips when another checkout already serves a healthy PostgreSQL on 5433', async () => {
+  it('understands the JSON-array output of Compose < 2.21', async () => {
+    const { exec } = fakeExec({ [OURS]: { output: `[${healthy}]` } });
+    expect((await database.run(ctx({ exec }))).status).toBe('skipped');
+  });
+
+  it('never reuses a database it does not own: a not-yet-healthy or foreign container means compose up', async () => {
+    // Another checkout's DB on 5433 is invisible to this project's `compose ps` → up → port clash → hint.
     const { exec, calls } = fakeExec({
       [OURS]: { output: JSON.stringify({ Service: 'db', State: 'running', Health: 'starting' }) },
-      [OTHER]: { output: JSON.stringify({ Names: 'claude-sdlc-project-template-ga-db-1' }) },
     });
-    expect(await database.run(ctx({ exec }))).toEqual({
-      status: 'skipped',
-      detail: 'healthy PostgreSQL already on 5433 (claude-sdlc-project-template-ga-db-1)',
-    });
-    expect(calls).toEqual([OURS, OTHER]);
+    expect(await database.run(ctx({ exec }))).toEqual({ status: 'done' });
+    expect(calls).toEqual([OURS, UP]);
   });
 
   it('starts (or restarts a stopped) container and waits for health', async () => {
     const { exec, calls } = fakeExec({ [OURS]: { output: JSON.stringify({ Service: 'db', State: 'exited' }) } });
     expect(await database.run(ctx({ exec }))).toEqual({ status: 'done' });
-    expect(calls).toEqual([OURS, OTHER, UP]);
+    expect(calls).toEqual([OURS, UP]);
   });
 
   it('fails with a port hint when compose cannot start it', async () => {
     const { exec } = fakeExec({ [UP]: { code: 1 } });
-    await expectStepError(database.run(ctx({ exec })), /Could not start PostgreSQL/, /port 5433 free/);
+    await expectStepError(
+      database.run(ctx({ exec })),
+      /Could not start PostgreSQL/,
+      /port 5433 free\? .*another checkout.*COMPOSE_PROJECT_NAME/,
+    );
   });
 });
 
