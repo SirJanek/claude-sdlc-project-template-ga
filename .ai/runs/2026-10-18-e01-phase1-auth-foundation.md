@@ -96,6 +96,15 @@ Also fixed while here: two `AuthService` unit tests compared `emailVerifiedAt` w
 
 Verification (round 2): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` → `Test Files 3 passed (3)`, `Tests 41 passed (41)` (auth 19, migrations 7, app 15). Mutation 4 (old presence logic restored in `readSessionCookie`: empty → `undefined`): "with the flag on, an EMPTY present cookie is a present credential → 401" fails with `promise resolved "{ userId: 'dev-admin', …}" instead of rejecting` (and the session unit test `expected undefined to be ''`); restored, 49/49 in `http/`.
 
+### Review fixes, round 3 (Codex on PR #46: production code clean, two test-code findings)
+
+| # | Finding | Fix | Proof |
+|---|---|---|---|
+| 1 | overlap tests waited a fixed 750 ms — a slow competitor could start after the held transaction committed, so even read-then-write would pass | `holdTransaction` returns the psql backend `pid`; `waitUntilBlocking()` polls `pg_stat_activity … where <pid> = any(pg_blocking_pids(pid))` with a 15 s deadline before the commit | with `revoke-sessions.ts` and `set-role.ts` mutated to read-then-write, the auth file fails exactly the two overlap tests: `expected '1' to be '2'` (API revocation) and the CLI reporting "session version 1" (set-role); 17/19 others pass, cleanup does not hang; restored |
+| 2 | `holdTransaction` had no failure-safe cleanup (only `commit`, no spawn/early-exit/timeout handling) | rejects on spawn error, early exit or psql error; `commit()` validates exit 0 + `COMMIT`; `dispose()` rolls back (kills after 5 s) and is idempotent; 30 s bound on holding/commit; both tests use `try/finally`, settle the pending API/CLI promise, then dispose | suite green twice in a row |
+
+Verification (round 3): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 41 passed (41)` 30.90 s, run 2 `Tests 41 passed (41)` 29.75 s (auth 19, migrations 7, app 15).
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
