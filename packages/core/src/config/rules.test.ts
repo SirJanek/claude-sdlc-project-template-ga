@@ -40,3 +40,8 @@ describe('platform fee tiers', () => {
     expect(platformFeePercent(200)).toBe(15);
   });
 });
+
+import { it as trialIt, expect as trialExpect } from 'vitest'
+trialIt('TRIAL: deliberately failing test (merge gate check, never merge)', () => {
+  trialExpect(1).toBe(2)
+})
