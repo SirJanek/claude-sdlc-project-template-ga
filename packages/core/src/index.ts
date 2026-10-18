@@ -16,7 +16,13 @@ export { buildContainer, getContainer, createRequestScope, withScope, type AppCo
 export { EventBus, type EventHandler } from './events/event-bus';
 export type { EventMap, EventId } from './events/events';
 export { userCreateSchema, type UserCreateInput } from './validators/auth/user-create.schema';
-export { emailLinkStartSchema, type EmailLinkStartInput } from './validators/auth/email-link-start.schema';
+export {
+  emailLinkStartSchema,
+  intentRoleSchema,
+  type EmailLinkStartInput,
+  type IntentRole,
+} from './validators/auth/email-link-start.schema';
+export { accountNoticeSchema, ACCOUNT_NOTICE_PARAM, type AccountNotice } from './validators/auth/account-notice.schema';
 export { emailLinkConsumeSchema, type EmailLinkConsumeInput } from './validators/auth/email-link-consume.schema';
 export { signOutSchema, type SignOutInput } from './validators/auth/sign-out.schema';
 export { nextPathSchema } from './validators/auth/next-path.schema';
@@ -28,6 +34,7 @@ export {
   type ConsumedLink,
   type CurrentUser,
 } from './services/auth/auth.service';
+export { MENTOR_PROFILE_PATH, defaultLandingPath, withAccountNotice } from './services/auth/landing-path';
 export type { MailSender, MailMessage } from './services/mail/mail-sender.port';
 export { MockMailSender } from './services/mail/adapters/mock-mail-sender';
 export { HealthService, type HealthReport } from './services/health/health.service';
@@ -71,5 +78,6 @@ export {
   readSessionCookie,
   type SessionClaims,
 } from './http/session';
+export { pageAccess, type PageAccess, type PageAccessDeps } from './http/page-access';
 export { readJsonBody } from './http/body';
 export { readClientIp, UNKNOWN_IP } from './http/client-ip';

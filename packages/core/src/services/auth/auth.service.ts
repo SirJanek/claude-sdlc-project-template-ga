@@ -15,6 +15,7 @@ import {
 import { buildSessionCookie, signSessionToken } from '../../http/session';
 import type { EmailLinkStartInput } from '../../validators/auth/email-link-start.schema';
 import type { MailSender } from '../mail/mail-sender.port';
+import { defaultLandingPath, withAccountNotice } from './landing-path';
 
 export interface EmailLinkRequest extends EmailLinkStartInput {
   /** Client address for the per-IP limit; hashed with AUTH_SECRET, never stored raw. */
@@ -24,8 +25,14 @@ export interface EmailLinkRequest extends EmailLinkStartInput {
 export interface ConsumedLink {
   userId: string;
   sessionVersion: number;
-  /** Validated same-origin path to return to; `/` when the link carried none. */
+  /**
+   * Validated same-origin path to return to: the link's `next` when it carried one, else the role's
+   * default (`/mentor/profile` for a mentor, `/` otherwise); carries `?notice=existing_account` when
+   * `existingAccount` is true, so the landing page shows the notice once.
+   */
   next: string;
+  /** True when a sign-up link (with an intended role) was used for an e-mail that already had an account. */
+  existingAccount: boolean;
 }
 
 export interface CurrentUser {
@@ -47,7 +54,6 @@ export const DEV_ADMIN_USER: CurrentUser = {
 
 const MINUTE = 60_000;
 const DAY = 86_400_000;
-const ROOT_PATH = '/';
 const MAIL_SUBJECT = 'Your MentorHub sign-in link';
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
@@ -148,6 +154,9 @@ export class AuthService {
    * Single use, atomically: the row is claimed by an UPDATE that matches only an unused, unexpired
    * token. Finds or creates the user by e-mail, marks it verified, emits `auth.user.created` only for
    * a new account (after commit). Invalid, expired or used → GoneError (410 link_invalid).
+   * A new account gets the link's intended role; an existing account is only verified — its role is
+   * never changed here (spec › Flows 3; `make set-role` is the only way), and a sign-up link used for
+   * it yields `existingAccount` plus the notice on the landing path.
    */
   async consumeEmailLink(rawToken: string, now = new Date()): Promise<ConsumedLink> {
     const tokenHash = sha256(rawToken);
@@ -171,8 +180,9 @@ export class AuthService {
           sessionVersion: 0,
         });
         created = true;
-      } else if (user.emailVerifiedAt === null) {
-        user.emailVerifiedAt = now;
+      } else {
+        // Existing account: verify it if needed and leave everything else — the role included — as it is.
+        if (user.emailVerifiedAt === null) user.emailVerifiedAt = now;
       }
       try {
         await em.flush();
@@ -181,7 +191,14 @@ export class AuthService {
         if (isUniqueViolation(error)) throw new ConflictError('Please try the link again.');
         throw error;
       }
-      return { user, created, next: token.nextPath ?? ROOT_PATH };
+      const existingAccount = !created && token.intentRole !== null;
+      const landing = token.nextPath ?? defaultLandingPath(user.role);
+      return {
+        user,
+        created,
+        existingAccount,
+        next: existingAccount ? withAccountNotice(landing, 'existing_account') : landing,
+      };
     });
     if (outcome.created) {
       await this.eventBus.emit('auth.user.created', {
@@ -190,7 +207,12 @@ export class AuthService {
         method: 'email',
       });
     }
-    return { userId: outcome.user.id, sessionVersion: outcome.user.sessionVersion, next: outcome.next };
+    return {
+      userId: outcome.user.id,
+      sessionVersion: outcome.user.sessionVersion,
+      next: outcome.next,
+      existingAccount: outcome.existingAccount,
+    };
   }
 
   /** The `Set-Cookie` value that starts a session for the user on this device. */
