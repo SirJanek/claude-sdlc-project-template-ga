@@ -2,7 +2,7 @@
 
 **Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints › Process (AI-native SDLC: agents work in fresh worktrees) — no intent line asks for setup directly; requested in issue #13
 **Issue:** #13
-**Status:** proposed · autonomous spec (`om-auto-write-spec`, assumptions below await Jan's confirmation) · revised after fresh-context review (8 findings applied)
+**Status:** proposed · autonomous spec (`om-auto-write-spec`, assumptions below await Jan's confirmation) · revised after fresh-context review (8 findings applied) · edge cases amended after the implementation review on PR #15
 
 ## 📝 TLDR
 
@@ -95,7 +95,8 @@ usage message, exit 1. No HTTP surface changes.
 | Docker installed but daemon stopped | `✖ Docker is not running — start Docker Desktop and re-run npm run setup` (no stack trace) |
 | pnpm missing | `✖ pnpm not found — run "corepack enable" (pnpm version is pinned in package.json)` |
 | Port 5433 taken by another process | step 4 fails with compose's message + hint `make db-down` or free the port |
-| Database container exists but stopped | step 4 not skipped; `up -d --wait` restarts it |
+| Database container exists but stopped | step 4 not skipped; `up -d --wait` restarts the **same** container and volume (verified live on PR #15) |
+| Another checkout of the repo (e.g. an agent worktree — Compose names the project after the folder) already serves its DB on 5433 | **not reused** — this branch's migrations would land in that database; step 4 fails with the port hint, which names `COMPOSE_PROJECT_NAME=<that project>` for deliberate sharing (Compose leaves a `created` container behind; `docker compose down -v` removes it) |
 | Interrupted mid-install (Ctrl-C) | next run: step 2 lock files differ → install runs again (pnpm resumes) |
 | Lockfile changed after `git pull` | step 2 not skipped → reinstall |
 | Offline machine with everything installed | all steps skipped except the ones needing network (none when complete) |
