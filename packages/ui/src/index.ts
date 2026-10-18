@@ -6,6 +6,9 @@ export * from './components/ui/card';
 export * from './components/ui/badge';
 export * from './components/ui/table';
 
+// Concept components (one folder per concept, same names as in db/core)
+export { SessionMenu, type SessionUserView } from './components/auth/SessionMenu';
+
 // Reusable panel layer (engineering standards › Reusable API & UI layer)
 export { apiCall, apiCallOrThrow, ApiCallError, readJsonSafe } from './backend/api/apiCall';
 export { REQUEST_HEADER, type ApiResult, type ApiErrorBody, type FieldErrors } from './backend/api/types';

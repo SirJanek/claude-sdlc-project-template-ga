@@ -34,6 +34,15 @@ function zodFieldErrors(error: ZodError): FieldErrors {
 }
 
 /**
+ * The success envelope as a `Response`, for handlers that must add headers (a `Set-Cookie`) and
+ * therefore use the Response escape hatch while keeping the standard shape.
+ */
+export function envelope<T>(data: T, init: ResponseInit = {}): Response {
+  const body: ApiEnvelope<T> = { ok: true, data };
+  return Response.json(body, { ...init, status: init.status ?? 200 });
+}
+
+/**
  * Wraps every route handler: CSRF check for state-changing methods, JSON envelope on success,
  * AppError/ZodError → status + envelope, anything else → logged 500 without internals.
  * Returning a `Response` is an explicit escape hatch for non-envelope contracts (e.g. /api/health).

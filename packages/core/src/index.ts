@@ -44,7 +44,14 @@ export {
   ServiceUnavailableError,
   type FieldErrors,
 } from './http/errors';
-export { apiHandler, REQUEST_HEADER, type ApiEnvelope, type RouteContext, type RouteHandler } from './http/apiHandler';
+export {
+  apiHandler,
+  envelope,
+  REQUEST_HEADER,
+  type ApiEnvelope,
+  type RouteContext,
+  type RouteHandler,
+} from './http/apiHandler';
 export { makeCrudRoute, type CrudRouteConfig } from './http/makeCrudRoute';
 export {
   requireSession,

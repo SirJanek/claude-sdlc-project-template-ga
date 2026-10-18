@@ -17,6 +17,7 @@ describe('@mentorhub/core public API', () => {
       'HealthService',
       'AppError',
       'apiHandler',
+      'envelope',
       'makeCrudRoute',
       'requireSession',
       'requireRole',

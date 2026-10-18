@@ -1,13 +1,26 @@
-import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { act, cleanup, render, screen } from '@testing-library/react';
 import { RULES } from '@mentorhub/core';
+
+const apiCall = vi.hoisted(() => vi.fn());
+// SessionMenu (in ui) imports apiCall by relative path, so the mock targets that module, not the package entry.
+vi.mock('../../../ui/src/backend/api/apiCall', () => ({ apiCall }));
+
 import HomePage from './page';
 
 afterEach(cleanup);
 
 describe('landing page', () => {
-  it('renders the hero, the call to action and the three steps with values from RULES', () => {
-    render(<HomePage />);
+  it('renders the hero, the call to action and the three steps with values from RULES', async () => {
+    apiCall.mockResolvedValue({
+      ok: false,
+      status: 401,
+      error: { code: 'unauthorized', message: 'Sign-in required.' },
+    });
+    await act(async () => {
+      render(<HomePage />);
+    });
+    expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/sign-in');
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe(
       'Grow faster with a mentor who has done it before',
     );

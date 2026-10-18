@@ -1,7 +1,8 @@
-import { Badge } from '@mentorhub/ui';
+import { SessionMenu } from '@mentorhub/ui';
 import { AdminNav } from './AdminNav';
 
-// Shared shell for every /admin/** page. WARNING: no real authentication yet — dev access only.
+// Shared shell for every /admin/** page. The API behind it is admin-only (requireSession + requireRole);
+// the header names the signed-in account (or the local dev admin) with a sign-out.
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -11,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="font-semibold">MentorHub Admin</span>
             <AdminNav />
           </div>
-          <Badge variant="destructive">Local only — dev access, no auth</Badge>
+          <SessionMenu />
         </div>
       </header>
       {children}
