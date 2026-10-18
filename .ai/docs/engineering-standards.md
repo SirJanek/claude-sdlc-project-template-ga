@@ -16,7 +16,8 @@ packages** (not a module runtime), **keep `awilix` DI**.
 - Commands go through `make` (`make check` = lint, typecheck, test, build, `pnpm audit`).
 - **No auth exists yet.** Until the auth spec lands, `requireSession` in `core/src/http/auth.ts`
   admits a fixed dev-admin session **only** when `ALLOW_DEV_ADMIN=1` **and**
-  `NODE_ENV !== "production"`; otherwise it throws `UnauthorizedError` (fail closed). The auth
+  `NODE_ENV === "development"` (an allowlist; test, staging and production are denied); otherwise
+  it throws `UnauthorizedError` (fail closed). The auth
   spec replaces this flag with JWT sessions per the Security section — the flag never ships to
   production.
 - `apiHandler` may return a plain `Response` as an explicit escape hatch for operational

@@ -19,7 +19,11 @@ for this package only.
 - Public pages use Tailwind directly; admin pages use components from `@mentorhub/ui`.
 - `/admin/**` and `/api/users` have **no real auth** — dev flag only; do not deploy them.
 - After moving routes run `make dev` once (stale `.next/dev/types` break `tsc`).
-- Commands: `pnpm --filter @mentorhub/app dev | build | typecheck`.
+- **Tests (100% coverage, see root AGENTS.md › Testing):** pages and components with Testing
+  Library next to the file (`page.test.tsx`), mocking `apiCall` from `@mentorhub/ui`; route files
+  with `// @vitest-environment node`, mocking `@mentorhub/core` to check the route's configuration.
+  Every new route or page also gets a case in `tests/integration/app.test.ts`.
+- Commands: `pnpm --filter @mentorhub/app dev | build | typecheck | test`.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

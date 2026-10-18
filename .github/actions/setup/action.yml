@@ -1,0 +1,12 @@
+name: Setup MentorHub workspace
+description: pnpm (version from package.json), Node (from .nvmrc) with pnpm cache, frozen-lockfile install.
+runs:
+  using: composite
+  steps:
+    - uses: pnpm/action-setup@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version-file: .nvmrc
+        cache: pnpm
+    - run: pnpm install --frozen-lockfile
+      shell: bash

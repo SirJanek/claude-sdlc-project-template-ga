@@ -1,0 +1,88 @@
+# Safety net for every pull request (and pushes to develop). Each job is its own check so a
+# failure points at the broken layer. Same commands as locally — `make <target>` — so "green on my
+# machine" and "green in CI" mean the same thing. See AGENTS.md › Testing.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  NEXT_TELEMETRY_DISABLED: '1'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: make lint
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: make typecheck
+
+  unit:
+    name: Unit tests (100% coverage)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: make test
+      - name: Coverage summary
+        if: always()
+        run: |
+          {
+            echo '### Unit test coverage'
+            echo '| Package | Lines | Branches | Functions | Statements |'
+            echo '|---|---|---|---|---|'
+            for f in packages/*/coverage/coverage-summary.json; do
+              [ -f "$f" ] || continue
+              node -e 'const t=require("./'"$f"'").total;const p=process.argv[1];console.log(`| ${p} | ${t.lines.pct}% | ${t.branches.pct}% | ${t.functions.pct}% | ${t.statements.pct}% |`)' "$(basename "$(dirname "$(dirname "$f")")")"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: make build
+
+  integration:
+    name: Integration (testcontainers + agent-browser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - name: Install the agent-browser Chrome and its system libraries
+        run: pnpm exec agent-browser install --with-deps
+      - run: make test-integration
+
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: make audit

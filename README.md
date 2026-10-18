@@ -26,7 +26,8 @@ make install        # zależności z lockfile
 make db-up          # PostgreSQL 17 w Dockerze na porcie 5433
 make db-migrate     # migracje
 make dev            # http://localhost:3000  ·  /admin/users  ·  /api/health
-make check          # to, co uruchamia CI: lint, typecheck, testy, build, audit
+make check          # lint, typecheck, testy jednostkowe (próg 100% pokrycia), build, audit
+make test-integration  # testy integracyjne: efemeryczny PostgreSQL (testcontainers) + agent-browser; wymaga Dockera
 ```
 
 Domyślne ustawienia bazy pasują do `docker-compose.yml`, więc plik `.env` nie jest potrzebny. Inne wartości (zob. `.env.example`) podaj w zmiennych środowiskowych powłoki albo w `packages/app/.env.local` dla aplikacji. Next.js czyta pliki `.env` z katalogu pakietu `app`, a skrypty migracji tylko ze środowiska.
@@ -56,9 +57,16 @@ Kierunek zależności: **`app → core → db`**, `ui` importuje tylko `app`. Pi
 - **Standard inżynieryjny:** [.ai/docs/engineering-standards.md](.ai/docs/engineering-standards.md). Zawiera nazewnictwo, zasady, minimum bezpieczeństwa i checklistę review.
 - **Foldery domen** (`entities/auth/`, `services/auth/`, `api/users/`) zamiast modułów; folder powstaje razem z pierwszym plikiem.
 - **Wspólne warstwy:** każda trasa przechodzi przez `apiHandler` albo `makeCrudRoute`, a każda strona pobiera dane przez `apiCall`. Bez ręcznych `try/catch` i bez surowego `fetch`.
-- **Brak logowania:** `/admin/users` i `/api/users` działają tylko z `ALLOW_DEV_ADMIN=1` poza produkcją (fail closed, `make dev` ustawia flagę). Logowanie przyjdzie z osobną specyfikacją.
+- **Brak logowania:** `/admin/users` i `/api/users` działają tylko z `ALLOW_DEV_ADMIN=1` i `NODE_ENV=development` (fail closed, `make dev` ustawia flagę). Logowanie przyjdzie z osobną specyfikacją.
 - **MikroORM 7** z encjami przez `defineEntity`, tabele w liczbie mnogiej (`users`), migracje sprawdzane ręcznie.
 - **`make check`** obejmuje także `pnpm audit` (wyjątki opisane w `pnpm-workspace.yaml`).
+
+### Siatka bezpieczeństwa (CI)
+
+Każdy pull request uruchamia w GitHub Actions ([ci.yml](.github/workflows/ci.yml)) sześć osobnych checków: **Lint**, **Typecheck**, **Unit tests (100% coverage)**, **Build**, **Integration (testcontainers + agent-browser)** i **Audit**. Te same komendy działają lokalnie (`make …`).
+
+- **Testy jednostkowe:** Vitest z pokryciem v8, próg **100%** (linie, gałęzie, funkcje, instrukcje) w każdym pakiecie. Każda nowa funkcja musi go utrzymać, co jest regułą w `AGENTS.md`.
+- **Testy integracyjne** (`tests/integration/`): każdy przebieg stawia świeży kontener PostgreSQL, puszcza migracje, uruchamia aplikację w trybie dev i produkcyjnym, a agent-browser klika po niej we własnej sesji. Po przebiegu nic nie zostaje, więc kilku agentów na osobnych worktree może testować równolegle.
 
 Reguły dla agentów: [AGENTS.md](AGENTS.md) oraz `AGENTS.md` w każdym pakiecie.
 

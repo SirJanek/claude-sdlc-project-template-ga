@@ -16,7 +16,11 @@ for this package only.
   Mutations on shared state (slots, bookings) run in a DB transaction.
 - **External integrations** are ports (`<name>.port.ts`) with adapters under `adapters/`; start
   with a mock adapter.
-- **Auth:** `requireSession` fails closed; the dev-admin flag is temporary until the auth spec.
+- **Auth:** `requireSession` fails closed; the dev-admin flag works only with `NODE_ENV=development`
+  (allowlist) and is temporary until the auth spec.
 - Pure functions take `now: Date` instead of calling `new Date()`; every exported function has a
   test next to it, including boundary cases. Export public API through `src/index.ts`.
+- **Tests:** every service, http helper and rule at 100% coverage; services tested through the
+  container with fakes that behave like the real dependency (e.g. a fake ORM that only answers a
+  real query). Security rules need a regression test that fails without the rule.
 - Commands: `pnpm --filter @mentorhub/core test | typecheck`.
