@@ -138,6 +138,9 @@ a dumping ground):
   as a singleton in the `Cradle` — not a queue. Background workers/queues are
   explicitly out of scope for MVP; events are for in-process side effects (logging,
   triggering a message, cache invalidation) only.
+  The first event is `auth.user.created` (`EventBus`, `EventMap`, `subscribers.ts` in
+  `core/src/events`); the first shared validator is `validators/auth/user-create.schema.ts` —
+  copy their shape for the next concept.
 - Shared Zod schemas live in `core/src/validators/<concept>/`, imported by both the
   API route (server validation) and the form component (client validation) — one
   schema, two call sites, never redefined.
