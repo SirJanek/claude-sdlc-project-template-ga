@@ -108,8 +108,8 @@ purpose** (`ui` must not import `core`): `REQUEST_HEADER` in `packages/core/src/
 `Secure` in production, `Max-Age` 7 days fixed (no refresh, no sliding window — grill-me Q6/Q13);
 value = HS256 JWT with claims `sub` (user id) and `sv` (`users.session_version`); `requireSession`
 is **async** and must be awaited by every caller; a present cookie decides on its own (valid → that
-user; invalid, stale, unknown user or a DB error → 401, never the dev admin), and only a request
-without a session cookie may fall back to the dev admin, still only with `ALLOW_DEV_ADMIN=1` **and**
+user; empty, malformed, stale, unknown user or a DB error → 401, never the dev admin), and only a
+request without any `mh_session` cookie may fall back to the dev admin, still only with `ALLOW_DEV_ADMIN=1` **and**
 `NODE_ENV=development`. `sessionVersion` is bumped atomically in the database
 (`session_version + 1`, `revokeSessions` / `make set-role`); a return path (`next`) must pass
 `nextPathSchema` (printable, same-origin, no `//` or `\`).

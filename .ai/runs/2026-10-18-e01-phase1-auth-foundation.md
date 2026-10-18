@@ -84,6 +84,18 @@ Mutation 3 (new): `revokeSessions` call in `signOutEverywhere` replaced by `find
 
 Verification after the fixes: `make check` exit 0 (tools/setup 51, db 30, ui 43, core 124, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` → `Test Files 3 passed (3)`, `Tests 39 passed (39)` (auth 17, migrations 7, app 15). Mutations: (1) `await authorize` removed → 2 tests `expected 200 to be 401`; (2) `usedAt: null` removed → "rejects a link clicked twice" `promise resolved … instead of rejecting`; (3) read-then-write revocation → "two revocations with a sign-in between" `AssertionError: expected 1 to be 2`. All restored, suites green.
 
+### Review fixes, round 2 (Codex on PR #46: five earlier findings confirmed fixed, three new)
+
+| # | Finding | Fix | Proof |
+|---|---|---|---|
+| MAJ1 | `Cookie: mh_session=` parsed to `undefined` → dev admin with the flag on | `readSessionCookie` returns `''` for a present empty cookie (`undefined` only when absent); `requireSession` treats any present cookie as a credential to verify → 401 | unit: empty cookie (alone and among others) → 401 with the flag on, lookup never called, no-cookie request still dev admin; integration (dev server): `mh_session=` → 401 on `/api/auth/me` and `/api/users`; mutation below |
+| MAJ2 | H3's concurrency only covered by the fake | `holdTransaction` in `tests/integration/env.ts` keeps a psql transaction open with an uncommitted `session_version + 1`; the API revocation (and, in a second test, `make set-role` via the CLI with the suite's `DATABASE_URL`) blocks on the row lock, the held transaction commits, both increments survive | integration on real PostgreSQL: `session_version` 0 → 2 after API revocation (a read-then-write would end at 1), cookie 401; `set-role` → role `mentor`, version 2, CLI prints "session version 2" |
+| MIN3 | `$` in the printable regex matched before a trailing newline (`"/ok\n"` passed) | search for a forbidden character (`/[^\x21-\x7e\u00a1-\uffff]/`) instead of an anchored match | schema: `/ok\n`, `/ok\r`, `/ok\r\n`, `/\n` rejected; integration: `/ok\n`, `/ok\r` as `next` → 422 |
+
+Also fixed while here: two `AuthService` unit tests compared `emailVerifiedAt` with the fake clock while `consume` defaulted to the real clock (passed only within the same millisecond) — `now` is now pinned.
+
+Verification (round 2): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` → `Test Files 3 passed (3)`, `Tests 41 passed (41)` (auth 19, migrations 7, app 15). Mutation 4 (old presence logic restored in `readSessionCookie`: empty → `undefined`): "with the flag on, an EMPTY present cookie is a present credential → 401" fails with `promise resolved "{ userId: 'dev-admin', …}" instead of rejecting` (and the session unit test `expected undefined to be ''`); restored, 49/49 in `http/`.
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
