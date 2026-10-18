@@ -25,7 +25,8 @@ vi.mock('@mentorhub/db', async (original) => ({
 
 type Row = Record<string, unknown> & { id?: string; createdAt?: Date };
 type Where = Record<string, unknown>;
-const LOCK_SQL = 'select pg_advisory_xact_lock(hashtext(?::text))';
+const LOCK_SQL = 'select pg_advisory_xact_lock(hashtext(?::text)), pg_advisory_xact_lock(hashtext(?::text))';
+const REVOKE_SQL = 'update users set session_version = session_version + 1 where id = ? returning session_version';
 
 /** Condition subset the service uses: equality (incl. null) and $gte / $gt / $lt on dates. */
 function matches(row: Row, where: Where): boolean {
@@ -45,8 +46,10 @@ function matches(row: Row, where: Where): boolean {
 
 /**
  * In-memory PostgreSQL stand-in: tables for users and auth_tokens, transactions with rollback,
- * `pg_advisory_xact_lock` as a mutex keyed by the bound e-mail (held until the transaction ends),
- * and the unique index on users.email. `clock` stamps createdAt so rate-limit windows are testable.
+ * `pg_advisory_xact_lock` as mutexes keyed by the bound bucket names (held until the transaction
+ * ends), the unique index on users.email, and the atomic `session_version + 1` UPDATE. Rows read
+ * through findOne are detached copies written back on flush — so a read-then-write of a counter
+ * loses updates exactly like a real database would. `clock` stamps createdAt for window tests.
  */
 class FakeDb {
   users: Row[] = [];
@@ -84,9 +87,22 @@ class FakeDb {
     const releases: (() => void)[] = [];
     /** Undo log: a rollback reverts this transaction's own writes only, like a real database. */
     const undo: (() => void)[] = [];
+    /** Identity map: table row → the detached copy handed out by findOne, written back on flush. */
+    const managed = new Map<Row, Row>();
+    const detach = (row: Row | undefined): Row | null => {
+      if (!row) return null;
+      const copy = managed.get(row) ?? { ...row };
+      managed.set(row, copy);
+      return copy;
+    };
     const flush = async () => {
       await Promise.resolve();
       if (this.flushError) throw this.flushError;
+      for (const [row, copy] of managed) {
+        const before = { ...row };
+        Object.assign(row, copy);
+        undo.push(() => Object.assign(row, before));
+      }
       for (const { table, row } of pending) {
         if (table === this.users && this.users.some((u) => u.email === row.email && u !== row)) {
           throw new UniqueViolation('duplicate key value violates unique constraint "users_email_unique"');
@@ -101,21 +117,29 @@ class FakeDb {
     };
     const em = {
       execute: async (sql: string, params: unknown[]) => {
-        expect(sql).toBe(LOCK_SQL);
-        releases.push(await this.acquire(String(params[0])));
-        return [];
+        if (sql === LOCK_SQL) {
+          for (const key of params) releases.push(await this.acquire(String(key)));
+          return [];
+        }
+        if (sql === REVOKE_SQL) {
+          const row = this.users.find((u) => u.id === params[0]);
+          if (!row) return [];
+          row.sessionVersion = (row.sessionVersion as number) + 1; // atomic, on the table row
+          return [{ session_version: row.sessionVersion }];
+        }
+        throw new Error(`unexpected SQL: ${sql}`);
       },
       count: async (entity: unknown, where: Where) => this.table(entity).filter((r) => matches(r, where)).length,
       findOne: async (entity: unknown, where: Where) => {
-        const found = this.table(entity).find((r) => matches(r, where)) ?? null;
+        const found = this.table(entity).find((r) => matches(r, where));
         if (entity === User && !found && this.raceEmail) {
           this.users.push({ id: 'raced', email: this.raceEmail, sessionVersion: 0 });
           this.raceEmail = undefined;
         }
-        return found;
+        return detach(found);
       },
       findOneOrFail: async (entity: unknown, where: Where) => {
-        const row = this.table(entity).find((r) => matches(r, where));
+        const row = detach(this.table(entity).find((r) => matches(r, where)));
         if (!row) throw new Error('not found');
         return row;
       },
@@ -223,6 +247,16 @@ describe('requestEmailLink', () => {
     for (let i = 0; i < AUTH_LIMITS.linksPerIp.max; i += 1) await h.request(`person${i}@example.com`);
     await expect(h.request('one-more@example.com')).rejects.toThrow(RateLimitedError);
     await expect(h.request('one-more@example.com', { ip: '198.51.100.7' })).resolves.toBeUndefined();
+  });
+
+  it('concurrent requests for DIFFERENT e-mails from one IP cannot exceed the IP limit (both buckets locked — review finding 2)', async () => {
+    const h = harness();
+    for (let i = 0; i < AUTH_LIMITS.linksPerIp.max - 1; i += 1) await h.request(`warm${i}@example.com`);
+    const results = await Promise.allSettled(Array.from({ length: 4 }, (_, i) => h.request(`race${i}@example.com`)));
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(3);
+    expect(h.db.tokens).toHaveLength(AUTH_LIMITS.linksPerIp.max);
+    expect(h.sent).toHaveLength(AUTH_LIMITS.linksPerIp.max);
   });
 
   it('concurrent requests for one e-mail cannot exceed the limit (advisory lock around count + insert)', async () => {
@@ -435,6 +469,22 @@ describe('sessions', () => {
     await h.service().signOutEverywhere('u1');
     expect(h.db.users[0]!.sessionVersion).toBe(4);
     await expect(h.service().signOutEverywhere('ghost')).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('two revocations with a sign-in between: the increment is atomic, so the in-between session is ended too (review finding 3)', async () => {
+    // Mutation check: a read-then-write (`user.sessionVersion += 1; flush()`) loses one increment here.
+    const h = harness();
+    h.db.users.push({ id: 'u1', email: 'a@x.io', sessionVersion: 0 });
+    const first = h.service();
+    const second = h.service();
+    // Both revocations start (and would each read version 0) before either writes.
+    const revocations = Promise.all([first.signOutEverywhere('u1'), second.signOutEverywhere('u1')]);
+    const inBetween = await h.service().startSession({ userId: 'u1', sessionVersion: 1 });
+    await revocations;
+    expect(h.db.users[0]!.sessionVersion).toBe(2);
+    const token = inBetween.slice('mh_session='.length, inBetween.indexOf(';'));
+    const claims = await verifySessionToken(token, env.AUTH_SECRET);
+    expect(claims?.sv).not.toBe(h.db.users[0]!.sessionVersion); // → 401 on the next request
   });
 
   it('currentUser returns the account behind a session, the fixed dev-admin record, or 401 for a vanished user', async () => {

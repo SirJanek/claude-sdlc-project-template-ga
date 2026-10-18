@@ -16,13 +16,18 @@ export function parseSetRoleArgs(argv: readonly string[]): { email: string; role
   return { email, role: rawRole as UserRole };
 }
 
-/** Sets the role and bumps the session version; returns the line to print. Throws when the user is unknown. */
+const SET_ROLE_SQL =
+  'update users set role = ?, session_version = session_version + 1, updated_at = now() where email = ? returning session_version';
+
+/**
+ * Sets the role and bumps the session version together, atomically in the database (one UPDATE with
+ * `session_version + 1` — never read-then-write, review finding 3); returns the line to print.
+ * Throws when the user is unknown.
+ */
 export async function setRole(em: EntityManager, email: string, role: UserRole): Promise<string> {
   const user = await em.findOne(User, { email });
   if (!user) throw new Error(`No user with e-mail "${email}".`);
-  const previous = user.role;
-  user.role = role;
-  user.sessionVersion += 1;
-  await em.flush();
-  return `${email}: ${previous} → ${role} (session version ${user.sessionVersion}; every session of this account was ended)`;
+  const rows = await em.execute<{ session_version: number }[]>(SET_ROLE_SQL, [role, email]);
+  const version = Number(rows[0]?.session_version);
+  return `${email}: ${user.role} → ${role} (session version ${version}; every session of this account was ended)`;
 }
