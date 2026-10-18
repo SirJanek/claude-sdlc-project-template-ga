@@ -33,6 +33,8 @@ for browser/migrations pinned by tests; Windows `.cmd` shims need `shell: true` 
 
 ## Progress
 
+PR: #15
+
 > Convention: `- [ ]` pending, `- [x]` done. Append ` — <commit sha>` when a step lands. Do not rename step titles.
 
 ### Phase 1: Installer
@@ -40,5 +42,5 @@ for browser/migrations pinned by tests; Windows `.cmd` shims need `shell: true` 
 - [x] 1.1 Package scaffold, workspace wiring, shared vitest option — 852ae2c
 - [x] 1.2 exec and steps with unit tests — c385e46
 - [x] 1.3 main, cli and bin entry with unit tests — 83ccd4a
-- [ ] 1.4 make target, root script and docs
-- [ ] 1.5 Evidence runs
+- [x] 1.4 make target, root script and docs — fa7e490
+- [x] 1.5 Evidence runs — PR body (fresh-clone run, re-run, make path, no-Docker failure, unknown flag)
