@@ -1,7 +1,7 @@
 # Spec: Integration evidence in CI, cached agent-browser Chrome
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
-**Builds on:** [2026-10-18-ci-safety-net.md](implemented/2026-10-18-ci-safety-net.md)
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
+**Builds on:** [2026-10-18-ci-safety-net.md](2026-10-18-ci-safety-net.md)
 **Status:** accepted · requested by Jan on 2026-10-18 ("evidence in checks like the course; then the add-ons")
 
 ## Scope

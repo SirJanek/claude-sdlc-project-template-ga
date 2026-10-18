@@ -1,7 +1,7 @@
 # Run: integration evidence in CI, cached Chrome, action bumps
 
 **Date:** 2026-10-18 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan
-**Spec:** [.ai/specs/2026-10-18-integration-evidence.md](../specs/2026-10-18-integration-evidence.md)
+**Spec:** [.ai/specs/implemented/2026-10-18-integration-evidence.md](../specs/implemented/2026-10-18-integration-evidence.md)
 **Branch:** `feat/integration-evidence` from `develop` (`6865864`, after PR #4 and #5)
 **Status:** done — PR #6
 
@@ -23,4 +23,4 @@
 
 ## Handoff
 
-- **Next step:** Jan reviews/merges PR #6; then move this spec to `implemented/`.
+- **Next step:** none — PR #6 merged, spec moved to `implemented/`.
