@@ -11,3 +11,4 @@ docs/
 evals/
 packages/db/src/migrations/
 .next-integration
+tests/integration/.evidence

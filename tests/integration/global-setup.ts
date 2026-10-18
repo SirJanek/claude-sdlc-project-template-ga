@@ -1,7 +1,9 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
+import { openSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { TestProject } from 'vitest/node';
+import { evidencePath, resetEvidence } from './evidence';
 
 const DIST_DIR = '.next-integration';
 
@@ -36,10 +38,16 @@ function serverEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
   return merged;
 }
 
-function startNext(args: string[], env: NodeJS.ProcessEnv): ChildProcess {
+/** stdout + stderr of a step go to `<name>.log` in the evidence folder. */
+const logTo = (name: string): ['ignore', number, number] => {
+  const fd = openSync(evidencePath(`${name}.log`), 'a');
+  return ['ignore', fd, fd];
+};
+
+function startNext(args: string[], env: NodeJS.ProcessEnv, log: string): ChildProcess {
   const child = spawn('pnpm', ['--filter', '@mentorhub/app', 'exec', 'next', ...args], {
     env: serverEnv(env),
-    stdio: 'ignore',
+    stdio: logTo(log),
     detached: true,
   });
   return child;
@@ -56,6 +64,7 @@ function stop(child: ChildProcess): void {
 }
 
 export default async function setup(project: TestProject) {
+  resetEvidence();
   const container = await new PostgreSqlContainer('postgres:17-alpine')
     .withDatabase('mentorhub')
     .withUsername('mentorhub')
@@ -69,16 +78,19 @@ export default async function setup(project: TestProject) {
     LOG_LEVEL: 'silent',
   };
 
-  execFileSync('pnpm', ['--filter', '@mentorhub/db', 'migrate'], { env: { ...process.env, ...env }, stdio: 'ignore' });
+  execFileSync('pnpm', ['--filter', '@mentorhub/db', 'migrate'], {
+    env: { ...process.env, ...env },
+    stdio: logTo('migrate'),
+  });
   execFileSync('pnpm', ['--filter', '@mentorhub/app', 'exec', 'next', 'build'], {
     env: serverEnv(env),
-    stdio: 'ignore',
+    stdio: logTo('build'),
   });
 
   const [devPort, prodPort] = [await freePort(), await freePort()];
   const servers = [
-    startNext(['dev', '--port', String(devPort)], env),
-    startNext(['start', '--port', String(prodPort)], env),
+    startNext(['dev', '--port', String(devPort)], env, 'server-dev'),
+    startNext(['start', '--port', String(prodPort)], env, 'server-prod'),
   ];
   const devUrl = `http://localhost:${devPort}`;
   const prodUrl = `http://localhost:${prodPort}`;

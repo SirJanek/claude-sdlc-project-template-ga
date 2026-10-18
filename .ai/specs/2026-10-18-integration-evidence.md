@@ -42,5 +42,5 @@ the CI safety-net spec moved to `implemented/`.
 
 | Phase | Status | Evidence |
 |---|---|---|
-| 1 Evidence in tests | ⏳ | |
+| 1 Evidence in tests | ✅ done | 12/12 locally; evidence: 4 step screenshots, migrate/build/server-dev/server-prod logs, junit.xml, results.json; broken page → `app-FAILED-shows-the-empty-state-….png`, clean rerun leaves no FAILED file |
 | 2 CI | ⏳ | |

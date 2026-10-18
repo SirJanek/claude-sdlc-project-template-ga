@@ -12,5 +12,11 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 120_000,
     hookTimeout: 300_000,
+    // Machine-readable results next to the screenshots and logs (uploaded by CI as evidence).
+    reporters: [
+      'default',
+      ['junit', { outputFile: 'tests/integration/.evidence/junit.xml' }],
+      ['json', { outputFile: 'tests/integration/.evidence/results.json' }],
+    ],
   },
 });
