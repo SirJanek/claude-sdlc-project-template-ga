@@ -20,6 +20,7 @@ export function createBrowser(name: string) {
     open: (url: string) => run('open', url),
     waitForText: (text: string) => run('wait', '--text', text),
     click: (selector: string) => run('click', selector),
+    fill: (selector: string, text: string) => run('fill', selector, text),
     text: (selector: string) => run('get', 'text', selector),
     count: (selector: string) => Number(run('get', 'count', selector)),
     url: () => run('get', 'url'),
