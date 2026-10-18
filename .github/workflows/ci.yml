@@ -67,6 +67,8 @@ jobs:
             tools/*/coverage/
           retention-days: 7
           if-no-files-found: warn
+          # Same name across re-run attempts (run_id is stable) — overwrite instead of failing the check.
+          overwrite: true
 
   build:
     name: Build
