@@ -119,6 +119,20 @@ to change. Gates after the merge: see the handback report (`make check`, `make t
    consume call now passes `h.db.clock`; the exact assertion stays. The remaining default-clock call in the
    file (`:448`, Phase 1's "earlier verification is kept") asserts no timestamp equality.
 
+## Review fixes, pass 2 (Codex on PR #47: one major regression from pass 1)
+
+`withAccountNotice` appended `notice` instead of replacing one already in the path: `/mentor/profile?notice=bad`
+became `…?notice=bad&notice=existing_account`, and the landing pages read the FIRST value, so the notice was
+rejected and not shown (AC3 broken for that `next`); `%6eotice=bad` had the same effect. Fix: keep the raw
+pathname and fragment, split the raw query on `&`, drop every pair whose DECODED key (percent- and
+plus-decoding, malformed left raw) is `notice`, keep the other pairs verbatim, append the authoritative
+`notice=existing_account`, re-check with `isSameOriginPath` as before. Regressions: helper (literal,
+`%6e`-encoded, repeated, bare `notice`, empty pairs + hash, a key that only starts with `notice=`, malformed
+encoding), service (`next=/mentor/profile?notice=bad` → exactly one `notice`, the authoritative one), page
+(renders the notice for the search params of the built URL), integration (seeded mentor, API consume with
+`?notice=bad` → `/mentor/profile?notice=existing_account`, the page shows the notice). Against the pass-1
+helper the two new unit tests are red.
+
 ## Handoff
 
 Phase 3 is complete on the branch (stacked on Phase 1's branch — merge Phase 1's PR first, then open this

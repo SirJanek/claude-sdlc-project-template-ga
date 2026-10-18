@@ -74,6 +74,11 @@ describe('/mentor/profile', () => {
     cleanup();
     await renderPage({ notice: ['existing_account', 'x'] });
     expect(screen.getByRole('status')).toBeTruthy(); // the first value counts, like every (auth) page
+    cleanup();
+    // What Next.js hands this page for the URL withAccountNotice builds from `/mentor/profile?notice=bad`.
+    const built = new URL('/mentor/profile?notice=existing_account', 'http://localhost');
+    await renderPage(Object.fromEntries(built.searchParams));
+    expect(screen.getByRole('status').textContent).toBe(EXISTING_ACCOUNT_NOTICE);
   });
 
   it('sends a signed-out visitor to /sign-in with the return path and renders nothing', async () => {

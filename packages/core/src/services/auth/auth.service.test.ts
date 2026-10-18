@@ -421,6 +421,16 @@ describe('consumeEmailLink', () => {
     expect(nextPathSchema.safeParse(next).success).toBe(true);
   });
 
+  it('an existing account with a next that already carries a notice key gets the authoritative one, first (PR #47 pass 2)', async () => {
+    const h = harness();
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    await h.request('m@example.com', { intentRole: 'mentor', next: '/mentor/profile?notice=bad' });
+    const { next } = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    expect(next).toBe('/mentor/profile?notice=existing_account');
+    expect(new URLSearchParams(next.split('?')[1]).getAll('notice')).toEqual(['existing_account']);
+  });
+
   it('signs an existing (admin-created, unverified) user in, verifying the account, without an event', async () => {
     const h = harness();
     h.db.users.push({
