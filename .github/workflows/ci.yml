@@ -113,7 +113,10 @@ jobs:
           name: integration-evidence-${{ github.run_id }}
           path: tests/integration/.evidence/
           retention-days: 14
-          if-no-files-found: warn
+          # .evidence is a dot-folder: upload-artifact skips hidden files unless told otherwise.
+          include-hidden-files: true
+          # Missing evidence is a failure, not a warning — a green job without proof proves nothing.
+          if-no-files-found: error
 
   audit:
     name: Audit
