@@ -16,5 +16,9 @@ for this package only.
   the migrator (only `src/scripts/migrate.ts` adds it). MikroORM 7 connects lazily — check the DB
   with a query, not `checkConnection()`.
 - `getOrm()` is the process singleton for core's composition root only.
+- **Tests:** unit tests run without a database (metadata, migration SQL via `getQueries()`, CLI logic
+  in `src/migrator/` with a fake migrator) and keep 100% coverage; they live outside
+  `src/migrations/` (the migrator loads every file there). Every new migration gets a case in
+  `tests/integration/migrations.test.ts` (fresh container: up, down with rows, up, no drift).
 - All access through entity/query APIs — no raw SQL with interpolated input.
 - Commands: `pnpm --filter @mentorhub/db test | typecheck | migrate | migrate:down | migrate:status | migration:create <name>`.

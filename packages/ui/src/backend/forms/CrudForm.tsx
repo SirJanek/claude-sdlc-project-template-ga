@@ -88,18 +88,22 @@ export function CrudForm<T>({
       {fields.map((field) => {
         const errors = fieldErrors[field.name];
         const id = `crud-${field.name}`;
+        const errorId = `${id}-error`;
         const common = {
           id,
           name: field.name,
           value: values[field.name] ?? '',
           placeholder: field.placeholder,
           'aria-invalid': errors ? true : undefined,
+          'aria-describedby': errors ? errorId : undefined,
           className: inputClass,
         };
         const onChange = (value: string) => setValues((current) => ({ ...current, [field.name]: value }));
         return (
-          <label key={field.name} htmlFor={id} className="grid gap-1.5 text-sm">
-            <span className="font-medium">{field.label}</span>
+          <div key={field.name} className="grid gap-1.5 text-sm">
+            <label htmlFor={id} className="font-medium">
+              {field.label}
+            </label>
             {field.type === 'textarea' ? (
               <textarea {...common} rows={4} onChange={(e) => onChange(e.target.value)} />
             ) : field.type === 'select' ? (
@@ -113,8 +117,12 @@ export function CrudForm<T>({
             ) : (
               <input {...common} type={field.type ?? 'text'} onChange={(e) => onChange(e.target.value)} />
             )}
-            {errors ? <span className="text-xs text-destructive">{errors.join(' ')}</span> : null}
-          </label>
+            {errors ? (
+              <span id={errorId} className="text-xs text-destructive">
+                {errors.join(' ')}
+              </span>
+            ) : null}
+          </div>
         );
       })}
       <div className="flex gap-2">

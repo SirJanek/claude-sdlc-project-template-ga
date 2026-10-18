@@ -17,4 +17,6 @@ for this package only.
 - Lists use `DataTable`, forms `CrudForm` (same Zod schema as the route), states `feedback/*`.
 - Components are presentational: no data fetching outside `apiCall`, no business rules.
 - Theme tokens in `src/styles/globals.css` — MentorHub's colours, never Preply's.
+- **Tests:** every component (including CLI-generated primitives) with Testing Library at 100%
+  coverage; assert what the user sees and does (roles, labels, keyboard), not class names.
 - Commands: `pnpm --filter @mentorhub/ui test | typecheck`.

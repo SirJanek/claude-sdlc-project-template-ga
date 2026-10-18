@@ -18,3 +18,14 @@ describe('environment', () => {
     expect(() => parseEnv({ ALLOW_DEV_ADMIN: 'yes' })).toThrow(/ALLOW_DEV_ADMIN/);
   });
 });
+
+describe('getEnv', () => {
+  it('parses process.env once and returns the cached result', async () => {
+    const { getEnv } = await import('./env');
+    process.env.DB_POOL_MAX = '7';
+    const first = getEnv();
+    process.env.DB_POOL_MAX = '9';
+    expect(first.DB_POOL_MAX).toBe(7);
+    expect(getEnv()).toBe(first);
+  });
+});

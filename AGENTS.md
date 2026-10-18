@@ -92,18 +92,36 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 | Task | Command |
 |---|---|
 | Install | `make install` (pnpm, from the lockfile) |
-| Test | `make test` (Vitest in every package, no DB needed) |
+| Unit tests | `make test` (Vitest + v8 coverage in every package; **fails below 100%**; no DB needed) |
+| Integration tests | `make test-integration` (ephemeral PostgreSQL via testcontainers + app driven by agent-browser; needs Docker) |
 | Lint + format | `make lint` (ESLint incl. package boundaries + Prettier check; fix with `pnpm format`) |
 | Typecheck | `make typecheck` |
 | Build | `make build` |
 | Audit | `make audit` (`pnpm audit --audit-level high`; documented exceptions in `pnpm-workspace.yaml`) |
-| Full check (what CI runs) | `make check` — lint, typecheck, test, build, audit |
+| Full local check | `make check` — lint, typecheck, unit tests, build, audit (CI also runs `make test-integration`) |
 | Run locally | `make dev` (starts the DB, then Next.js on :3000 with dev-admin access) |
 | Database | `make db-up`, `make db-down`, `make db-migrate`, `make db-migration NAME=<slug>` |
 
+## Testing (mandatory — CI blocks the PR otherwise)
+
+- **Every new feature or change ships with unit tests that keep coverage at 100%** — lines,
+  branches, functions and statements, in every package. `make test` fails below 100% and so does
+  the **Unit tests (100% coverage)** CI check. No exceptions "for later"; untested code is unfinished code.
+- Tests sit next to the code as `*.test.ts` / `*.test.tsx` in each package's `src/`. React
+  components and pages are tested with Testing Library (jsdom); routes with `@vitest-environment node`.
+- Tests assert behaviour, not lines: a test that would still pass with the logic broken is a
+  finding. When adding a rule, prove the test fails without it (mutation) before calling it done.
+- **Every new route, page or migration also gets an integration test** in `tests/integration/`
+  (ephemeral PostgreSQL via testcontainers, the app driven by agent-browser in its own session).
+  Run `make test-integration` before opening the PR.
+- Coverage exclusions are limited to test files, config files and `packages/db/src/scripts/**`
+  (thin CLI entry points whose logic lives in tested modules). Adding an exclusion needs a spec.
+- Never put non-migration files in `packages/db/src/migrations/` (the migrator would load them).
+- CI (`.github/workflows/ci.yml`) runs on every PR: **Lint**, **Typecheck**, **Unit tests (100%
+  coverage)**, **Build**, **Integration (testcontainers + agent-browser)**, **Audit**.
+
 ## Conventions
 
-- Tests sit next to the code as `*.test.ts` inside each package's `src/`.
 - Product UI text is English. Human-facing docs are Polish; files agents read
   (`AGENTS.md`, `CLAUDE.md`, skills, hooks, `docs/sdlc/*`) are English.
 - Never edit files under `docs/sdlc/` without being asked — they are SDLC artifacts, not docs.
@@ -118,8 +136,8 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   they throw `AppError`s and never build HTTP responses. Only `container.ts` calls `getOrm()`.
 - Routes: wrap in `apiHandler` or build with `makeCrudRoute` — no hand-written `try/catch`;
   authorize first (`requireSession`, ownership) and parse write bodies with a Zod schema.
-- **No real auth yet:** `requireSession` admits a dev admin only with `ALLOW_DEV_ADMIN=1` outside
-  production (fail closed). Never deploy `/admin` or `/api/users` before the auth spec.
+- **No real auth yet:** `requireSession` admits a dev admin only with `ALLOW_DEV_ADMIN=1` and
+  `NODE_ENV=development` (an allowlist — test, staging and production are denied; fail closed). Never deploy `/admin` or `/api/users` before the auth spec.
 - Schema changes only through migrations (`make db-migration`); review the generated SQL (renames
   come out as drop + create); never edit an applied migration.
 - Workspace packages are consumed as TypeScript source: relative imports without `.js`.

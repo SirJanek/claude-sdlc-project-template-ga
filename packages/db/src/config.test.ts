@@ -19,3 +19,22 @@ describe('ORM config', () => {
     expect(cfg.pool?.max).toBe(3);
   });
 });
+
+describe('ORM config defaults', () => {
+  it('falls back to the local docker database and a pool of 10', () => {
+    const cfg = createOrmConfig({});
+    expect(cfg.clientUrl).toBe('postgresql://mentorhub:mentorhub@localhost:5433/mentorhub');
+    expect(cfg.pool?.max).toBe(10);
+    expect(cfg.debug).toBe(false);
+  });
+
+  it('logs queries only in development and accepts overrides', () => {
+    expect(createOrmConfig({ NODE_ENV: 'development' }).debug).toEqual(['query']);
+    expect(createOrmConfig({ NODE_ENV: 'development' }, { debug: false }).debug).toBe(false);
+  });
+
+  it('reads process.env when no environment is passed', () => {
+    process.env.DB_POOL_MAX = '4';
+    expect(createOrmConfig().pool?.max).toBe(4);
+  });
+});

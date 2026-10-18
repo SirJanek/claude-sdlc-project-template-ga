@@ -7,13 +7,16 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: install test lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
+.PHONY: install test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
 
 install:   ## Install dependencies from the lockfile
 	pnpm install --frozen-lockfile
 
-test:      ## Unit tests in every package (Vitest, no database needed)
+test:      ## Unit tests in every package with the 100% coverage gate (Vitest, no database needed)
 	pnpm -r test
+
+test-integration: ## Integration suite: ephemeral PostgreSQL (testcontainers) + app driven by agent-browser. Needs Docker
+	pnpm test:integration
 
 lint:      ## ESLint + Prettier check
 	pnpm lint

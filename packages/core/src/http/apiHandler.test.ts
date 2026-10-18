@@ -77,3 +77,18 @@ describe('apiHandler', () => {
     expect(await res.json()).toEqual({ status: 'degraded' });
   });
 });
+
+describe('apiHandler — defaults', () => {
+  it('keys form-level validation errors as _form', async () => {
+    const res = await apiHandler(async () => z.string().parse(42), { logger })(get(), ctx);
+    expect(await res.json()).toMatchObject({ error: { fieldErrors: { _form: [expect.any(String)] } } });
+  });
+
+  it('uses the shared logger when none is passed', async () => {
+    process.env.LOG_LEVEL = 'silent';
+    const res = await apiHandler(async () => {
+      throw new Error('boom');
+    })(get(), ctx);
+    expect(res.status).toBe(500);
+  });
+});
