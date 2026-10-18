@@ -19,10 +19,21 @@ Marketplace **mentoringu 1:1 przez wideo**: osoby rozwijające karierę w produk
 
 ## Uruchomienie lokalne
 
-Wymagane: Node ≥ 22 (`.nvmrc`: 26), pnpm 10, Docker. Przeglądarkę do testów integracyjnych (headless Chrome dla agent-browsera) instaluje `make setup-browser`; `make test-integration` robi to sam.
+Wymagane: Node ≥ 22 (`.nvmrc`: 26), pnpm 10, Docker.
+
+**Jednym poleceniem (zalecane):**
+
+```bash
+make setup          # albo bez make (np. Windows): npm run setup  ·  pnpm run setup
+```
+
+Instalator sprawdza Node, pnpm i Dockera, instaluje zależności, przeglądarkę do testów integracyjnych (headless Chrome dla agent-browsera), uruchamia PostgreSQL i puszcza migracje. Można go odpalać dowolnie wiele razy: kroki już wykonane pomija (`↷ skipped`), przerwaną instalację dokończy. Bez przeglądarki: `make setup SETUP_ARGS=--skip-browser` / `npm run setup -- --skip-browser`. Uwaga: `pnpm setup` (bez `run`) to wbudowane polecenie pnpm i **nie** uruchamia instalatora.
+
+**Ręcznie, krok po kroku (alternatywa):**
 
 ```bash
 make install        # zależności z lockfile
+make setup-browser  # Chrome dla agent-browsera (testy integracyjne); make test-integration robi to sam
 make db-up          # PostgreSQL 17 w Dockerze na porcie 5433
 make db-migrate     # migracje
 make dev            # http://localhost:3000  ·  /admin/users  ·  /api/health
