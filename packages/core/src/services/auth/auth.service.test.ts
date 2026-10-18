@@ -348,7 +348,7 @@ describe('consumeEmailLink', () => {
       sessionVersion: 5,
     });
     await h.request();
-    const result = await h.service().consumeEmailLink(h.lastToken());
+    const result = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
     expect(result).toEqual({ userId: 'u-admin-made', sessionVersion: 5, next: '/' });
     expect(h.db.users[0]!.emailVerifiedAt).toEqual(h.db.clock);
     expect(h.eventBus.emit).not.toHaveBeenCalled();
