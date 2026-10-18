@@ -32,6 +32,8 @@ next-env.d.ts
 coverage/
 .next-integration/
 tests/integration/.evidence/
+# Worktrees created by the Open Mercato skills (om-auto-*) for isolated runs
+.ai/tmp/
 
 # Open Mercato pipeline: per-run QA state (generated, not source)
 .ai/qa/artifacts_*/
