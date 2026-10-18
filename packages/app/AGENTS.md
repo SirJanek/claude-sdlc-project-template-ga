@@ -17,7 +17,8 @@ for this package only.
   `DataTable`; forms → `CrudForm` with the shared schema; states → `feedback/*`.
 - Reference example: `src/app/api/users/route.ts` + `src/app/admin/users/page.tsx`.
 - Public pages use Tailwind directly; admin pages use components from `@mentorhub/ui`.
-- `/admin/**` and `/api/users` have **no real auth** — dev flag only; do not deploy them.
+- Admin pages share `src/app/admin/layout.tsx` (+ colocated `AdminNav`); every `/admin/**` page fetches through `apiCall` — a server component awaiting the DB crashes `next dev` when the database is down.
+- `/admin/**`, `/api/users` and `/api/admin/*` have **no real auth** — dev flag only; do not deploy them.
 - After moving routes run `make dev` once (stale `.next/dev/types` break `tsc`).
 - **Tests (100% coverage, see root AGENTS.md › Testing):** pages and components with Testing
   Library next to the file (`page.test.tsx`), mocking `apiCall` from `@mentorhub/ui`; route files

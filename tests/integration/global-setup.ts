@@ -96,7 +96,8 @@ export default async function setup(project: TestProject) {
   const prodUrl = `http://localhost:${prodPort}`;
   await Promise.all([waitUntilUp(`${devUrl}/api/health`), waitUntilUp(`${prodUrl}/api/health`)]);
   // Warm up dev-mode compilation so browser waits measure the app, not the compiler.
-  for (const path of ['/', '/admin/users', '/api/users']) await fetch(`${devUrl}${path}`);
+  for (const path of ['/', '/admin', '/admin/users', '/api/users', '/api/admin/health'])
+    await fetch(`${devUrl}${path}`);
 
   project.provide('devUrl', devUrl);
   project.provide('prodUrl', prodUrl);

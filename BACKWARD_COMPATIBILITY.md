@@ -16,7 +16,8 @@ stricter (deprecation windows) when the first external consumer or production da
 | CSRF header | state-changing methods require `x-mentorhub-request: 1` (`REQUEST_HEADER`) |
 | Error codes and statuses | `AppError` subclasses map to fixed status + `code` (401, 403, 404, 405, 409, 422) |
 | `GET /api/health` | **non-envelope** monitor contract: `200 { status: "ok", db: "up" }` / `503 { status: "degraded", db: "down" }` |
-| `/api/users` | `makeCrudRoute` — `GET` list behind `requireSession`; unsupported methods → 405 |
+| `/api/users` | `makeCrudRoute` — `GET` list and `POST` create, both **admin only** (`requireSession` + `requireRole('admin')`); `POST` body `{ email, name, role? }` → `200` with the created user (`email` lower-cased), `422` invalid, `409` duplicate email; unsupported methods → 405 |
+| `GET /api/admin/health` | admin only, envelope: `{ ok: true, data: { status, db: "up" \| "down" } }` — a down database is a `200` report, not an error |
 
 **Breaking:** removing or renaming a route, field or error `code`; changing a status code;
 making an optional request field required; loosening or dropping the CSRF or session check
@@ -39,7 +40,7 @@ rollback note in the PR body.
 
 ## 3. Workspace package APIs
 
-`@mentorhub/core` (`src/index.ts`), `@mentorhub/db` (`src/index.ts`), `@mentorhub/ui` (exports
+`@mentorhub/core` (`src/index.ts` — incl. `EventBus`, `EventMap`, `userCreateSchema`; event IDs `concept.entity.action` and their payloads, today `auth.user.created { userId, email }`, are part of the contract), `@mentorhub/db` (`src/index.ts` — incl. `isUniqueViolation`), `@mentorhub/ui` (exports
 map: `.`, `./styles.css`, `./components/*`, `./lib/*`, `./backend/*`). These are internal to the
 monorepo and not published.
 
@@ -122,7 +123,7 @@ contradicts an active entry needs a superseding entry approved by its owner in t
 ## What is not protected
 
 Internal, unexported helpers; Tailwind classes and page markup beyond anything
-`tests/integration/app.test.ts` asserts on (today: the landing `h1`, the `/admin` → `/admin/users`
-redirect, the users table rows, their order and the email column, the empty state and the error
+`tests/integration/app.test.ts` asserts on (today: the landing `h1`, the `/admin` Dashboard text and the
+admin navigation, the users table rows, their order and the email column, the empty state and the error
 alert); the output wording of `make setup` other than its exit codes; and anything under `docs/discovery/mockups/` (prototypes, not product). These
 still change through tests and migrations, just without the breaking-change paperwork.

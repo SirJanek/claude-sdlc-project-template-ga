@@ -12,6 +12,8 @@ export const REDACTED_PATHS = [
   '*.authorization',
   'cookie',
   '*.cookie',
+  'email',
+  '*.email',
   'req.headers.authorization',
   'req.headers.cookie',
 ];

@@ -10,11 +10,14 @@ describe('logger', () => {
         password: 'p4ss',
         user: { token: 't0k', jwt: 'eyJ' },
         req: { headers: { authorization: 'Bearer x', cookie: 'sid=1' } },
+        email: 'me@x.io',
+        payload: { email: 'you@x.io' },
       },
       'login',
     );
     const out = lines.join('');
-    for (const secret of ['p4ss', 't0k', 'eyJ', 'Bearer x', 'sid=1']) expect(out).not.toContain(secret);
+    for (const secret of ['p4ss', 't0k', 'eyJ', 'Bearer x', 'sid=1', 'me@x.io', 'you@x.io'])
+      expect(out).not.toContain(secret);
     expect(out).toContain('[redacted]');
   });
 });

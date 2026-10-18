@@ -6,6 +6,8 @@ import { asClass, asValue, createContainer, InjectionMode, type AwilixContainer 
 import { createOrmConfig, getOrm, type EntityManager } from '@mentorhub/db';
 import { getEnv } from '../config/env';
 import { getLogger } from '../logger';
+import { EventBus } from '../events/event-bus';
+import { registerEventSubscribers } from '../events/subscribers';
 import { UserService } from '../services/auth/user.service';
 import { HealthService } from '../services/health/health.service';
 import type { Cradle } from './cradle';
@@ -29,9 +31,11 @@ export function buildContainer(overrides: Partial<Pick<Cradle, 'getOrm' | 'env' 
             }),
           )),
     ),
+    eventBus: asClass(EventBus).singleton(),
     healthService: asClass(HealthService).singleton(),
     userService: asClass(UserService).scoped(),
   });
+  registerEventSubscribers(container.cradle);
   return container;
 }
 

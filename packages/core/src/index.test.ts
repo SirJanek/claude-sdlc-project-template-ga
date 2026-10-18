@@ -12,6 +12,8 @@ describe('@mentorhub/core public API', () => {
       'buildContainer',
       'withScope',
       'UserService',
+      'EventBus',
+      'userCreateSchema',
       'HealthService',
       'AppError',
       'apiHandler',

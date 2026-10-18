@@ -8,6 +8,7 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — A Next.js server component that awaits a failing DB call returns 500 in `next dev` (React's dev debug serialisation throws "object null is not iterable" on pg's AggregateError) while `next start` renders fine, and `setImmediate`/`connection()` do not help: fetch DB-backed admin data through `apiCall` + an envelope route, and prove the DB-down state in the integration test (dev server), not only in unit tests.
 - 2026-10-18 — A Claude token from the C&F company account cannot run outside C&F machines: its managed policy (`forceLoginOrgUUID` a860e8b8-…) follows the token, so `claude setup-token` in GitHub Actions fails with "Unable to verify organization". The Claude review workflow is disabled (`gh workflow disable "Claude review"`) until L03; re-enable only with a token outside the C&F organization.
 - 2026-10-18 — actions/upload-artifact (v4+) skips hidden files: a dot-folder like `.evidence` uploads nothing unless `include-hidden-files: true`. Use `if-no-files-found: error` for evidence — `warn` let a green job ship without proof.
 - 2026-10-18 — Vitest file reporters (junit, json) open their output file at startup, before global setup: never delete those files in setup (the reporter keeps writing to an unlinked inode and the report vanishes). Clean only what setup itself produces.
