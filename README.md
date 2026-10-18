@@ -100,6 +100,7 @@ Szczegóły i metryki etapów: [docs/sdlc/00-OVERVIEW.md](docs/sdlc/00-OVERVIEW.
 | Ścieżka | Do czego |
 |---|---|
 | `.ai/` | Przestrzeń agentów: `specs/` (specyfikacje SDD `YYYY-MM-DD-slug.md`, `implemented/`, `archive/`), `runs/` (log każdego przebiegu AI: decyzje z uzasadnieniem, handoff), `lessons.md` + `lessons/` (wnioski zapisywane przez agentów), `skills/` (rozszerzenia i nadpisania skilli), `analyses/README.md` (indeks analiz trzymanych w `docs/`) |
+| `.agents/skills/` | Skille Open Mercato (`om-*`, 42 szt., `npx skills add open-mercato/skills --skill '*'`); `.claude/skills/om-*` to symlinki dla Claude Code (`/om-…`), Codex czyta katalog wprost (`$om-…`); wersje w `skills-lock.json`, aktualizacja `npx skills update -p` |
 | `docs/discovery/` | Analiza wstępna i klikalny prototyp (materiał wejściowy) |
 | `docs/sdlc/` | Proces SDLC: `intent.md`, wzorce formatu `spec.md` i `plan.md` (same specyfikacje są w `.ai/specs/`), `LESSONS.md`, `bands.yaml` |
 | `packages/` | Kod: `app` (Next.js), `core`, `db`, `ui`; każdy pakiet ma swój `AGENTS.md` |
