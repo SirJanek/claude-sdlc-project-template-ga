@@ -2,7 +2,7 @@
 
 **Intent:** none directly — enabling infrastructure for the [intent.md](../../docs/sdlc/intent.md) › Desired outcome "core path find → book → pay → meet → review works end to end" (bookings, payments and messages need the event bus, shared validators and an admin back-office for the operations/trust & safety role). Scope source: issue #17, not an intent line. Commits cite "Desired outcome".
 **Issue:** #17
-**Status:** draft · autonomous spec (`om-auto-write-spec`, assumptions below await Jan's confirmation) · **one spec, one issue, two phases — deliberately not split (Jan)**
+**Status:** accepted (Jan, 2026-10-18 — autonomous defaults confirmed) · implementation: PR #19 (awaiting QA) · **one spec, one issue, two phases — deliberately not split (Jan)**
 
 ## 📝 TLDR
 
@@ -153,6 +153,10 @@ pages are attached to the implementation PR instead.
 - The new admin guard also tightens `GET /api/users` for non-admin sessions (200 → 403); none exists today besides the dev admin. Recorded in BC §1.
 - A subscriber is awaited inside the request, so a slow subscriber slows the response. Acceptable while the
   only subscriber is a log line; revisit (fire-and-forget or a queue) when a real subscriber appears.
+- **Risk class: `risk-high`** by `SDLC.md` inference (permission checks on two routes + a tightened shared
+  contract). The wrong-role (mentee/mentor → 403) integration case is **waived by Jan** (maintainer) until the
+  auth spec lands — no non-admin session can exist before then; it is covered by unit tests. Second reviewer:
+  the independent re-review on PR #19; QA stays manual (`needs-qa`, no self-QA).
 - Rollback: revert the PR — no migration, no data written outside `users`.
 
 ## Resolved assumptions (autonomous defaults)
@@ -192,13 +196,19 @@ Two phases in **one spec and one implementation PR** (decided by Jan; not to be 
 
 **Phase 2**
 5. An admin `POST /api/users` with a valid body returns the envelope with the new user (e-mail lower-cased,
-   role default `mentee`); the user appears in `GET /api/users` and on `/admin/users`. *(unit service + route; integration)* A body `{ id, createdAt, role }` reaches `service.create` as `{ email, name, role }` only *(route unit test)*.
+   role default `mentee`); the user appears in `GET /api/users` and on `/admin/users`. *(unit service + route; integration)* A body `{ id, createdAt, role }` reaches `service.create` as `{ email, name, role }` only *(validator unit test + integration: `id` ignored — the route unit test mocks the schema, so it does not prove this)*.
 6. Invalid body → 422 `validation_failed` with `fieldErrors`; duplicate email (any case) → 409 `conflict`;
    no session → 401; wrong role → 403 on **both GET and POST**; missing CSRF header → 403. *(unit + integration; wrong role is unit-only (mentee session) because the only real session is admin)* Two concurrent creates of one email, second flush rejecting with a unique violation → one `UserListItem`, one `ConflictError`, exactly one emit *(service unit test)*.
 7. `auth.user.created` is emitted exactly once per successful create, after the flush, and never on a failed one;
    a throwing subscriber neither fails the request nor stops other subscribers. *(unit: bus + service; the log line's redaction is unit-tested — the integration servers run with `LOG_LEVEL=silent`)*
 8. The bus is a container singleton; `UserService` stays scoped; subscribers register once per container. *(unit: container)*
 9. `make check` green at 100% coverage in every package; `make test-integration` green.
+
+## Out of scope
+
+No create form on `/admin/users` (API + list only); dashboard metrics beyond the DB state; update/delete of users;
+email/notification port or any subscriber beyond the log line; queues/background workers; real authentication
+(separate auth spec); `201 Created` (the envelope convention answers `200`); mentor profile; seeding.
 
 ## Implementation plan
 
@@ -212,6 +222,13 @@ Two phases in **one spec and one implementation PR** (decided by Jan; not to be 
 5. `validators/auth/user-create.schema.ts` + tests (trim, lower-case, default role, bounds, stripped keys).
 6. `db`: `isUniqueViolation` + test; `UserService.create` (+ cradle/container wiring, exports) with tests: persists, emits once after flush, no emit on conflict / other error, 409 mapping.
 7. Route: `create` + admin `authorize`; route tests (200, 422, 409, 401, 403, CSRF).
-8. Integration tests: create → list → page; 422; duplicate 409; denied path (production server 401, no CSRF 403); event log redacted.
+8. Integration tests: create → list → page; 422; duplicate 409; denied path (production server 401, no CSRF 403). (Log redaction is unit-tested — integration servers run `LOG_LEVEL=silent`.)
 9. Docs: BC §1 (new endpoints `POST /api/users` and `GET /api/admin/health`, `GET /api/users` tightened to admin) and §3 (new exports), `packages/core/AGENTS.md` (singleton exception for `EventBus`; layout lists `events/` and `validators/auth/`), AGENTS.md "Built so far", engineering-standards (events/validators now exist), lesson + run log.
 10. `make check`, `make test-integration`, UI checked in the running app with screenshots; PR labelled `run-integration`.
+
+### Progress
+
+| Phase | Status | Evidence |
+|---|---|---|
+| 1 Admin skeleton (steps 1–3) | ⏳ | PR #19 |
+| 2 Event bus + user create (steps 4–10) | ⏳ | PR #19 |
