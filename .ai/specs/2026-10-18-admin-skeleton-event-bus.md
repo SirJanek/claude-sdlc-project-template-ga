@@ -37,16 +37,21 @@ and the first event `auth.user.created`, so they arrive with a consumer instead 
   only when a second panel needs it). The layout itself stays a server component. `/admin/users` keeps its
   page inside the shell (its own `<main>` is fine because the layout renders only the header + `{children}`,
   no second `<main>`).
-- `/admin` becomes the **Dashboard** (`admin/page.tsx`, replaces the redirect): a server component with
-  `export const dynamic = 'force-dynamic'` that calls `getContainer().cradle.healthService.check()` (same
-  call as `/api/health`; no new endpoint, no client fetch of the non-envelope health route) and renders one
-  card: **Database** — `Connected` (db `up`) or `Database unreachable` (db `down`), with a badge variant and
-  a short sentence for each. `check()` never throws (a failure is a `down` report), so DB down renders a
-  state, not a crash. The app still builds and boots with no database (`force-dynamic`).
-- Auth: the Dashboard exposes only what the unauthenticated `/api/health` already exposes, so it adds no
-  session check of its own; data screens stay guarded by the API they call (`requireSession` in
-  `/api/users`). The "Local only — dev access, no auth" warning badge moves into the layout header so every
-  admin page carries it (removed from the users page heading to avoid duplicating it).
+- `/admin` becomes the **Dashboard** (`admin/page.tsx`, replaces the redirect): a client page that loads
+  the database state through `apiCall('/api/admin/health')` and renders one card: **Database** —
+  `Connected` (db `up`), `Database unreachable` (db `down`), a loading state, and an error state with retry
+  (e.g. 401/403). `GET /api/admin/health` is a new admin-only envelope route
+  (`requireSession` + `requireRole('admin')`, `force-dynamic`) over the same `HealthService.check()` as
+  `/api/health`; a down database is a successful `200` report (`{ ok: true, data: { status, db } }`),
+  never an HTTP error. The app still builds and boots with no database.
+  *Amended during implementation:* the first design was a server component awaiting `healthService.check()`
+  directly (no new endpoint). The integration run showed `next dev` answers 500 for it while the database is
+  down (React's dev debug serialisation throws on pg's `AggregateError`; `next start` is fine, and
+  `connection()` / deferring the call did not help). A client page over `apiCall` is also what
+  `packages/app/AGENTS.md` prescribes, and it puts the Dashboard data behind the admin guard.
+- Auth: the Dashboard data is guarded by the API it calls. The "Local only — dev access, no auth" warning
+  badge moves into the layout header so every admin page carries it (removed from the users page heading to
+  avoid duplicating it).
 
 ### Phase 2 — event bus, validator, first mutation
 
@@ -61,6 +66,7 @@ and the first event `auth.user.created`, so they arrive with a consumer instead 
 | Service | `UserService.create(input)` | `em.create(User, …)` → `em.flush()` → **then** `eventBus.emit('auth.user.created', { userId, email })` → returns a `UserListItem` (same shape as `list()`). The `users` table has exactly one unique constraint besides the PK (`email`), so a unique violation on it is translated to `ConflictError('A user with this email already exists.')` **in the service** (not the route); any other error propagates and **nothing is emitted**. `UserService` stays `scoped`; it receives the singleton bus through the cradle. |
 | DB helper | `packages/db` | `isUniqueViolation(error: unknown): boolean` (wraps MikroORM's `UniqueConstraintViolationException`) exported from `@mentorhub/db` (class-level: the service message must be revisited when another unique index is added) — `db` is the only package allowed to import `@mikro-orm/*`, so `core` cannot test the exception class itself. |
 | Route | `app/src/app/api/users/route.ts` | adds `create: { schema: userCreateSchema, run: (service, input) => service.create(input) }` and `authorize: (request) => { requireRole(requireSession(request), 'admin'); }` (block body: `requireRole` returns void) to the existing `makeCrudRoute` config. The same `authorize` applies to `GET` (assumption 5). |
+| Health route | `app/src/app/api/admin/health/route.ts` | see Phase 1 — `apiHandler` + admin guard + `healthService.check()` |
 | Exports | `core/src/index.ts` | `EventBus`, `EventMap`, `userCreateSchema`, `UserCreateInput` (additive). |
 
 **Alternatives considered:** `EventEmitter` from `node:events` (rejected: untyped, and a handler error
@@ -76,7 +82,7 @@ constraint is the source of truth).
 ```
 app → core → db                      ui (app only)
  admin/layout.tsx ─ AdminNav.tsx (client)         Card, Badge (existing)
- admin/page.tsx ──► getContainer().cradle.healthService.check()
+ admin/page.tsx ──► apiCall ──► api/admin/health ──► healthService.check()
  api/users/route.ts ► makeCrudRoute(create) ► userService.create ──► db: User, isUniqueViolation
                                                    └─► eventBus.emit('auth.user.created')
                                                             └─► logger subscriber (email redacted)
@@ -111,9 +117,9 @@ after the row is flushed; never on a failed create (422, 409, DB error).
 
 Admin shell: header (product name, **Dashboard**, **Users**, the dev-access warning badge) above a centred
 content area. Dashboard: title "Admin · Dashboard", a "Database" card with the state badge (`Connected`
-default, `Database unreachable` destructive) and one explanatory line. States: loading — none
-(server-rendered); DB down — the unreachable state; no session — the Dashboard shows only health,
-`/admin/users` keeps its API-driven error state. No create form on `/admin/users` (assumption 2). Mockups
+default, `Database unreachable` destructive) and one explanatory line. States: loading — a status line;
+DB down — the unreachable state; no session — the card shows the API's denial with a retry button, as
+`/admin/users` does. No create form on `/admin/users` (assumption 2). Mockups
 not produced — the Dashboard is a single card in the existing design language; screenshots of the running
 pages are attached to the implementation PR instead.
 
@@ -160,7 +166,7 @@ Defaults 1–4 are the ones written in issue #17; 5–7 were decided while writi
 | 3 | Which roles may create users? | **Admin only** | the created user's role may be any of `USER_ROLES` (admin endpoint) |
 | 4 | Subscriber beyond logging? | **Log only** | no email/notification port yet |
 | 5 | Does the new `authorize` also guard `GET /api/users`? | **Yes**, one admin guard for the whole route | for the only existing session (dev admin) nothing changes |
-| 6 | Dashboard session check? | **None** — shows only what `/api/health` already exposes | no sensitive data; keeps the page server-rendered without a request object |
+| 6 | Dashboard session check? | **Admin guard** on the new `/api/admin/health` | amended during implementation (was: none, server-rendered) |
 | 7 | Success status of `POST` | **200** via the shared envelope | not 201 — would change `apiHandler` for all routes |
 
 None of these carries `⚠ NEEDS HUMAN CONFIRMATION`.
@@ -190,7 +196,7 @@ Two phases in **one spec and one implementation PR** (decided by Jan; not to be 
 6. Invalid body → 422 `validation_failed` with `fieldErrors`; duplicate email (any case) → 409 `conflict`;
    no session → 401; wrong role → 403 on **both GET and POST**; missing CSRF header → 403. *(unit + integration; wrong role is unit-only (mentee session) because the only real session is admin)* Two concurrent creates of one email, second flush rejecting with a unique violation → one `UserListItem`, one `ConflictError`, exactly one emit *(service unit test)*.
 7. `auth.user.created` is emitted exactly once per successful create, after the flush, and never on a failed one;
-   a throwing subscriber neither fails the request nor stops other subscribers. *(unit: bus + service; integration: the log line carries no plain email)*
+   a throwing subscriber neither fails the request nor stops other subscribers. *(unit: bus + service; the log line's redaction is unit-tested — the integration servers run with `LOG_LEVEL=silent`)*
 8. The bus is a container singleton; `UserService` stays scoped; subscribers register once per container. *(unit: container)*
 9. `make check` green at 100% coverage in every package; `make test-integration` green.
 
@@ -198,7 +204,7 @@ Two phases in **one spec and one implementation PR** (decided by Jan; not to be 
 
 ### Phase 1: Admin skeleton
 1. `admin/AdminNav.tsx` (client, `usePathname`, `aria-current`) + `admin/layout.tsx` (header, nav, dev badge); remove the badge from the users page. Tests: nav marks only the active link, layout renders children.
-2. `admin/page.tsx` Dashboard (`force-dynamic`, `healthService.check()`); tests for `up` and `down` (container mocked).
+2. `api/admin/health/route.ts` (admin guard, envelope) and `admin/page.tsx` Dashboard (client, `apiCall`); tests for `up`, `down`, loading, error + retry, and the route's 200/401/403.
 3. Update `tests/integration/app.test.ts` (Dashboard text, `aria-current`, navigation to Users, Dashboard in the DB-down test) and the BC "What is not protected" sentence.
 
 ### Phase 2: Event bus + user create
@@ -207,5 +213,5 @@ Two phases in **one spec and one implementation PR** (decided by Jan; not to be 
 6. `db`: `isUniqueViolation` + test; `UserService.create` (+ cradle/container wiring, exports) with tests: persists, emits once after flush, no emit on conflict / other error, 409 mapping.
 7. Route: `create` + admin `authorize`; route tests (200, 422, 409, 401, 403, CSRF).
 8. Integration tests: create → list → page; 422; duplicate 409; denied path (production server 401, no CSRF 403); event log redacted.
-9. Docs: BC §1 (new endpoint, GET tightened to admin) and §3 (new exports), `packages/core/AGENTS.md` (singleton exception for `EventBus`; layout lists `events/` and `validators/auth/`), AGENTS.md "Built so far", engineering-standards (events/validators now exist), lesson + run log.
+9. Docs: BC §1 (new endpoints `POST /api/users` and `GET /api/admin/health`, `GET /api/users` tightened to admin) and §3 (new exports), `packages/core/AGENTS.md` (singleton exception for `EventBus`; layout lists `events/` and `validators/auth/`), AGENTS.md "Built so far", engineering-standards (events/validators now exist), lesson + run log.
 10. `make check`, `make test-integration`, UI checked in the running app with screenshots; PR labelled `run-integration`.
