@@ -43,4 +43,6 @@ the CI safety-net spec moved to `implemented/`.
 | Phase | Status | Evidence |
 |---|---|---|
 | 1 Evidence in tests | ✅ done | 12/12 locally; evidence: 4 step screenshots, migrate/build/server-dev/server-prod logs, junit.xml, results.json; broken page → `app-FAILED-shows-the-empty-state-….png`, clean rerun leaves no FAILED file |
-| 2 CI | ⏳ | |
+| 2 CI | ✅ done | run 39086347486: all 6 checks green; artifact `integration-evidence-39086347486` (288 KB: 4 screenshots rendered on the Linux runner, 4 logs, junit.xml 12/0, results.json); Chrome restored from cache `agent-browser-chrome-Linux-0.39.1` (saved by run 39086192364, 179 MB); first run uploaded nothing (hidden folder) — fixed with include-hidden-files + if-no-files-found: error |
+
+**All phases complete.**

@@ -3,7 +3,7 @@
 **Date:** 2026-10-18 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan
 **Spec:** [.ai/specs/2026-10-18-integration-evidence.md](../specs/2026-10-18-integration-evidence.md)
 **Branch:** `feat/integration-evidence` from `develop` (`6865864`, after PR #4 and #5)
-**Status:** in progress
+**Status:** done — PR #6
 
 ## Decisions
 
@@ -12,6 +12,15 @@
 - Bump actions to current majors found via the GitHub API (checkout v7.0.1, setup-node v7.1.0,
   upload-artifact v7.0.2, cache v6.1.0, pnpm/action-setup v6.1.0).
 
+## Verification
+
+- Local: 12/12; evidence complete; broken page → `FAILED-…` screenshot; clean rerun removes it.
+- CI run 39086192364: green but **no artifact** — upload-artifact skips the hidden `.evidence`
+  folder and `if-no-files-found: warn` hid it. Fixed (`include-hidden-files: true`,
+  `if-no-files-found: error`); Chrome cache saved (179 MB).
+- CI run 39086347486: green; artifact downloaded and checked (4 screenshots from the Linux runner,
+  4 logs, junit 12 tests / 0 failures, results.json); Chrome restored from cache.
+
 ## Handoff
 
-- **Next step:** phase 2 CI checks on the PR (artifact present, cache hit on a rerun).
+- **Next step:** Jan reviews/merges PR #6; then move this spec to `implemented/`.
