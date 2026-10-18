@@ -3,7 +3,17 @@ import { readFileSync } from 'node:fs';
 import { promisify } from 'node:util';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
-import { databaseUrl, devOutbox, devUrl, holdTransaction, prodOutbox, prodUrl, psql } from './env';
+import {
+  containerId,
+  databaseUrl,
+  devOutbox,
+  devUrl,
+  holdTransaction,
+  prodOutbox,
+  prodUrl,
+  psql,
+  settleCompetitor,
+} from './env';
 
 const run = promisify(execFile);
 /** Signed-in cookie for `email` through the real link flow (one link per call). */
@@ -23,11 +33,12 @@ const browser = createBrowser('auth');
 const CSRF = { 'x-mentorhub-request': '1' };
 const EXPIRED = 'This link has expired or was already used — send a new one.';
 
-const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}) =>
+const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}, signal?: AbortSignal) =>
   fetch(`${base}${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...CSRF, ...headers },
     body: JSON.stringify(body),
+    signal,
   });
 const requestLink = (base: string, email: string, next?: string) =>
   post(base, '/api/auth/email/start', { email, ...(next ? { next } : {}) });
@@ -198,16 +209,17 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'overlap@example.com'",
       'UPDATE 1',
     );
+    const abort = new AbortController();
     let revocation: Promise<Response> | undefined;
     try {
-      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
+      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie }, abort.signal);
       await held.waitUntilBlocking(); // the API's UPDATE is provably waiting on our row lock
       expect(sessionVersion('overlap@example.com')).toBe('0'); // nothing committed yet
       await held.commit();
       expect((await revocation).status).toBe(200);
     } finally {
-      await revocation?.catch(() => undefined); // settle before any cleanup touches the row
-      await held.dispose();
+      await held.dispose(); // release the lock FIRST — the competitor may be waiting on it
+      await settleCompetitor(revocation, () => abort.abort()); // then let it finish, bounded, or abort it
     }
     // A read-then-write would have written the stale "0 + 1" over the held transaction's increment.
     expect(sessionVersion('overlap@example.com')).toBe('2');
@@ -230,11 +242,78 @@ describe('sessions over the API (production server)', () => {
       await held.commit();
       expect((await cli).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
     } finally {
-      await cli?.catch(() => undefined);
-      await held.dispose();
+      await held.dispose(); // release the lock FIRST
+      await settleCompetitor(cli, () => void cli?.child.kill('SIGKILL')); // then settle or kill the CLI
     }
     expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
+  it('test helper: a failure before commit still releases the lock — the blocked writer finishes and cleanup is not stuck (review round 4)', async () => {
+    psql(
+      "insert into users (id, email, name, role, created_at, updated_at) values (gen_random_uuid(), 'cleanup@example.com', null, 'mentee', now(), now())",
+    );
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'cleanup@example.com'",
+      'UPDATE 1',
+    );
+    // An asynchronous writer (its own psql process) that blocks on the held row until the lock is released.
+    const competitor = run(
+      'docker',
+      [
+        'exec',
+        containerId(),
+        'psql',
+        '-U',
+        'mentorhub',
+        '-d',
+        'mentorhub',
+        '-tAc',
+        "update users set name = 'written by the competitor' where email = 'cleanup@example.com'",
+      ],
+      { timeout: 20_000 },
+    );
+    await held.waitUntilBlocking();
+    const started = Date.now();
+    // The failure path of the overlap tests: no commit happened; cleanup releases first, then settles.
+    await held.dispose();
+    const outcome = await settleCompetitor(competitor, () => void competitor.child.kill('SIGKILL'));
+    expect(outcome).toBe('settled');
+    expect(Date.now() - started).toBeLessThan(5_000);
+    // The held increment was rolled back; the competitor's write went through once the lock was gone.
+    expect(psql("select name, session_version from users where email = 'cleanup@example.com'")).toBe(
+      'written by the competitor|0',
+    );
+    expect(psql(`select count(*) from pg_stat_activity where pid = ${held.pid}`)).toBe('0'); // psql is gone
+    // The suite's cleanup DELETE completes within a bound instead of waiting on a leaked lock.
+    psql("delete from users where email = 'cleanup@example.com'", undefined, 5_000);
+  });
+
+  it('test helper: readiness failure terminates the psql child and rejects (review round 4)', async () => {
+    psql(
+      "insert into users (id, email, name, role, created_at, updated_at) values (gen_random_uuid(), 'ready@example.com', null, 'mentee', now(), now())",
+    );
+    const blocker = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'ready@example.com'",
+      'UPDATE 1',
+    );
+    try {
+      const started = Date.now();
+      await expect(
+        holdTransaction(
+          "update users set session_version = session_version + 1 where email = 'ready@example.com'",
+          'UPDATE 1',
+          undefined,
+          { timeoutMs: 1_500 },
+        ),
+      ).rejects.toThrow(/holding the transaction timed out after 1500 ms/);
+      expect(Date.now() - started).toBeLessThan(10_000);
+      // The second psql was terminated: nobody waits on the blocker any more.
+      expect(psql(`select count(*) from pg_stat_activity where ${blocker.pid} = any(pg_blocking_pids(pid))`)).toBe('0');
+    } finally {
+      await blocker.dispose();
+    }
+    psql("delete from users where email = 'ready@example.com'", undefined, 5_000);
   });
 
   it('a role change through the database ends the session too (sessionVersion bump = make set-role)', async () => {
