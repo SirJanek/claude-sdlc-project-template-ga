@@ -134,6 +134,7 @@ export default async function setup(project: TestProject) {
   project.provide('devOutbox', devOutbox);
   project.provide('prodOutbox', prodOutbox);
   project.provide('containerId', container.getId());
+  project.provide('databaseUrl', container.getConnectionUri());
 
   return async () => {
     servers.forEach(stop);

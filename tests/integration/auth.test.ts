@@ -1,7 +1,18 @@
+import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { promisify } from 'node:util';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
-import { devOutbox, devUrl, prodOutbox, prodUrl, psql } from './env';
+import { databaseUrl, devOutbox, devUrl, holdTransaction, prodOutbox, prodUrl, psql } from './env';
+
+const run = promisify(execFile);
+/** Signed-in cookie for `email` through the real link flow (one link per call). */
+async function signIn(base: string, outbox: string, email: string): Promise<string> {
+  expect((await requestLink(base, email)).status).toBe(200);
+  return cookieOf(await post(base, '/api/auth/email/consume', { token: tokenOf(linkFor(outbox, email)) }));
+}
+const sessionVersion = (email: string) => psql(`select session_version from users where email = '${email}'`);
+import { evidencePath } from './evidence';
 
 /**
  * E01 Phase 1 — passwordless sign-in by e-mail link, sessions and the denied paths. Runs against the
@@ -162,6 +173,70 @@ describe('sessions over the API (production server)', () => {
     expect((await post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie })).status).toBe(401);
   });
 
+  it('a sign-in between two revocations is ended as well: increments are atomic (review finding 3)', async () => {
+    expect((await requestLink(prodUrl(), 'revoke@example.com')).status).toBe(200);
+    const first = cookieOf(
+      await post(prodUrl(), '/api/auth/email/consume', { token: tokenOf(linkFor(prodOutbox(), 'revoke@example.com')) }),
+    );
+    expect((await post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie: first })).status).toBe(200);
+    expect((await requestLink(prodUrl(), 'revoke@example.com')).status).toBe(200);
+    const between = cookieOf(
+      await post(prodUrl(), '/api/auth/email/consume', { token: tokenOf(linkFor(prodOutbox(), 'revoke@example.com')) }),
+    );
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie: between } })).status).toBe(200);
+    expect((await post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie: between })).status).toBe(200);
+    expect(psql("select session_version from users where email = 'revoke@example.com'")).toBe('2');
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie: between } })).status).toBe(401);
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie: first } })).status).toBe(401);
+  });
+
+  it('an overlapping revocation on real PostgreSQL loses nothing: a held UPDATE + the API bump → +2 (review round 2, finding 2)', async () => {
+    const cookie = await signIn(prodUrl(), prodOutbox(), 'overlap@example.com');
+    expect(sessionVersion('overlap@example.com')).toBe('0');
+    // Another revocation, mid-flight and uncommitted: the API's UPDATE blocks on the row lock until it commits.
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'overlap@example.com'",
+      'UPDATE 1',
+    );
+    let revocation: Promise<Response> | undefined;
+    try {
+      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
+      await held.waitUntilBlocking(); // the API's UPDATE is provably waiting on our row lock
+      expect(sessionVersion('overlap@example.com')).toBe('0'); // nothing committed yet
+      await held.commit();
+      expect((await revocation).status).toBe(200);
+    } finally {
+      await revocation?.catch(() => undefined); // settle before any cleanup touches the row
+      await held.dispose();
+    }
+    // A read-then-write would have written the stale "0 + 1" over the held transaction's increment.
+    expect(sessionVersion('overlap@example.com')).toBe('2');
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
+  it('make set-role overlapping a revocation keeps both increments and the new role (review round 2, finding 2)', async () => {
+    const cookie = await signIn(prodUrl(), prodOutbox(), 'promote@example.com');
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'promote@example.com'",
+      'UPDATE 1',
+    );
+    let cli: ReturnType<typeof run> | undefined;
+    try {
+      cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
+        env: { ...process.env, DATABASE_URL: databaseUrl() },
+      });
+      await held.waitUntilBlocking(); // the CLI's UPDATE is provably waiting on our row lock
+      expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee');
+      await held.commit();
+      expect((await cli).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+    } finally {
+      await cli?.catch(() => undefined);
+      await held.dispose();
+    }
+    expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
   it('a role change through the database ends the session too (sessionVersion bump = make set-role)', async () => {
     expect((await requestLink(prodUrl(), 'api@example.com')).status).toBe(200);
     const res = await post(prodUrl(), '/api/auth/email/consume', {
@@ -188,6 +263,44 @@ describe('sessions over the API (production server)', () => {
     expect(noHeader.status).toBe(403);
     expect(psql("select count(*) from auth_tokens where email = 'csrf@example.com'")).toBe('0');
   });
+
+  it('rejects a return path with control characters or an off-site target (422, review finding 1)', async () => {
+    for (const next of [
+      '/\t/evil.example',
+      '/\n/evil.example',
+      '/\r\n/evil.example',
+      '//evil.example',
+      '/\\evil.example',
+      'https://evil.example/',
+      '/ok\n', // a trailing line terminator slipped past an anchored `$` (review round 2, finding 3)
+      '/ok\r',
+    ]) {
+      const res = await post(prodUrl(), '/api/auth/email/start', { email: 'redirect@example.com', next });
+      expect(res.status, JSON.stringify(next)).toBe(422);
+      expect(
+        ((await res.json()) as { error: { fieldErrors: Record<string, string[]> } }).error.fieldErrors,
+      ).toHaveProperty('next');
+    }
+    expect(psql("select count(*) from auth_tokens where email = 'redirect@example.com'")).toBe('0');
+  });
+
+  it('the per-IP limit holds under concurrent requests for different e-mails (real PostgreSQL, review finding 2)', async () => {
+    const ip = { 'x-forwarded-for': '198.51.100.77' }; // its own bucket, untouched by the other tests
+    const burst = 26;
+    const results = await Promise.all(
+      Array.from({ length: burst }, (_, i) =>
+        post(prodUrl(), '/api/auth/email/start', { email: `burst${i}@example.com` }, ip),
+      ),
+    );
+    const statuses = results.map((r) => r.status);
+    expect(statuses.filter((s) => s === 200)).toHaveLength(20);
+    expect(statuses.filter((s) => s === 429)).toHaveLength(burst - 20);
+    expect(psql("select count(*) from auth_tokens where email like 'burst%@example.com'")).toBe('20');
+    const sent = readFileSync(prodOutbox(), 'utf8')
+      .split('\n')
+      .filter((line) => line.includes('"to":"burst'));
+    expect(sent).toHaveLength(20);
+  });
 });
 
 describe('development server with ALLOW_DEV_ADMIN=1', () => {
@@ -202,6 +315,30 @@ describe('development server with ALLOW_DEV_ADMIN=1', () => {
     const asUser = await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie } });
     expect(await asUser.json()).toMatchObject({ ok: true, data: { email: 'dev@example.com', role: 'mentee' } });
     expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie } })).status).toBe(403);
+    // A present cookie that cannot be trusted is 401, never the dev admin (review finding 4) — an EMPTY one too (round 2, finding 1).
+    expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie: 'mh_session=garbage' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie: 'mh_session=' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie: 'mh_session=' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie: 'other=1; mh_session=; x=2' } })).status).toBe(
+      401,
+    );
+    psql("update users set session_version = session_version + 1 where email = 'dev@example.com'");
+    expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie } })).status).toBe(401);
+  });
+
+  it('never prints a sign-in token in the dev server output (review finding 5)', async () => {
+    expect((await requestLink(devUrl(), 'logged@example.com')).status).toBe(200);
+    const link = linkFor(devOutbox(), 'logged@example.com');
+    browser.open(link);
+    browser.waitForText('Sign in as logged@example.com?');
+    await fetch(link); // a plain GET too, like a mail scanner
+    await new Promise((r) => setTimeout(r, 1000)); // let the request logger flush
+    const log = readFileSync(evidencePath('server-dev.log'), 'utf8');
+    expect(log).toMatch(/GET \/sign-in /); // request logging is on: the filter, not silence, keeps the token out
+    expect(log).not.toContain(tokenOf(link));
+    expect(log).not.toContain('token=');
+    expect(log).not.toMatch(/GET \/auth\/confirm\?/);
   });
 
   it('shows the dev admin as such in the admin header', () => {

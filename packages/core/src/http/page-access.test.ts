@@ -66,6 +66,24 @@ describe('pageAccess', () => {
     expect(load).not.toHaveBeenCalled();
   });
 
+  it('treats an EMPTY session cookie as a present credential: sign-in, never the dev admin (review finding 4)', async () => {
+    const devAdmin = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const lookup = vi.fn(async () => mentor);
+    const load = vi.fn(async () => account);
+    const empty = new Headers({ cookie: `${SESSION_COOKIE}=` });
+    await expect(pageAccess(empty, target, { env: devAdmin, lookup, account: load })).resolves.toEqual({
+      kind: 'sign-in',
+      signInPath: '/sign-in?next=%2Fmentor%2Fprofile',
+    });
+    const garbage = new Headers({ cookie: `${SESSION_COOKIE}=garbage` });
+    await expect(pageAccess(garbage, target, { env: devAdmin, lookup, account: load })).resolves.toEqual({
+      kind: 'sign-in',
+      signInPath: '/sign-in?next=%2Fmentor%2Fprofile',
+    });
+    expect(lookup).not.toHaveBeenCalled();
+    expect(load).not.toHaveBeenCalled();
+  });
+
   it('loads the account through the request scope by default', async () => {
     const currentUser = vi.fn(async () => account);
     withScopeMock.mockImplementation((fn: (cradle: unknown) => unknown) => fn({ authService: { currentUser } }));

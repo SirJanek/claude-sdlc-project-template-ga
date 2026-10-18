@@ -45,13 +45,11 @@ export interface RequireSessionDeps {
 const defaultLookup = (userId: string) => withScope((cradle) => cradle.sessionUserLookup.findForSession(userId));
 
 /**
- * Session from the `mh_session` cookie: verify the JWT, load the user, compare the session version.
- * Anything doubtful — no cookie, bad signature, expired, unknown user, version mismatch, a database
- * error — is `null`; the caller decides what that means.
+ * Session from a present `mh_session` cookie: verify the JWT, load the user, compare the session
+ * version. Anything doubtful — bad signature, expired, unknown user, version mismatch, a database
+ * error — is `null`, which the caller turns into a denial.
  */
-async function sessionFromCookie(request: Request, env: Env, deps: RequireSessionDeps): Promise<Session | null> {
-  const token = readSessionCookie(request);
-  if (!token) return null;
+async function sessionFromCookie(token: string, env: Env, deps: RequireSessionDeps): Promise<Session | null> {
   const claims = await verifySessionToken(token, env.AUTH_SECRET, deps.now?.());
   if (!claims) return null;
   let user: SessionUser | null;
@@ -66,9 +64,10 @@ async function sessionFromCookie(request: Request, env: Env, deps: RequireSessio
 
 /**
  * Returns the caller's session or throws UnauthorizedError — fails closed on any doubt.
- * A valid cookie session wins. Without one, the local dev admin is admitted ONLY when
- * ALLOW_DEV_ADMIN=1 and NODE_ENV is exactly "development" (an allowlist: test, staging, production
- * or anything unexpected is denied).
+ * A present cookie decides on its own: valid → that user; invalid, stale, unknown user or a database
+ * error → 401, never the dev admin (review finding 4). Only a request WITHOUT a session cookie may
+ * fall back to the local dev admin, and ONLY when ALLOW_DEV_ADMIN=1 and NODE_ENV is exactly
+ * "development" (an allowlist: test, staging, production or anything unexpected is denied).
  */
 export async function requireSession(request: Request, deps: RequireSessionDeps = {}): Promise<Session> {
   let env: Env;
@@ -77,8 +76,13 @@ export async function requireSession(request: Request, deps: RequireSessionDeps 
   } catch {
     throw new UnauthorizedError();
   }
-  const session = await sessionFromCookie(request, env, deps);
-  if (session) return session;
+  const token = readSessionCookie(request);
+  if (token !== undefined) {
+    // Present at all — even empty or malformed — means "verify this", never "fall back".
+    const session = token === '' ? null : await sessionFromCookie(token, env, deps);
+    if (!session) throw new UnauthorizedError();
+    return session;
+  }
   if (env.ALLOW_DEV_ADMIN === '1' && env.NODE_ENV === 'development') return DEV_ADMIN_SESSION;
   throw new UnauthorizedError();
 }

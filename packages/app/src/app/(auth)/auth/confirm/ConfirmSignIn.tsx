@@ -3,11 +3,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiCall } from '@mentorhub/ui';
 
+/**
+ * Where to go after sign-in. The server validated `next` already; this is the last line of defence
+ * before `window.location.assign`: only a path that stays on this origin is used, else the root.
+ */
+export function safeDestination(next: string, origin: string): string {
+  const url = new URL(next, origin);
+  return url.origin === origin && next.startsWith('/') && !next.startsWith('//') ? next : '/';
+}
+
 // Colocated with the confirm page (its only consumer). Only this button's POST consumes the token.
 export function ConfirmSignIn({
   email,
   token,
-  onSignedIn = (next) => window.location.assign(next),
+  onSignedIn = (next) => window.location.assign(safeDestination(next, window.location.origin)),
 }: {
   email: string;
   token: string;

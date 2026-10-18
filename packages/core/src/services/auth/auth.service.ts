@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { AuthToken, User, isUniqueViolation, type EntityManager, type UserRole } from '@mentorhub/db';
+import { AuthToken, User, isUniqueViolation, revokeSessions, type EntityManager, type UserRole } from '@mentorhub/db';
 import type { Logger } from 'pino';
 import type { Env } from '../../config/env';
 import { AUTH_LIMITS } from '../../config/rules';
@@ -91,10 +91,11 @@ export class AuthService {
   }
 
   /**
-   * Stores a hashed single-use token and only then sends the link. The rate-limit count and the
-   * insert share one transaction under an advisory lock keyed by the e-mail (bound parameter), so
-   * concurrent requests cannot both pass the limit. Resolves for unknown and existing e-mails alike
-   * (no account enumeration). On a send failure the token is marked dead and the caller gets 503.
+   * Stores a hashed single-use token and only then sends the link. The rate-limit counts and the
+   * insert share one transaction under two advisory locks — the e-mail bucket, then the IP bucket,
+   * always in that order (no deadlock), both namespaced and bound as parameters — so concurrent
+   * requests cannot both pass either limit (review finding 2). Resolves for unknown and existing
+   * e-mails alike (no account enumeration). On a send failure the token is marked dead → 503.
    */
   async requestEmailLink(input: EmailLinkRequest, now = new Date()): Promise<void> {
     const { email } = input;
@@ -103,7 +104,10 @@ export class AuthService {
     const tokenHash = sha256(rawToken);
 
     await this.em.transactional(async (em) => {
-      await em.execute('select pg_advisory_xact_lock(hashtext(?::text))', [email]);
+      await em.execute('select pg_advisory_xact_lock(hashtext(?::text)), pg_advisory_xact_lock(hashtext(?::text))', [
+        `email:${email}`,
+        `ip:${ipHash}`,
+      ]);
       const { linksPerEmail, linksPerIp, tokenRetentionDays, linkTtlMinutes } = AUTH_LIMITS;
       const byEmail = await em.count(AuthToken, {
         email,
@@ -221,12 +225,14 @@ export class AuthService {
     return buildSessionCookie(token, this.env);
   }
 
-  /** Bumps the session version: every cookie issued so far stops working on its next request. */
+  /**
+   * Bumps the session version in one atomic UPDATE (`session_version = session_version + 1`): two
+   * revocations never overwrite each other and a session started in between is ended as well
+   * (review finding 3). Every cookie issued so far stops working on its next request.
+   */
   async signOutEverywhere(userId: string): Promise<void> {
-    const user = await this.em.findOne(User, { id: userId });
-    if (!user) throw new UnauthorizedError();
-    user.sessionVersion += 1;
-    await this.em.flush();
+    const revoked = await revokeSessions(this.em, userId);
+    if (!revoked) throw new UnauthorizedError();
   }
 
   /** The signed-in account for `/api/auth/me`. */

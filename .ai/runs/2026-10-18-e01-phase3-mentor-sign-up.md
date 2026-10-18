@@ -86,6 +86,21 @@ signed in to the existing account, role unchanged, nothing created, no e-mail en
 - Denied paths (integration): mentee cookie on `/mentor/profile` → "Mentor account required", no profile
   content; no cookie → `307` to `/sign-in?next=%2Fmentor%2Fprofile`.
 
+## Merge with Phase 1's Codex review fixes (after the first handback)
+
+`git merge origin/feat/e01-phase1-auth-foundation` (`edb97e0` … `7281795`), a merge commit — no rebase.
+Conflicts: `.ai/lessons.md` and `AGENTS.md` traps (both sides kept, Phase 3 lines first), and
+`auth.service.test.ts` (the admin-created-user test: Phase 1 pinned the clock as `da11f23` did, Phase 3
+expects `next: '/mentor/profile'` + `existingAccount: false` — Phase 3's expectation kept on Phase 1's
+line). Auto-merged: `auth.service.ts` (two-bucket locks + Phase 3 landing), `global-setup.ts`,
+`BACKWARD_COMPATIBILITY.md`, `tests/integration/auth.test.ts`.
+Checked against the hardened rules: `withAccountNotice` output passes the stricter `nextPathSchema`
+(`isSameOriginPath`; test extended with a query path); the role-aware landing is untouched by the new
+`requireSession` semantics (the consume route never reads a cookie); `pageAccess` inherits "a PRESENT
+cookie decides on its own" — new unit case: `mh_session=` (empty) and `mh_session=garbage` with
+`ALLOW_DEV_ADMIN=1`/`development` → `sign-in`, never the dev admin, no lookup. No Phase 3 behaviour had
+to change. Gates after the merge: see the handback report (`make check`, `make test-integration` ×2).
+
 ## Handoff
 
 Phase 3 is complete on the branch (stacked on Phase 1's branch — merge Phase 1's PR first, then open this

@@ -149,9 +149,10 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 - **Auth (spec `2026-10-18-accounts-and-roles.md`, Phase 1):** `requireSession` is **async** — always
   `await` it (an un-awaited guard runs beside the request; `makeCrudRoute` awaits `authorize`). It reads
   the `mh_session` cookie (HS256 JWT `sub` + `sv`, 7 days fixed, no refresh), loads the user through the
-  scope's `sessionUserLookup`, rejects an `sv` mismatch and fails closed (401) on any error. Without a
-  valid cookie the local dev admin is admitted only with `ALLOW_DEV_ADMIN=1` **and** `NODE_ENV=development`
-  (allowlist). Sign-in is passwordless: `POST /api/auth/email/start` → link in the mail outbox
+  scope's `sessionUserLookup`, rejects an `sv` mismatch and fails closed (401) on any error — a present
+  cookie never falls back to the dev admin. Only a request without a session cookie may use the local dev
+  admin, with `ALLOW_DEV_ADMIN=1` **and** `NODE_ENV=development` (allowlist). Session revocation is an atomic
+  `session_version + 1` UPDATE (`revokeSessions` in db), never read-then-write. Sign-in is passwordless: `POST /api/auth/email/start` → link in the mail outbox
   (`MockMailSender`, `MAIL_OUTBOX_FILE`) → `/auth/confirm` (GET only names the account; the button's POST
   consumes). Roles change only through `make set-role` (bumps `sessionVersion`). Security parameters
   live in `AUTH_LIMITS` (`core/src/config/rules.ts`), next to `RULES`, never inside it.
@@ -285,3 +286,7 @@ evals/README.md.
 - A server page that needs the session builds no `Request` by hand: call `pageAccess(await headers(), { role, path })` from `core` and switch on `kind` (`sign-in` → `redirect`, `forbidden` → render a refusal, `granted` → session + account). `requireSession` reads only the cookie header, so any absolute base URL would do, but the helper keeps that out of route files.
 - A test that compares a timestamp set by a service's `now = new Date()` default with a fixture clock taken earlier flakes on a millisecond boundary: always pass the harness clock as `now` (seen in the admin-created-user consume test).
 - The `(auth)` form is shared: `EmailLinkForm` in `src/app/(auth)/` (it needs `next/navigation`, so it cannot live in `ui`); a one-time notice after sign-in travels as a validated query parameter (`accountNoticeSchema`) on the landing path, never as free text from the URL.
+- Validating a redirect path by its first characters is not enough: URL parsers strip tab/CR/LF before looking for `//`, so `/\t/evil.example` becomes `https://evil.example/`. Reject non-printable characters and check the parsed origin against a fixed base (`isSameOriginPath`), on the server and again before `window.location.assign`.
+- A counter bump (`sessionVersion`, any revocation) is `set col = col + 1` in one UPDATE, never entity read → `+= 1` → flush (lost update under concurrency keeps a revoked session alive).
+- An advisory lock must cover every bucket a transaction counts: locking only the e-mail bucket let two requests for different e-mails both pass the per-IP limit. Lock all buckets, namespaced, in a fixed order.
+- Next's dev request logger prints the full URL (query string included) to stdout, bypassing pino redaction: routes that carry a secret in the query (`/auth/confirm?token=`) go into `next.config.ts` → `logging.incomingRequests.ignore`.

@@ -92,7 +92,7 @@ describe('requireSession — cookie session', () => {
 });
 
 describe('requireSession — dev admin (fail closed)', () => {
-  it('admits the dev admin only with the flag in development, and only without a valid cookie session', async () => {
+  it('admits the dev admin only with the flag in development, and only without a session cookie', async () => {
     const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
     await expect(requireSession(req(), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
     expect(DEV_ADMIN_SESSION.emailVerified).toBe(true);
@@ -101,6 +101,31 @@ describe('requireSession — dev admin (fail closed)', () => {
       userId: 'u1',
       isDevSession: false,
     });
+  });
+
+  it('with the flag on, a present cookie that cannot be trusted is 401 — never the dev admin (review finding 4)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const cookie = await cookieFor();
+    const failing = vi.fn(async () => {
+      throw new Error('connection refused');
+    });
+    await expect(requireSession(req(cookie), { env: dev, lookup: failing })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(cookie), { env: dev, lookup: lookupOf(null) })).rejects.toThrow(UnauthorizedError);
+    const stale = await cookieFor({ sub: 'u1', sv: 1 });
+    await expect(requireSession(req(stale), { env: dev, lookup: lookupOf(user) })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`${SESSION_COOKIE}=garbage`), { env: dev })).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('with the flag on, an EMPTY present cookie is a present credential → 401, not the dev admin (review round 2, finding 1)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const lookup = lookupOf(user);
+    await expect(requireSession(req(`${SESSION_COOKIE}=`), { env: dev, lookup })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`other=1; ${SESSION_COOKIE}=; x=2`), { env: dev, lookup })).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(lookup).not.toHaveBeenCalled();
+    // Without the cookie at all the dev admin still works.
+    await expect(requireSession(req('other=1'), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
   });
 
   it('denies without the flag, with the flag outside development, and when the env cannot be read', async () => {

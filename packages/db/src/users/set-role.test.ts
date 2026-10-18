@@ -20,29 +20,42 @@ describe('parseSetRoleArgs', () => {
 });
 
 describe('setRole', () => {
+  /** The row is only ever changed by the UPDATE statement, like in the real database. */
   function fakeEm(rows: { email: string; role: string; sessionVersion: number }[]) {
-    let flushed = 0;
+    const executed: unknown[][] = [];
     const em = {
-      findOne: async (_entity: unknown, where: { email: string }) => rows.find((r) => r.email === where.email) ?? null,
-      flush: async () => {
-        flushed += 1;
+      findOne: async (_entity: unknown, where: { email: string }) => {
+        const row = rows.find((r) => r.email === where.email);
+        return row ? { ...row } : null;
+      },
+      execute: async (sql: string, params: [string, string]) => {
+        executed.push([sql, params]);
+        const row = rows.find((r) => r.email === params[1])!;
+        row.role = params[0];
+        row.sessionVersion += 1;
+        return [{ session_version: row.sessionVersion }];
       },
     } as unknown as EntityManager;
-    return { em, flushed: () => flushed };
+    return { em, executed };
   }
 
-  it('changes the role, bumps the session version once, flushes and reports it', async () => {
+  it('changes the role and bumps the session version in one atomic UPDATE, and reports it', async () => {
     const row = { email: 'ann@example.com', role: 'mentee', sessionVersion: 2 };
-    const { em, flushed } = fakeEm([row]);
+    const { em, executed } = fakeEm([row]);
     const line = await setRole(em, 'ann@example.com', 'mentor');
     expect(row).toEqual({ email: 'ann@example.com', role: 'mentor', sessionVersion: 3 });
-    expect(flushed()).toBe(1);
+    expect(executed).toEqual([
+      [
+        'update users set role = ?, session_version = session_version + 1, updated_at = now() where email = ? returning session_version',
+        ['mentor', 'ann@example.com'],
+      ],
+    ]);
     expect(line).toBe('ann@example.com: mentee → mentor (session version 3; every session of this account was ended)');
   });
 
-  it('fails for an unknown e-mail without flushing', async () => {
-    const { em, flushed } = fakeEm([]);
+  it('fails for an unknown e-mail without writing', async () => {
+    const { em, executed } = fakeEm([]);
     await expect(setRole(em, 'ghost@example.com', 'admin')).rejects.toThrow('No user with e-mail "ghost@example.com".');
-    expect(flushed()).toBe(0);
+    expect(executed).toEqual([]);
   });
 });

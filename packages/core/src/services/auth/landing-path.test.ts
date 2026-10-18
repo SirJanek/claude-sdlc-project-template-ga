@@ -21,7 +21,7 @@ describe('withAccountNotice', () => {
   });
 
   it('keeps the result a same-origin relative path (still passes nextPathSchema)', () => {
-    for (const path of ['/', '/a/b?c=d', '/x#y'])
+    for (const path of ['/', '/a/b?c=d', '/x#y', '/mentors/7?slot=2026-10-20T10:00'])
       expect(nextPathSchema.safeParse(withAccountNotice(path, 'existing_account')).success, path).toBe(true);
   });
 });

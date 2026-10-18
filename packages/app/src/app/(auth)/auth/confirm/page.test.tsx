@@ -11,7 +11,7 @@ vi.mock('@mentorhub/core', async (original) => ({
 }));
 
 import ConfirmPage, { dynamic } from './page';
-import { ConfirmSignIn } from './ConfirmSignIn';
+import { ConfirmSignIn, safeDestination } from './ConfirmSignIn';
 
 const token = randomBytes(32).toString('base64url');
 const EXPIRED = 'This link has expired or was already used — send a new one.';
@@ -69,17 +69,32 @@ describe('/auth/confirm', () => {
     expect(onSignedIn).toHaveBeenCalledWith('/mentors/7');
   });
 
-  it('navigates with window.location by default', async () => {
-    apiCall.mockResolvedValue({ ok: true, data: { next: '/' }, status: 200 });
+  it('navigates with window.location by default, never off this origin (review finding 1)', async () => {
     const assign = vi.fn();
     const original = window.location;
-    Object.defineProperty(window, 'location', { value: { ...original, assign }, writable: true, configurable: true });
-    render(<ConfirmSignIn email="ann@example.com" token={token} />);
-    await act(async () => {
-      fireEvent.click(screen.getByRole('button'));
+    Object.defineProperty(window, 'location', {
+      value: { ...original, assign, origin: 'https://mentorhub.test' },
+      writable: true,
+      configurable: true,
     });
-    expect(assign).toHaveBeenCalledWith('/');
+    for (const [next, expected] of [
+      ['/mentors/7?slot=1', '/mentors/7?slot=1'],
+      ['/\t/evil.example', '/'],
+      ['//evil.example', '/'],
+      ['https://evil.example/', '/'],
+      ['/\\evil.example', '/'],
+    ] as const) {
+      apiCall.mockResolvedValue({ ok: true, data: { next }, status: 200 });
+      render(<ConfirmSignIn email="ann@example.com" token={token} />);
+      await act(async () => {
+        fireEvent.click(screen.getByRole('button'));
+      });
+      expect(assign, JSON.stringify(next)).toHaveBeenLastCalledWith(expected);
+      cleanup();
+    }
     Object.defineProperty(window, 'location', { value: original, writable: true, configurable: true });
+    expect(safeDestination('/\n/evil.example', 'https://mentorhub.test')).toBe('/');
+    expect(new URL('/\t/evil.example', 'https://mentorhub.test').origin).toBe('https://evil.example');
   });
 
   it('shows a 410 from the consume route as a focused alert with a way to a new link', async () => {

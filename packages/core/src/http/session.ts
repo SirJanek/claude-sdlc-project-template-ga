@@ -62,16 +62,17 @@ export function clearSessionCookie(env: { NODE_ENV: string }): string {
   return `${SESSION_COOKIE}=; ${cookieAttributes(env, 0)}`;
 }
 
-/** The session token from the request's Cookie header, or `undefined` when absent or empty. */
+/**
+ * The session cookie's value, or `undefined` only when the request carries NO `mh_session` cookie.
+ * A present but empty cookie (`mh_session=`) returns `''`: presence is a credential the caller must
+ * verify and deny, never a reason to fall back to anything (review round 2, finding 1).
+ */
 export function readSessionCookie(request: Request): string | undefined {
   const header = request.headers.get('cookie');
   if (!header) return undefined;
   for (const part of header.split(';')) {
     const [name, ...rest] = part.trim().split('=');
-    if (name === SESSION_COOKIE) {
-      const value = rest.join('=');
-      return value === '' ? undefined : value;
-    }
+    if (name === SESSION_COOKIE) return rest.join('=');
   }
   return undefined;
 }
