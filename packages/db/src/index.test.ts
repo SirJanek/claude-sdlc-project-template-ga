@@ -11,6 +11,7 @@ describe('@mentorhub/db public API', () => {
       'entities',
       'DEFAULT_DATABASE_URL',
       'createOrm',
+      'isUniqueViolation',
       'getOrm',
     ]) {
       expect(db, name).toHaveProperty(name);

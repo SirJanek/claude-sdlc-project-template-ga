@@ -1,8 +1,8 @@
 # Spec: Admin panel skeleton + typed event bus with the first event (`auth.user.created`)
 
-**Intent:** none directly — enabling infrastructure for the [intent.md](../../docs/sdlc/intent.md) › Desired outcome "core path find → book → pay → meet → review works end to end" (bookings, payments and messages need the event bus, shared validators and an admin back-office for the operations/trust & safety role). Scope source: issue #17, not an intent line. Commits cite "Desired outcome".
+**Intent:** none directly — enabling infrastructure for the [intent.md](../../../docs/sdlc/intent.md) › Desired outcome "core path find → book → pay → meet → review works end to end" (bookings, payments and messages need the event bus, shared validators and an admin back-office for the operations/trust & safety role). Scope source: issue #17, not an intent line. Commits cite "Desired outcome".
 **Issue:** #17
-**Status:** accepted (Jan, 2026-10-18 — autonomous defaults confirmed) · implementation: PR #19 (awaiting QA) · **one spec, one issue, two phases — deliberately not split (Jan)**
+**Status:** accepted (Jan, 2026-10-18 — autonomous defaults confirmed) · implemented in PR #19 (QA by Jan pending at the time of the move) · **one spec, one issue, two phases — deliberately not split (Jan)**
 
 ## 📝 TLDR
 
@@ -230,5 +230,5 @@ email/notification port or any subscriber beyond the log line; queues/background
 
 | Phase | Status | Evidence |
 |---|---|---|
-| 1 Admin skeleton (steps 1–3) | ⏳ | PR #19 |
-| 2 Event bus + user create (steps 4–10) | ⏳ | PR #19 |
+| 1 Admin skeleton (steps 1–3) | ✅ | PR #19 — layout + `AdminNav`, Dashboard over admin-only `GET /api/admin/health`, integration test + BC sentence updated |
+| 2 Event bus + user create (steps 4–10) | ✅ | PR #19 — `make check` 100% in all packages, Integration 19/19 on `f19c9dd`, independent re-review on `f19c9dd` (process major resolved by Jan's waiver, `risk-high`) |

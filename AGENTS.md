@@ -159,7 +159,8 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   Zod parse) → `withScope` from the `core` container → service class → MikroORM
   `EntityManager` fork (`db`) → PostgreSQL. Client pages call `/api/*` only through `apiCall`.
 - Roles: guest, mentee, mentor, admin. Built so far: `/` (public, `(marketing)`),
-  `/admin/users` (users list, **dev access only**), `/api/users`, `/api/health`; table `users`.
+  `/admin` (Dashboard: database state) and `/admin/users` (users list) inside the shared admin layout with navigation (**dev access only**), `/api/users` (list + admin create), `/api/admin/health`, `/api/health`; table `users`;
+  `core/src/events` (typed `EventBus`, first event `auth.user.created`) and `core/src/validators/auth/`.
 - Domains to come (from discovery): catalogue, booking & holds, payments & plans, sessions &
   video room, messaging, mentor onboarding, payouts, admin moderation & disputes. External
   integrations go behind a port in `core` with a mock adapter first.
