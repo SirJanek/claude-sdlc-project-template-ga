@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "pnpm --filter @mentorhub/app dev",
+    "setup": "node tools/setup/bin/setup.mjs",
     "build": "pnpm --filter @mentorhub/app build",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",

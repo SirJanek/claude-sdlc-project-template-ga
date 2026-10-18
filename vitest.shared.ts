@@ -5,14 +5,19 @@
  */
 export const FULL_COVERAGE = { lines: 100, branches: 100, functions: 100, statements: 100 };
 
-export function unitTestConfig(options: { environment?: 'node' | 'jsdom'; coverageExclude?: string[] } = {}) {
+export function unitTestConfig(
+  options: { environment?: 'node' | 'jsdom'; coverageExclude?: string[]; extensions?: string[] } = {},
+) {
+  // `extensions` lets a dependency-free JavaScript package (tools/setup: .mjs) use the same gate.
+  const extensions = options.extensions ?? ['ts', 'tsx'];
+  const ext = extensions.length === 1 ? extensions[0] : `{${extensions.join(',')}}`;
   return {
-    include: ['src/**/*.test.{ts,tsx}'],
+    include: [`src/**/*.test.${ext}`],
     environment: options.environment ?? 'node',
     coverage: {
       provider: 'v8' as const,
-      include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.{ts,tsx}', ...(options.coverageExclude ?? [])],
+      include: [`src/**/*.${ext}`],
+      exclude: [`src/**/*.test.${ext}`, ...(options.coverageExclude ?? [])],
       thresholds: FULL_COVERAGE,
       reporter: ['text', 'json-summary'],
     },

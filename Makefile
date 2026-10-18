@@ -7,7 +7,10 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: install setup-browser test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
+.PHONY: setup install setup-browser test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
+
+setup:     ## One-command, idempotent local setup: prerequisites, deps, browser, database, migrations (re-run any time; SETUP_ARGS=--skip-browser)
+	node tools/setup/bin/setup.mjs $(SETUP_ARGS)
 
 install:   ## Install dependencies from the lockfile
 	pnpm install --frozen-lockfile

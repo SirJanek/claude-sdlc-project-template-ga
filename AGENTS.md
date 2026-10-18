@@ -91,6 +91,7 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 
 | Task | Command |
 |---|---|
+| Setup (fresh clone, idempotent) | `make setup` (or `npm run setup` / `pnpm run setup` without `make`; **not** `pnpm setup`, a pnpm built-in): prerequisites, deps, browser, database, migrations — skips what is done |
 | Install | `make install` (pnpm, from the lockfile) |
 | Unit tests | `make test` (Vitest + v8 coverage in every package; **fails below 100%**; no DB needed) |
 | Integration tests | `make test-integration` (ephemeral PostgreSQL via testcontainers + app driven by agent-browser; needs Docker; installs the browser first via `make setup-browser`) |
@@ -118,8 +119,8 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   failures screenshot themselves. Evidence (screenshots, server logs, `junit.xml`, `results.json`)
   lands in `tests/integration/.evidence/` and CI uploads it as artifact
   `integration-evidence-<run id>` — on failure too. Look there before guessing why a test failed.
-- Coverage exclusions are limited to test files, config files and `packages/db/src/scripts/**`
-  (thin CLI entry points whose logic lives in tested modules). Adding an exclusion needs a spec.
+- Coverage exclusions are limited to test files, config files, `packages/db/src/scripts/**` and
+  `tools/*/bin/**` (thin CLI entry points whose logic lives in tested modules). Adding an exclusion needs a spec.
 - Never put non-migration files in `packages/db/src/migrations/` (the migrator would load them).
 - CI (`.github/workflows/ci.yml`) runs on every PR: **Lint**, **Typecheck**, **Unit tests (100%
   coverage)**, **Build**, **Audit** — the five required checks. **Integration (testcontainers +

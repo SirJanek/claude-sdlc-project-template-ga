@@ -1,0 +1,15 @@
+{
+  "name": "@mentorhub/setup",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "One-command idempotent local setup (make setup / npm run setup). No runtime dependencies: it runs before pnpm install.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^5.0.5",
+    "vitest": "^5.0.5"
+  }
+}
