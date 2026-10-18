@@ -12,11 +12,27 @@ describe('logger', () => {
         req: { headers: { authorization: 'Bearer x', cookie: 'sid=1' } },
         email: 'me@x.io',
         payload: { email: 'you@x.io' },
+        mh_session: 'eyJ.session.jwt',
+        cookies: { mh_session: 'eyJ.nested.jwt' },
+        'set-cookie': 'mh_session=eyJ.set.jwt; Path=/',
+        res: { headers: { 'set-cookie': 'mh_session=eyJ.res.jwt' } },
       },
       'login',
     );
     const out = lines.join('');
-    for (const secret of ['p4ss', 't0k', 'eyJ', 'Bearer x', 'sid=1', 'me@x.io', 'you@x.io'])
+    for (const secret of [
+      'p4ss',
+      't0k',
+      'eyJ',
+      'Bearer x',
+      'sid=1',
+      'me@x.io',
+      'you@x.io',
+      'session.jwt',
+      'nested.jwt',
+      'set.jwt',
+      'res.jwt',
+    ])
       expect(out).not.toContain(secret);
     expect(out).toContain('[redacted]');
   });

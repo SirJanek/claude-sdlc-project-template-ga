@@ -17,8 +17,11 @@ for this package only.
   Mutations on shared state (slots, bookings) run in a DB transaction.
 - **External integrations** are ports (`<name>.port.ts`) with adapters under `adapters/`; start
   with a mock adapter.
-- **Auth:** `requireSession` fails closed; the dev-admin flag works only with `NODE_ENV=development`
-  (allowlist) and is temporary until the auth spec.
+- **Auth:** `requireSession` is async and fails closed (cookie `mh_session` → `http/session.ts` verify →
+  `sessionUserLookup` from the scope → `sv` compare); the dev-admin flag works only with
+  `NODE_ENV=development` (allowlist) and only without a valid cookie. `AuthService` owns e-mail links and
+  sessions; `services/mail/` is the mail port (mock adapter chosen by `MAIL_ADAPTER`). Security limits live
+  in `AUTH_LIMITS` next to `RULES`.
 - Pure functions take `now: Date` instead of calling `new Date()`; every exported function has a
   test next to it, including boundary cases. Export public API through `src/index.ts`.
 - **Tests:** every service, http helper and rule at 100% coverage; services tested through the

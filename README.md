@@ -68,7 +68,7 @@ Kierunek zależności: **`app → core → db`**, `ui` importuje tylko `app`. Pi
 - **Standard inżynieryjny:** [.ai/docs/engineering-standards.md](.ai/docs/engineering-standards.md). Zawiera nazewnictwo, zasady, minimum bezpieczeństwa i checklistę review.
 - **Foldery domen** (`entities/auth/`, `services/auth/`, `api/users/`) zamiast modułów; folder powstaje razem z pierwszym plikiem.
 - **Wspólne warstwy:** każda trasa przechodzi przez `apiHandler` albo `makeCrudRoute`, a każda strona pobiera dane przez `apiCall`. Bez ręcznych `try/catch` i bez surowego `fetch`.
-- **Brak logowania:** `/admin/users` i `/api/users` działają tylko z `ALLOW_DEV_ADMIN=1` i `NODE_ENV=development` (fail closed, `make dev` ustawia flagę). Logowanie przyjdzie z osobną specyfikacją.
+- **Logowanie bez hasła (E01, faza 1):** `/sign-in` wysyła jednorazowy link (15 min) na e-mail; lokalnie link ląduje w pliku `MAIL_OUTBOX_FILE` (adapter `mock`), a na `/auth/confirm` dopiero przycisk „Sign in as …” zużywa token. Sesja to cookie `mh_session` (JWT, 7 dni, bez odświeżania). `AUTH_SECRET` jest wymagany poza `NODE_ENV=test` — `make setup` generuje go do `packages/app/.env.local`. Role zmienia tylko `make set-role EMAIL=… ROLE=admin|mentor|mentee`. `/admin/users` i `/api/users` wymagają roli admin; lokalnie bez cookie wciąż działa `ALLOW_DEV_ADMIN=1` z `NODE_ENV=development` (`make dev` ustawia flagę). Logowanie przez GitHub, rejestracja mentora i powrót do slotu to kolejne fazy specyfikacji.
 - **MikroORM 7** z encjami przez `defineEntity`, tabele w liczbie mnogiej (`users`), migracje sprawdzane ręcznie.
 - **`make check`** obejmuje także `pnpm audit` (wyjątki opisane w `pnpm-workspace.yaml`).
 

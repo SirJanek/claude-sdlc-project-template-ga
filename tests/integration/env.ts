@@ -5,12 +5,17 @@ declare module 'vitest' {
   export interface ProvidedContext {
     devUrl: string;
     prodUrl: string;
+    /** Mail outbox (JSON lines) of each server's MockMailSender. */
+    devOutbox: string;
+    prodOutbox: string;
     containerId: string;
   }
 }
 
 export const devUrl = () => inject('devUrl');
 export const prodUrl = () => inject('prodUrl');
+export const devOutbox = () => inject('devOutbox');
+export const prodOutbox = () => inject('prodOutbox');
 
 /** Runs SQL in the suite's PostgreSQL container (seed data, assertions). */
 export function psql(sql: string, containerId = inject('containerId')): string {

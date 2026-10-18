@@ -141,7 +141,7 @@ describe('MentorHub app (ephemeral PostgreSQL)', () => {
     expect(browser.count('[data-slot=data-table]')).toBe(0);
   });
 
-  // Keep last: it stops the shared database.
+  // Keep last: it stops the shared database (this file runs last — vitest.integration.config.ts).
   it('reports 503 and shows the error state when the database goes down', async () => {
     stopDatabase();
     const res = await fetch(`${devUrl()}/api/health`);

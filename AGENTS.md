@@ -102,6 +102,7 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 | Full local check | `make check` — lint, typecheck, unit tests, build, audit (integration is on demand: `make test-integration`, or the `run-integration` PR label) |
 | Run locally | `make dev` (starts the DB, then Next.js on :3000 with dev-admin access) |
 | Database | `make db-up`, `make db-down`, `make db-migrate`, `make db-migration NAME=<slug>` |
+| Account role | `make set-role EMAIL=<e-mail> ROLE=admin\|mentor\|mentee` (ends every session of that account) |
 
 ## Testing (mandatory — CI blocks the PR otherwise)
 
@@ -145,8 +146,15 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   they throw `AppError`s and never build HTTP responses. Only `container.ts` calls `getOrm()`.
 - Routes: wrap in `apiHandler` or build with `makeCrudRoute` — no hand-written `try/catch`;
   authorize first (`requireSession`, ownership) and parse write bodies with a Zod schema.
-- **No real auth yet:** `requireSession` admits a dev admin only with `ALLOW_DEV_ADMIN=1` and
-  `NODE_ENV=development` (an allowlist — test, staging and production are denied; fail closed). Never deploy `/admin` or `/api/users` before the auth spec.
+- **Auth (spec `2026-10-18-accounts-and-roles.md`, Phase 1):** `requireSession` is **async** — always
+  `await` it (an un-awaited guard runs beside the request; `makeCrudRoute` awaits `authorize`). It reads
+  the `mh_session` cookie (HS256 JWT `sub` + `sv`, 7 days fixed, no refresh), loads the user through the
+  scope's `sessionUserLookup`, rejects an `sv` mismatch and fails closed (401) on any error. Without a
+  valid cookie the local dev admin is admitted only with `ALLOW_DEV_ADMIN=1` **and** `NODE_ENV=development`
+  (allowlist). Sign-in is passwordless: `POST /api/auth/email/start` → link in the mail outbox
+  (`MockMailSender`, `MAIL_OUTBOX_FILE`) → `/auth/confirm` (GET only names the account; the button's POST
+  consumes). Roles change only through `make set-role` (bumps `sessionVersion`). Security parameters
+  live in `AUTH_LIMITS` (`core/src/config/rules.ts`), next to `RULES`, never inside it.
 - Schema changes only through migrations (`make db-migration`); review the generated SQL (renames
   come out as drop + create); never edit an applied migration.
 - Workspace packages are consumed as TypeScript source: relative imports without `.js`.
@@ -159,8 +167,9 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   Zod parse) → `withScope` from the `core` container → service class → MikroORM
   `EntityManager` fork (`db`) → PostgreSQL. Client pages call `/api/*` only through `apiCall`.
 - Roles: guest, mentee, mentor, admin. Built so far: `/` (public, `(marketing)`),
-  `/admin` (Dashboard: database state) and `/admin/users` (users list) inside the shared admin layout with navigation (**dev access only**), `/api/users` (list + admin create), `/api/admin/health`, `/api/health`; table `users`;
-  `core/src/events` (typed `EventBus`, first event `auth.user.created`) and `core/src/validators/auth/`.
+  `/admin` (Dashboard: database state) and `/admin/users` (users list) inside the shared admin layout with navigation (admin session or local dev admin), `/api/users` (list + admin create), `/api/admin/health`, `/api/health`; tables `users`, `auth_tokens`;
+  auth Phase 1: `/sign-in`, `/check-email`, `/auth/confirm` (`(auth)` group), `/api/auth/email/{start,consume}`, `/api/auth/sign-out`, `/api/auth/me`, `AuthService`, `MailSender` port (`services/mail/`, mock adapter), `core/src/http/session.ts`;
+  `core/src/events` (typed `EventBus`, first event `auth.user.created { userId, email, method }`) and `core/src/validators/auth/`.
 - Domains to come (from discovery): catalogue, booking & holds, payments & plans, sessions &
   video room, messaging, mentor onboarding, payouts, admin moderation & disputes. External
   integrations go behind a port in `core` with a mock adapter first.
@@ -267,3 +276,8 @@ Shared traps go here; Claude-only traps go to CLAUDE.md. Delete an entry only wh
 underlying cause is gone. Entries here are also the best source of eval tasks — see
 evals/README.md.
 -->
+
+- `parseEnv({})` is no longer a valid test fixture: `AUTH_SECRET` is required outside `NODE_ENV=test`. Pass `{ NODE_ENV: 'test' }` or an explicit ≥ 32-character secret.
+- Mocking `apiCall` on `@mentorhub/ui` in an `app` test does not reach `ui` components (they import `backend/api/apiCall` by relative path): mock that module path (`vi.mock('../../../../ui/src/backend/api/apiCall', …)`) when a page renders `SessionMenu`.
+- A fake transaction must undo only its own writes: a snapshot taken before the advisory lock is acquired "rolls back" rows other transactions committed meanwhile, and a rate-limit test then passes 5 of 3 (seen in the `AuthService` fake). Keep an undo log per transaction.
+- With Vitest fake timers a React countdown needs one `act()` per tick: the next `setTimeout` is scheduled only after the re-render, so one `advanceTimersByTime(60_000)` moves the clock by a single second.
