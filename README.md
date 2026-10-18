@@ -19,7 +19,7 @@ Marketplace **mentoringu 1:1 przez wideo**: osoby rozwijające karierę w produk
 
 ## Uruchomienie lokalne
 
-Wymagane: Node ≥ 22 (`.nvmrc`: 26), pnpm 10, Docker.
+Wymagane: Node ≥ 22 (`.nvmrc`: 26), pnpm 10, Docker. Przeglądarkę do testów integracyjnych (headless Chrome dla agent-browsera) instaluje `make setup-browser`; `make test-integration` robi to sam.
 
 ```bash
 make install        # zależności z lockfile

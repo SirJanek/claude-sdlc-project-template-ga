@@ -15,7 +15,8 @@
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter @mentorhub/db migrate",
     "db:migration": "pnpm --filter @mentorhub/db migration:create",
-    "test:integration": "vitest run --config vitest.integration.config.ts"
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "browser:install": "agent-browser install"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

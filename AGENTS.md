@@ -93,7 +93,7 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 |---|---|
 | Install | `make install` (pnpm, from the lockfile) |
 | Unit tests | `make test` (Vitest + v8 coverage in every package; **fails below 100%**; no DB needed) |
-| Integration tests | `make test-integration` (ephemeral PostgreSQL via testcontainers + app driven by agent-browser; needs Docker) |
+| Integration tests | `make test-integration` (ephemeral PostgreSQL via testcontainers + app driven by agent-browser; needs Docker; installs the browser first via `make setup-browser`) |
 | Lint + format | `make lint` (ESLint incl. package boundaries + Prettier check; fix with `pnpm format`) |
 | Typecheck | `make typecheck` |
 | Build | `make build` |
