@@ -11,19 +11,24 @@
     "build": "pnpm --filter @mentorhub/app build",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm -r typecheck && tsc --noEmit -p tsconfig.json",
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter @mentorhub/db migrate",
-    "db:migration": "pnpm --filter @mentorhub/db migration:create"
+    "db:migration": "pnpm --filter @mentorhub/db migration:create",
+    "test:integration": "vitest run --config vitest.integration.config.ts"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^26.6.5",
+    "agent-browser": "0.39.1",
     "eslint": "^10.13.0",
     "eslint-config-next": "^16.4.2",
     "globals": "^17.13.0",
     "prettier": "^3.9.10",
+    "testcontainers": "^12.2.1",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.71.2"
+    "typescript-eslint": "^8.71.2",
+    "vitest": "^5.0.5"
   }
 }

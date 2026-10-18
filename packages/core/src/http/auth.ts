@@ -14,7 +14,8 @@ export const DEV_ADMIN_SESSION: Session = { userId: 'dev-admin', role: 'admin', 
 /**
  * Returns the caller's session or throws UnauthorizedError — fails closed on any doubt.
  * Until the auth spec lands, the only session is a local dev admin, admitted ONLY when
- * ALLOW_DEV_ADMIN=1 and NODE_ENV is not production. The request is unused until then.
+ * ALLOW_DEV_ADMIN=1 and NODE_ENV is exactly "development" (an allowlist: test, staging, production
+ * or anything unexpected is denied). The request is unused until then.
  */
 export function requireSession(request: Request, deps: { env?: () => Env } = {}): Session {
   void request;
@@ -24,7 +25,7 @@ export function requireSession(request: Request, deps: { env?: () => Env } = {})
   } catch {
     throw new UnauthorizedError();
   }
-  if (env.ALLOW_DEV_ADMIN === '1' && env.NODE_ENV !== 'production') return DEV_ADMIN_SESSION;
+  if (env.ALLOW_DEV_ADMIN === '1' && env.NODE_ENV === 'development') return DEV_ADMIN_SESSION;
   throw new UnauthorizedError();
 }
 

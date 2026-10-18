@@ -93,5 +93,5 @@ regression; load testing; deploy pipeline.
 |---|---|---|
 | 1 Spec | ✅ done | this commit |
 | 2 Unit framework + 100% | ✅ done | `make check` exit 0 (15 s): 112 unit tests, 100% lines/branches/functions/statements in core, db, ui, app; mutation: two test files removed → `make test` exit 2 |
-| 3 Integration | ⏳ | |
+| 3 Integration | ✅ done | `pnpm test:integration` 12/12 in 16 s (testcontainers PostgreSQL, migrations, `next dev` + `next build`/`start`, agent-browser); no containers, servers or browser sessions left; mutation: broken empty state → exit 1; **found a real bug**: dev flag opened with NODE_ENV=test → flag now development-only |
 | 4 CI + rules | ⏳ | |

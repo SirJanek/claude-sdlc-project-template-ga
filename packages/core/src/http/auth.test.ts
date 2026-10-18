@@ -7,15 +7,19 @@ const req = new Request('http://local/api/users');
 const env = (vars: Record<string, string>) => () => parseEnv(vars);
 
 describe('requireSession (fail closed)', () => {
-  it('admits the dev admin only with the flag outside production', () => {
+  it('admits the dev admin only with the flag in development', () => {
     expect(requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' }) })).toEqual(
       DEV_ADMIN_SESSION,
     );
   });
 
-  it('denies without the flag, with the flag in production, and when the env cannot be read', () => {
+  it('denies without the flag, with the flag outside development, and when the env cannot be read', () => {
     expect(() => requireSession(req, { env: env({}) })).toThrow(UnauthorizedError);
     expect(() => requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'production' }) })).toThrow(
+      UnauthorizedError,
+    );
+    // Regression: a test or staging deploy must not open the flag (found by the integration suite).
+    expect(() => requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'test' }) })).toThrow(
       UnauthorizedError,
     );
     expect(() =>

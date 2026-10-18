@@ -8,6 +8,7 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — Gate dev-only behaviour on an allowlist (`NODE_ENV === "development"`), never on `!== "production"`: Vitest sets NODE_ENV=test, `next start` kept it, and the dev-admin flag opened on a production build (found by the integration suite). Child servers started from tests must not inherit NODE_ENV.
 - 2026-10-18 — Never put files other than migrations in `packages/db/src/migrations/`: the migrator glob `!(*.d).{js,ts}` picked up a test file as a pending migration. Migration tests live in `src/migrator/`.
 - 2026-10-18 — After moving or renaming Next.js routes, run `next dev` once (or `make dev`): stale `.next/dev/types` still point at the old files and break `tsc`, and neither `next typegen` nor `next build` refreshes them.
 - 2026-10-18 — Never silence `git add` (`2>/dev/null`) or pass it a deleted path: one missing pathspec aborts the whole add and the commit goes out with only what was staged before (f25fdf0 shipped without its new files; fixed by a follow-up commit, history not rewritten). Check `git status --short` is empty after committing.

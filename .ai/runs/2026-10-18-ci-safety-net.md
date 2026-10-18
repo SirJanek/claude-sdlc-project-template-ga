@@ -15,7 +15,7 @@
 
 - [x] Phase 1 spec
 - [x] Phase 2 unit framework + 100% (found and fixed: test file in src/migrations picked up as a migration; CrudForm error text inside <label> changed the accessible name)
-- [ ] Phase 3 integration
+- [x] Phase 3 integration (no install-script approvals needed for testcontainers or agent-browser — both reverted after checking)
 - [ ] Phase 4 CI + rules
 
 ## Handoff

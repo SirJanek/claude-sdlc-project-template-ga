@@ -23,6 +23,7 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/.next/**',
+      '**/.next-integration/**',
       '**/dist/**',
       '**/next-env.d.ts',
       'packages/db/src/migrations/**',
