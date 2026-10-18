@@ -7,13 +7,15 @@ import type { EventBus } from '../../events/event-bus';
 import type { Session } from '../../http/auth';
 import {
   ConflictError,
+  GitHubEmailUnverifiedError,
   GoneError,
   RateLimitedError,
   ServiceUnavailableError,
   UnauthorizedError,
 } from '../../http/errors';
 import { buildSessionCookie, signSessionToken } from '../../http/session';
-import type { EmailLinkStartInput } from '../../validators/auth/email-link-start.schema';
+import type { EmailLinkStartInput, IntentRole } from '../../validators/auth/email-link-start.schema';
+import type { GitHubUser } from '../github/github-client.port';
 import type { MailSender } from '../mail/mail-sender.port';
 import { defaultLandingPath, withAccountNotice } from './landing-path';
 
@@ -34,6 +36,16 @@ export interface ConsumedLink {
   /** True when a sign-up link (with an intended role) was used for an e-mail that already had an account. */
   existingAccount: boolean;
 }
+
+/** What a GitHub attempt asked for on `/api/auth/github/start`, carried in the signed state cookie. */
+export interface GitHubSignInIntent {
+  role?: IntentRole;
+  /** Already validated by nextPathSchema when the attempt started. */
+  next?: string;
+}
+
+/** A GitHub sign-in lands exactly like a consumed link: same shape, same landing rules. */
+export type GitHubSignIn = ConsumedLink;
 
 export interface CurrentUser {
   id: string;
@@ -59,9 +71,12 @@ const MAIL_SUBJECT = 'Your MentorHub sign-in link';
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
 const minutesBefore = (now: Date, minutes: number) => new Date(now.getTime() - minutes * MINUTE);
 
+/** `users.name` is 120 characters; GitHub display names are free text. */
+const NAME_MAX_LENGTH = 120;
+
 /**
- * Accounts and roles (spec, Phase 1): one-time e-mail links, sessions, sign-out. Request-scoped.
- * Throws AppErrors only; never builds HTTP responses.
+ * Accounts and roles (spec, Phases 1–3): one-time e-mail links, GitHub sign-in, sessions, sign-out.
+ * Request-scoped. Throws AppErrors only; never builds HTTP responses.
  */
 export class AuthService {
   private readonly em: EntityManager;
@@ -209,6 +224,71 @@ export class AuthService {
         userId: outcome.user.id,
         email: outcome.user.email,
         method: 'email',
+      });
+    }
+    return {
+      userId: outcome.user.id,
+      sessionVersion: outcome.user.sessionVersion,
+      next: outcome.next,
+      existingAccount: outcome.existingAccount,
+    };
+  }
+
+  /**
+   * Phase 2 (spec › Flows 2): signs a person in with what GitHub said about them. Only a **verified**
+   * primary e-mail is accepted (GitHubEmailUnverifiedError otherwise — nothing is read or written).
+   * Lookup order: by `githubId`; else by the lower-cased e-mail, in which case the GitHub id is linked
+   * to that account — allowed only because GitHub verified the e-mail, so the account it names is the
+   * person's (one account per e-mail, never a duplicate); else a new account with the intended role
+   * (`mentee` by default). An existing account keeps its role and name (`make set-role` is the only
+   * way to change a role); a sign-up intent for it yields `existingAccount` plus the notice on the
+   * landing path, exactly like a sign-up link. The account's e-mail is never changed by GitHub.
+   */
+  async signInWithGitHub(github: GitHubUser, intent: GitHubSignInIntent, now = new Date()): Promise<GitHubSignIn> {
+    if (!github.primaryEmail?.verified) throw new GitHubEmailUnverifiedError();
+    const email = github.primaryEmail.email.trim().toLowerCase();
+    const outcome = await this.em.transactional(async (em) => {
+      let user = await em.findOne(User, { githubId: github.githubId });
+      let created = false;
+      if (!user) {
+        user = await em.findOne(User, { email });
+        if (user) {
+          user.githubId = github.githubId;
+        } else {
+          user = em.create(User, {
+            email,
+            name: github.name?.slice(0, NAME_MAX_LENGTH) ?? null,
+            role: intent.role ?? 'mentee',
+            emailVerifiedAt: now,
+            githubId: github.githubId,
+            sessionVersion: 0,
+          });
+          created = true;
+        }
+      }
+      // GitHub vouches for the e-mail: an admin-created (unverified) account becomes verified here.
+      if (user.emailVerifiedAt === null) user.emailVerifiedAt = now;
+      try {
+        await em.flush();
+      } catch (error) {
+        // Two callbacks for one new person at once: the second loses on users.email or users.github_id.
+        if (isUniqueViolation(error)) throw new ConflictError('Please try GitHub sign-in again.');
+        throw error;
+      }
+      const existingAccount = !created && intent.role !== undefined;
+      const landing = intent.next ?? defaultLandingPath(user.role);
+      return {
+        user,
+        created,
+        existingAccount,
+        next: existingAccount ? withAccountNotice(landing, 'existing_account') : landing,
+      };
+    });
+    if (outcome.created) {
+      await this.eventBus.emit('auth.user.created', {
+        userId: outcome.user.id,
+        email: outcome.user.email,
+        method: 'github',
       });
     }
     return {

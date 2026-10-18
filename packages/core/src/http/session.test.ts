@@ -3,8 +3,10 @@ import { SignJWT } from 'jose';
 import { AUTH_LIMITS } from '../config/rules';
 import {
   SESSION_COOKIE,
+  buildCookie,
   buildSessionCookie,
   clearSessionCookie,
+  readCookie,
   readSessionCookie,
   signSessionToken,
   verifySessionToken,
@@ -89,5 +91,24 @@ describe('session cookie', () => {
     expect(readSessionCookie(req())).toBeUndefined();
     expect(readSessionCookie(req(`${SESSION_COOKIE}=`))).toBe('');
     expect(readSessionCookie(req(`a=1; ${SESSION_COOKIE}=; b=2`))).toBe('');
+  });
+});
+
+describe('buildCookie / readCookie (shared by the session and the GitHub state cookie)', () => {
+  it('scopes the path when asked and keeps every auth flag', () => {
+    expect(
+      buildCookie('mh_x', 'v', { NODE_ENV: 'development' }, { maxAgeSeconds: 600, path: '/api/auth/github' }),
+    ).toBe('mh_x=v; Path=/api/auth/github; HttpOnly; SameSite=Lax; Max-Age=600');
+    expect(buildCookie('mh_x', 'v', { NODE_ENV: 'production' }, { maxAgeSeconds: 5 })).toBe(
+      'mh_x=v; Path=/; HttpOnly; SameSite=Lax; Max-Age=5; Secure',
+    );
+  });
+
+  it('reads one cookie by name among others, empty when present and empty, undefined when absent', () => {
+    const request = new Request('http://x', { headers: { cookie: 'a=1; mh_github=eyJ.x.y; mh_session=' } });
+    expect(readCookie(request, 'mh_github')).toBe('eyJ.x.y');
+    expect(readCookie(request, 'mh_session')).toBe('');
+    expect(readCookie(request, 'mh_other')).toBeUndefined();
+    expect(readCookie(new Request('http://x'), 'mh_github')).toBeUndefined();
   });
 });

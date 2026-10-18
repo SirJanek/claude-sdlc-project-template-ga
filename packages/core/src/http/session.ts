@@ -45,34 +45,49 @@ export async function verifySessionToken(
   }
 }
 
-/** Flags every session cookie carries (engineering standards › Cookies); `Secure` only in production. */
-function cookieAttributes(env: { NODE_ENV: string }, maxAgeSeconds: number): string {
-  const attributes = ['Path=/', 'HttpOnly', 'SameSite=Lax', `Max-Age=${maxAgeSeconds}`];
+/**
+ * `Set-Cookie` value with the flags every auth cookie carries (engineering standards › Cookies):
+ * httpOnly, `SameSite=Lax` (the GitHub callback is a top-level cross-site navigation, which Lax
+ * allows and Strict would not), a scoped path and `Secure` in production. Shared by the session
+ * cookie and the GitHub state cookie (`github-state.ts`) so the flags cannot drift apart.
+ */
+export function buildCookie(
+  name: string,
+  value: string,
+  env: { NODE_ENV: string },
+  { maxAgeSeconds, path = '/' }: { maxAgeSeconds: number; path?: string },
+): string {
+  const attributes = [`Path=${path}`, 'HttpOnly', 'SameSite=Lax', `Max-Age=${maxAgeSeconds}`];
   if (env.NODE_ENV === 'production') attributes.push('Secure');
-  return attributes.join('; ');
+  return `${name}=${value}; ${attributes.join('; ')}`;
 }
 
 /** `Set-Cookie` value that stores the token for the session lifetime. */
 export function buildSessionCookie(token: string, env: { NODE_ENV: string }): string {
-  return `${SESSION_COOKIE}=${token}; ${cookieAttributes(env, AUTH_LIMITS.sessionDays * SECONDS_PER_DAY)}`;
+  return buildCookie(SESSION_COOKIE, token, env, { maxAgeSeconds: AUTH_LIMITS.sessionDays * SECONDS_PER_DAY });
 }
 
 /** `Set-Cookie` value that removes the session cookie from this device. */
 export function clearSessionCookie(env: { NODE_ENV: string }): string {
-  return `${SESSION_COOKIE}=; ${cookieAttributes(env, 0)}`;
+  return buildCookie(SESSION_COOKIE, '', env, { maxAgeSeconds: 0 });
 }
 
 /**
- * The session cookie's value, or `undefined` only when the request carries NO `mh_session` cookie.
- * A present but empty cookie (`mh_session=`) returns `''`: presence is a credential the caller must
- * verify and deny, never a reason to fall back to anything (review round 2, finding 1).
+ * The named cookie's value, or `undefined` only when the request carries NO such cookie. A present
+ * but empty cookie (`name=`) returns `''`: presence is a credential the caller must verify and deny,
+ * never a reason to fall back to anything (review round 2, finding 1).
  */
-export function readSessionCookie(request: Request): string | undefined {
+export function readCookie(request: Request, name: string): string | undefined {
   const header = request.headers.get('cookie');
   if (!header) return undefined;
   for (const part of header.split(';')) {
-    const [name, ...rest] = part.trim().split('=');
-    if (name === SESSION_COOKIE) return rest.join('=');
+    const [cookieName, ...rest] = part.trim().split('=');
+    if (cookieName === name) return rest.join('=');
   }
   return undefined;
+}
+
+/** The session cookie's value — see `readCookie` for the empty-cookie rule. */
+export function readSessionCookie(request: Request): string | undefined {
+  return readCookie(request, SESSION_COOKIE);
 }

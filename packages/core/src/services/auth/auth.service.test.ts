@@ -6,6 +6,7 @@ import { AUTH_LIMITS } from '../../config/rules';
 import { DEV_ADMIN_SESSION } from '../../http/auth';
 import {
   ConflictError,
+  GitHubEmailUnverifiedError,
   GoneError,
   RateLimitedError,
   ServiceUnavailableError,
@@ -550,5 +551,171 @@ describe('sessions', () => {
     expect((await h.service().currentUser(session)).emailVerified).toBe(false);
     await expect(h.service().currentUser(DEV_ADMIN_SESSION)).resolves.toBe(DEV_ADMIN_USER);
     await expect(h.service().currentUser({ ...session, userId: 'ghost' })).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+describe('signInWithGitHub (Phase 2)', () => {
+  const now = new Date('2026-10-18T12:00:00Z');
+  const verified = (email = 'Ann@Example.com', githubId = 'gh-42') => ({
+    githubId,
+    primaryEmail: { email, verified: true },
+    name: 'Ann Example',
+  });
+
+  it('refuses an unverified primary e-mail and an account without one — nothing read, written or emitted', async () => {
+    const h = harness();
+    const unverified = { githubId: 'gh-1', primaryEmail: { email: 'u@example.com', verified: false }, name: null };
+    await expect(h.service().signInWithGitHub(unverified, {}, now)).rejects.toThrow(GitHubEmailUnverifiedError);
+    await expect(h.service().signInWithGitHub({ ...unverified, primaryEmail: null }, {}, now)).rejects.toThrow(
+      GitHubEmailUnverifiedError,
+    );
+    expect(h.db.users).toHaveLength(0);
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+  });
+
+  it('creates a verified mentee by default: lower-cased e-mail, GitHub id and name stored, event method github', async () => {
+    const h = harness();
+    const result = await h.service().signInWithGitHub(verified(' Ann@Example.com '), {}, now);
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]).toMatchObject({
+      email: 'ann@example.com',
+      name: 'Ann Example',
+      role: 'mentee',
+      githubId: 'gh-42',
+      emailVerifiedAt: now,
+      sessionVersion: 0,
+    });
+    expect(result).toEqual({ userId: 'id-1', sessionVersion: 0, next: '/', existingAccount: false });
+    expect(h.eventBus.emit).toHaveBeenCalledWith('auth.user.created', {
+      userId: 'id-1',
+      email: 'ann@example.com',
+      method: 'github',
+    });
+    // No display name on GitHub → name stays null until the person gives one (grill-me Q5/Q12).
+    await h.service().signInWithGitHub({ ...verified('bob@example.com', 'gh-7'), name: null }, {}, now);
+    expect(h.db.users[1]).toMatchObject({ email: 'bob@example.com', name: null, githubId: 'gh-7' });
+  });
+
+  it('creates a mentor when the attempt asked for it and lands on profile setup; a long name is cut to 120', async () => {
+    const h = harness();
+    const github = { ...verified(), name: 'x'.repeat(200) };
+    const result = await h.service().signInWithGitHub(github, { role: 'mentor' }, now);
+    expect(h.db.users[0]).toMatchObject({ role: 'mentor', name: 'x'.repeat(120) });
+    expect(result).toMatchObject({ next: '/mentor/profile', existingAccount: false });
+    expect(await h.service().signInWithGitHub({ ...verified(), name: null }, {}, now)).toMatchObject({
+      userId: 'id-1',
+    });
+    expect(h.db.users[0]!.name).toBe('x'.repeat(120)); // an existing name is never overwritten
+  });
+
+  it('finds the account by GitHub id first — even when the GitHub e-mail changed; the account e-mail stays', async () => {
+    const h = harness();
+    h.db.users.push({
+      id: 'u-9',
+      email: 'old@example.com',
+      name: 'Old',
+      role: 'mentor',
+      githubId: 'gh-42',
+      emailVerifiedAt: now,
+      sessionVersion: 3,
+    });
+    const result = await h.service().signInWithGitHub(verified('new@example.com'), {}, now);
+    expect(result).toEqual({ userId: 'u-9', sessionVersion: 3, next: '/mentor/profile', existingAccount: false });
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]).toMatchObject({ email: 'old@example.com', githubId: 'gh-42' });
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+  });
+
+  it('links the GitHub id to an account that exists by (verified) e-mail — one row, no duplicate, nothing else changed', async () => {
+    const h = harness();
+    await h.request('ann@example.com');
+    await h.service().consumeEmailLink(h.lastToken(), now); // an account made by a link, no GitHub id yet
+    expect(h.db.users[0]).toMatchObject({ githubId: null });
+    h.eventBus.emit.mockClear();
+    const result = await h.service().signInWithGitHub(verified('ANN@example.com'), {}, now);
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]).toMatchObject({ email: 'ann@example.com', githubId: 'gh-42', role: 'mentee', name: null });
+    const id = h.db.users[0]!.id as string;
+    expect(result).toEqual({ userId: id, sessionVersion: 0, next: '/', existingAccount: false });
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+    // From now on the id is the key: the same person signs in to the same account again.
+    expect(await h.service().signInWithGitHub(verified('ANN@example.com'), {}, now)).toMatchObject({ userId: id });
+    expect(h.db.users).toHaveLength(1);
+  });
+
+  it('verifies an admin-created (unverified) account when GitHub vouches for its e-mail', async () => {
+    const h = harness();
+    h.db.users.push({
+      id: 'u-1',
+      email: 'made@example.com',
+      name: 'Made',
+      role: 'mentee',
+      githubId: null,
+      emailVerifiedAt: null,
+      sessionVersion: 0,
+    });
+    await h.service().signInWithGitHub(verified('made@example.com'), {}, now);
+    expect(h.db.users[0]).toMatchObject({ emailVerifiedAt: now, githubId: 'gh-42', name: 'Made' });
+  });
+
+  it('AC3 (#26) by GitHub: a mentor sign-up for an existing mentee signs in to it, role unchanged, with the notice', async () => {
+    const h = harness();
+    h.db.users.push({
+      id: 'u-1',
+      email: 'taken@example.com',
+      name: 'Taken',
+      role: 'mentee',
+      githubId: null,
+      emailVerifiedAt: now,
+      sessionVersion: 0,
+    });
+    const result = await h.service().signInWithGitHub(verified('taken@example.com'), { role: 'mentor' }, now);
+    expect(result).toEqual({
+      userId: 'u-1',
+      sessionVersion: 0,
+      next: '/?notice=existing_account',
+      existingAccount: true,
+    });
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]!.role).toBe('mentee');
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+    // An existing mentor gets the notice on profile setup; a plain sign-in (no intent) never shows it.
+    h.db.users[0]!.role = 'mentor';
+    expect(await h.service().signInWithGitHub(verified('taken@example.com'), { role: 'mentor' }, now)).toMatchObject({
+      next: '/mentor/profile?notice=existing_account',
+      existingAccount: true,
+    });
+    expect(await h.service().signInWithGitHub(verified('taken@example.com'), {}, now)).toMatchObject({
+      next: '/mentor/profile',
+      existingAccount: false,
+    });
+  });
+
+  it('keeps the validated return path from the attempt, also with the notice', async () => {
+    const h = harness();
+    expect(await h.service().signInWithGitHub(verified(), { next: '/mentors/7?slot=1' }, now)).toMatchObject({
+      next: '/mentors/7?slot=1',
+    });
+    expect(
+      await h.service().signInWithGitHub(verified(), { role: 'mentor', next: '/mentors/7?slot=1' }, now),
+    ).toMatchObject({
+      next: '/mentors/7?slot=1&notice=existing_account',
+    });
+  });
+
+  it('maps a unique violation on commit to 409 (two callbacks for one new person), rethrows anything else', async () => {
+    const h = harness();
+    h.db.flushError = new UniqueViolation('duplicate key value violates unique constraint "users_github_id_unique"');
+    await expect(h.service().signInWithGitHub(verified(), {}, now)).rejects.toThrow(ConflictError);
+    h.db.flushError = new Error('disk full');
+    await expect(h.service().signInWithGitHub(verified(), {}, now)).rejects.toThrow('disk full');
+    expect(h.db.users).toHaveLength(0);
+  });
+
+  it('stamps the current time by default', async () => {
+    const h = harness();
+    const before = Date.now();
+    await h.service().signInWithGitHub(verified(), {});
+    expect((h.db.users[0]!.emailVerifiedAt as Date).getTime()).toBeGreaterThanOrEqual(before);
   });
 });

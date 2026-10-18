@@ -4,6 +4,8 @@ import type { EventBus } from '../events/event-bus';
 import type { Env } from '../config/env';
 import type { SessionUserLookup } from '../http/auth';
 import type { AuthService } from '../services/auth/auth.service';
+import type { GitHubSignInService } from '../services/auth/github-sign-in.service';
+import type { GitHubClient } from '../services/github/github-client.port';
 import type { UserService } from '../services/auth/user.service';
 import type { HealthService } from '../services/health/health.service';
 import type { MailSender } from '../services/mail/mail-sender.port';
@@ -24,4 +26,8 @@ export interface Cradle {
   /** Outgoing e-mail port; adapter chosen by MAIL_ADAPTER. */
   mailSender: MailSender;
   authService: AuthService;
+  /** GitHub OAuth port; adapter chosen by GITHUB_ADAPTER, `null` when GitHub sign-in is off. */
+  githubClient: GitHubClient | null;
+  /** The start/callback flow of "Continue with GitHub". */
+  githubSignIn: GitHubSignInService;
 }

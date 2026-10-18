@@ -9,8 +9,10 @@ import { getLogger } from '../logger';
 import { EventBus } from '../events/event-bus';
 import { registerEventSubscribers } from '../events/subscribers';
 import { AuthService } from '../services/auth/auth.service';
+import { GitHubSignInService } from '../services/auth/github-sign-in.service';
 import { UserService } from '../services/auth/user.service';
 import { HealthService } from '../services/health/health.service';
+import { createGitHubClient } from '../services/github/create-github-client';
 import { createMailSender } from '../services/mail/create-mail-sender';
 import type { Cradle } from './cradle';
 
@@ -39,6 +41,8 @@ export function buildContainer(overrides: Partial<Pick<Cradle, 'getOrm' | 'env' 
     sessionUserLookup: aliasTo('userService'),
     mailSender: asFunction(createMailSender).singleton(),
     authService: asClass(AuthService).scoped(),
+    githubClient: asFunction(createGitHubClient).singleton(),
+    githubSignIn: asClass(GitHubSignInService).scoped(),
   });
   registerEventSubscribers(container.cradle);
   return container;

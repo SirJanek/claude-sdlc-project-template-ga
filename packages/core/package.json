@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@mentorhub/db": "workspace:*",
+    "arctic": "3.7.0",
     "awilix": "^13.0.5",
     "jose": "^6.2.12",
     "pino": "^10.4.0",

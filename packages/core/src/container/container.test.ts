@@ -4,6 +4,8 @@ import { parseEnv } from '../config/env';
 import { createLogger } from '../logger';
 import { EventBus } from '../events/event-bus';
 import { AuthService } from '../services/auth/auth.service';
+import { GitHubSignInService } from '../services/auth/github-sign-in.service';
+import { FakeGitHubClient } from '../services/github/adapters/fake-github-client';
 import { MockMailSender } from '../services/mail/adapters/mock-mail-sender';
 import { buildContainer, createRequestScope, withScope } from './container';
 
@@ -66,6 +68,22 @@ describe('composition root', () => {
     expect(scope.cradle.authService).toBeInstanceOf(AuthService);
     expect(scope.cradle.authService).not.toBe((await createRequestScope(c)).cradle.authService);
     expect(scope.cradle.sessionUserLookup).toBe(scope.cradle.userService);
+  });
+
+  it('registers the GitHub client by GITHUB_ADAPTER as a singleton (null when off) and the flow per scope', async () => {
+    const off = build(async () => fakeOrm(true));
+    expect(off.cradle.githubClient).toBeNull();
+    const offScope = await createRequestScope(off);
+    expect(offScope.cradle.githubSignIn).toBeInstanceOf(GitHubSignInService);
+    const on = buildContainer({
+      getOrm: async () => fakeOrm(true),
+      env: parseEnv({ NODE_ENV: 'test', GITHUB_ADAPTER: 'fake' }),
+      logger: silent,
+    });
+    expect(on.cradle.githubClient).toBeInstanceOf(FakeGitHubClient);
+    const scope = await createRequestScope(on);
+    expect(scope.cradle.githubClient).toBe(on.cradle.githubClient);
+    expect(scope.cradle.githubSignIn).not.toBe((await createRequestScope(on)).cradle.githubSignIn);
   });
 
   it('registers the event bus as a singleton and wires the subscribers once per container', async () => {
