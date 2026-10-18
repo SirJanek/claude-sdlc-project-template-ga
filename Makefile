@@ -7,7 +7,7 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: install test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
+.PHONY: install setup-browser test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
 
 install:   ## Install dependencies from the lockfile
 	pnpm install --frozen-lockfile
@@ -15,7 +15,10 @@ install:   ## Install dependencies from the lockfile
 test:      ## Unit tests in every package with the 100% coverage gate (Vitest, no database needed)
 	pnpm -r test
 
-test-integration: ## Integration suite: ephemeral PostgreSQL (testcontainers) + app driven by agent-browser. Needs Docker
+setup-browser: ## Install the headless Chrome used by agent-browser (idempotent; once per machine)
+	pnpm browser:install
+
+test-integration: setup-browser ## Integration suite: ephemeral PostgreSQL (testcontainers) + app driven by agent-browser. Needs Docker
 	pnpm test:integration
 
 lint:      ## ESLint + Prettier check
