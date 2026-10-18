@@ -6,6 +6,8 @@ describe('@mentorhub/db public API', () => {
     for (const name of [
       'User',
       'USER_ROLES',
+      'AuthToken',
+      'TOKEN_INTENT_ROLES',
       'baseProperties',
       'createOrmConfig',
       'entities',
@@ -17,5 +19,6 @@ describe('@mentorhub/db public API', () => {
       expect(db, name).toHaveProperty(name);
     }
     expect(db.entities).toContain(db.User);
+    expect(db.entities).toContain(db.AuthToken);
   });
 });

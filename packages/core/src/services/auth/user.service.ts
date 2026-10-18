@@ -6,7 +6,7 @@ import type { UserCreateInput } from '../../validators/auth/user-create.schema';
 export interface UserListItem {
   id: string;
   email: string;
-  name: string;
+  name: string | null;
   role: UserRole;
   createdAt: string;
 }

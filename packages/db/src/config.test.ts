@@ -1,16 +1,51 @@
 import { describe, expect, it } from 'vitest';
 import { MikroORM } from '@mikro-orm/postgresql';
 import { createOrmConfig } from './config';
-import { User } from './entities';
+import { AuthToken, User } from './entities';
 
 describe('ORM config', () => {
   it('maps the User entity to table "users" with the expected columns (no DB connection)', async () => {
     const orm = new MikroORM(createOrmConfig({ DATABASE_URL: 'postgresql://x:y@localhost:1/none' }));
     const meta = orm.getMetadata().get(User);
     expect(meta.tableName).toBe('users');
-    expect(Object.keys(meta.properties).sort()).toEqual(['createdAt', 'email', 'id', 'name', 'role', 'updatedAt']);
+    expect(Object.keys(meta.properties).sort()).toEqual([
+      'createdAt',
+      'email',
+      'emailVerifiedAt',
+      'githubId',
+      'id',
+      'name',
+      'role',
+      'sessionVersion',
+      'updatedAt',
+    ]);
     expect(meta.properties.email.unique).toBe(true);
     expect(meta.properties.role.items).toEqual(['mentee', 'mentor', 'admin']);
+    expect(meta.properties.name.nullable).toBe(true);
+    expect(meta.properties.githubId.unique).toBe(true);
+    expect(meta.properties.sessionVersion.default).toBe(0);
+  });
+
+  it('maps AuthToken to "auth_tokens" with a unique hashed token and no FK to users', async () => {
+    const orm = new MikroORM(createOrmConfig({ DATABASE_URL: 'postgresql://x:y@localhost:1/none' }));
+    const meta = orm.getMetadata().get(AuthToken);
+    expect(meta.tableName).toBe('auth_tokens');
+    expect(Object.keys(meta.properties).sort()).toEqual([
+      'createdAt',
+      'email',
+      'expiresAt',
+      'id',
+      'intentRole',
+      'ipHash',
+      'nextPath',
+      'tokenHash',
+      'updatedAt',
+      'usedAt',
+    ]);
+    expect(meta.properties.tokenHash.unique).toBe(true);
+    expect(meta.properties.tokenHash.columnTypes).toEqual(['char(64)']);
+    expect(meta.properties.intentRole.items).toEqual(['mentee', 'mentor']);
+    expect(Object.values(meta.properties).some((prop) => prop.kind !== 'scalar')).toBe(false);
   });
 
   it('reads the pool size and URL from the environment', () => {
