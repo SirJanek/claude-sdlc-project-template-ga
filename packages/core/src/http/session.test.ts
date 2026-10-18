@@ -80,13 +80,14 @@ describe('session cookie', () => {
     );
   });
 
-  it('reads the session cookie among others and treats a missing or empty one as absent', () => {
+  it('reads the session cookie among others; absent → undefined, present but empty → "" (still present)', () => {
     const req = (cookie?: string) => new Request('http://local/', { headers: cookie === undefined ? {} : { cookie } });
     expect(readSessionCookie(req(`a=1; ${SESSION_COOKIE}=x.y.z; b=2`))).toBe('x.y.z');
     expect(readSessionCookie(req(`${SESSION_COOKIE}=with=equals`))).toBe('with=equals');
     expect(readSessionCookie(req('a=1; b=2'))).toBeUndefined();
-    expect(readSessionCookie(req(`${SESSION_COOKIE}=`))).toBeUndefined();
     expect(readSessionCookie(req(`${SESSION_COOKIE}_other=1`))).toBeUndefined();
     expect(readSessionCookie(req())).toBeUndefined();
+    expect(readSessionCookie(req(`${SESSION_COOKIE}=`))).toBe('');
+    expect(readSessionCookie(req(`a=1; ${SESSION_COOKIE}=; b=2`))).toBe('');
   });
 });

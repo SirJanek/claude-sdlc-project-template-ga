@@ -116,6 +116,18 @@ describe('requireSession — dev admin (fail closed)', () => {
     await expect(requireSession(req(`${SESSION_COOKIE}=garbage`), { env: dev })).rejects.toThrow(UnauthorizedError);
   });
 
+  it('with the flag on, an EMPTY present cookie is a present credential → 401, not the dev admin (review round 2, finding 1)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const lookup = lookupOf(user);
+    await expect(requireSession(req(`${SESSION_COOKIE}=`), { env: dev, lookup })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`other=1; ${SESSION_COOKIE}=; x=2`), { env: dev, lookup })).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(lookup).not.toHaveBeenCalled();
+    // Without the cookie at all the dev admin still works.
+    await expect(requireSession(req('other=1'), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
+  });
+
   it('denies without the flag, with the flag outside development, and when the env cannot be read', async () => {
     await expect(requireSession(req(), { env: env() })).rejects.toThrow(UnauthorizedError);
     await expect(

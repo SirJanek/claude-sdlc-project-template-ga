@@ -30,6 +30,10 @@ describe('nextPathSchema', () => {
       '/a\x7fb',
       '/ a',
       '/\t',
+      '/ok\n', // `$` would match before a trailing newline (review round 2, finding 3)
+      '/ok\r',
+      '/ok\r\n',
+      '/\n',
     ])
       expect(nextPathSchema.safeParse(path).success, JSON.stringify(path)).toBe(false);
     // The exact escape the review demonstrated: the parser would turn it into https://evil.example/.

@@ -340,7 +340,7 @@ describe('consumeEmailLink', () => {
   it('creates a verified mentee for a new e-mail, emits auth.user.created once with method email, returns next', async () => {
     const h = harness();
     await h.request('new@example.com', { next: '/mentors/7?slot=1' });
-    const result = await h.service().consumeEmailLink(h.lastToken());
+    const result = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
     expect(h.db.users).toHaveLength(1);
     expect(h.db.users[0]).toMatchObject({
       email: 'new@example.com',
@@ -382,7 +382,7 @@ describe('consumeEmailLink', () => {
       sessionVersion: 5,
     });
     await h.request();
-    const result = await h.service().consumeEmailLink(h.lastToken());
+    const result = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
     expect(result).toEqual({ userId: 'u-admin-made', sessionVersion: 5, next: '/' });
     expect(h.db.users[0]!.emailVerifiedAt).toEqual(h.db.clock);
     expect(h.eventBus.emit).not.toHaveBeenCalled();

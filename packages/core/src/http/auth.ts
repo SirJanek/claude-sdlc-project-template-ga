@@ -77,8 +77,9 @@ export async function requireSession(request: Request, deps: RequireSessionDeps 
     throw new UnauthorizedError();
   }
   const token = readSessionCookie(request);
-  if (token) {
-    const session = await sessionFromCookie(token, env, deps);
+  if (token !== undefined) {
+    // Present at all — even empty or malformed — means "verify this", never "fall back".
+    const session = token === '' ? null : await sessionFromCookie(token, env, deps);
     if (!session) throw new UnauthorizedError();
     return session;
   }

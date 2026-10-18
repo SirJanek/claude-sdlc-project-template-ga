@@ -1,7 +1,19 @@
+import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
+import { promisify } from 'node:util';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
-import { devOutbox, devUrl, prodOutbox, prodUrl, psql } from './env';
+import { databaseUrl, devOutbox, devUrl, holdTransaction, prodOutbox, prodUrl, psql } from './env';
+
+const run = promisify(execFile);
+/** Signed-in cookie for `email` through the real link flow (one link per call). */
+async function signIn(base: string, outbox: string, email: string): Promise<string> {
+  expect((await requestLink(base, email)).status).toBe(200);
+  return cookieOf(await post(base, '/api/auth/email/consume', { token: tokenOf(linkFor(outbox, email)) }));
+}
+const sessionVersion = (email: string) => psql(`select session_version from users where email = '${email}'`);
+/** Lets a blocked statement reach the database before the held transaction commits. */
+const settle = () => new Promise((r) => setTimeout(r, 750));
 import { evidencePath } from './evidence';
 
 /**
@@ -180,6 +192,42 @@ describe('sessions over the API (production server)', () => {
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie: first } })).status).toBe(401);
   });
 
+  it('an overlapping revocation on real PostgreSQL loses nothing: a held UPDATE + the API bump → +2 (review round 2, finding 2)', async () => {
+    const cookie = await signIn(prodUrl(), prodOutbox(), 'overlap@example.com');
+    expect(sessionVersion('overlap@example.com')).toBe('0');
+    // Another revocation, mid-flight and uncommitted: the API's UPDATE blocks on the row lock until it commits.
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'overlap@example.com'",
+      'UPDATE 1',
+    );
+    const revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
+    await settle();
+    expect(sessionVersion('overlap@example.com')).toBe('0'); // still blocked: nothing committed yet
+    await held.commit();
+    expect((await revocation).status).toBe(200);
+    // A read-then-write would have written the stale "0 + 1" over the held transaction's increment.
+    expect(sessionVersion('overlap@example.com')).toBe('2');
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
+  it('make set-role overlapping a revocation keeps both increments and the new role (review round 2, finding 2)', async () => {
+    const cookie = await signIn(prodUrl(), prodOutbox(), 'promote@example.com');
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'promote@example.com'",
+      'UPDATE 1',
+    );
+    const cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
+      env: { ...process.env, DATABASE_URL: databaseUrl() },
+    });
+    await settle();
+    expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee'); // CLI still blocked
+    await held.commit();
+    const { stdout } = await cli;
+    expect(stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+    expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
+    expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
   it('a role change through the database ends the session too (sessionVersion bump = make set-role)', async () => {
     expect((await requestLink(prodUrl(), 'api@example.com')).status).toBe(200);
     const res = await post(prodUrl(), '/api/auth/email/consume', {
@@ -215,6 +263,8 @@ describe('sessions over the API (production server)', () => {
       '//evil.example',
       '/\\evil.example',
       'https://evil.example/',
+      '/ok\n', // a trailing line terminator slipped past an anchored `$` (review round 2, finding 3)
+      '/ok\r',
     ]) {
       const res = await post(prodUrl(), '/api/auth/email/start', { email: 'redirect@example.com', next });
       expect(res.status, JSON.stringify(next)).toBe(422);
@@ -256,8 +306,13 @@ describe('development server with ALLOW_DEV_ADMIN=1', () => {
     const asUser = await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie } });
     expect(await asUser.json()).toMatchObject({ ok: true, data: { email: 'dev@example.com', role: 'mentee' } });
     expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie } })).status).toBe(403);
-    // A present cookie that cannot be trusted is 401, never the dev admin (review finding 4).
+    // A present cookie that cannot be trusted is 401, never the dev admin (review finding 4) — an EMPTY one too (round 2, finding 1).
     expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie: 'mh_session=garbage' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie: 'mh_session=' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie: 'mh_session=' } })).status).toBe(401);
+    expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie: 'other=1; mh_session=; x=2' } })).status).toBe(
+      401,
+    );
     psql("update users set session_version = session_version + 1 where email = 'dev@example.com'");
     expect((await fetch(`${devUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
     expect((await fetch(`${devUrl()}/api/users`, { headers: { cookie } })).status).toBe(401);
