@@ -21,6 +21,15 @@
 - CI run 39086347486: green; artifact downloaded and checked (4 screenshots from the Linux runner,
   4 logs, junit 12 tests / 0 failures, results.json); Chrome restored from cache.
 
+## Claude review (decision D)
+
+- Claude GitHub App installed and `CLAUDE_CODE_OAUTH_TOKEN` added by Jan; PR #6 run was skipped by the
+  action's own guard (workflow file must match the default branch); PR #7 run failed: "Unable to
+  verify organization … a860e8b8-…" — the token belongs to the C&F company account whose managed
+  policy (`forceLoginOrgUUID`) follows it into CI.
+- Options were: personal Pro/Max token, personal API key, ask C&F IT, disable. **Jan chose D:**
+  workflow disabled with `gh workflow disable "Claude review"` (file kept), back in L03.
+
 ## Handoff
 
 - **Next step:** none — PR #6 merged, spec moved to `implemented/`.

@@ -8,6 +8,7 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — A Claude token from the C&F company account cannot run outside C&F machines: its managed policy (`forceLoginOrgUUID` a860e8b8-…) follows the token, so `claude setup-token` in GitHub Actions fails with "Unable to verify organization". The Claude review workflow is disabled (`gh workflow disable "Claude review"`) until L03; re-enable only with a token outside the C&F organization.
 - 2026-10-18 — actions/upload-artifact (v4+) skips hidden files: a dot-folder like `.evidence` uploads nothing unless `include-hidden-files: true`. Use `if-no-files-found: error` for evidence — `warn` let a green job ship without proof.
 - 2026-10-18 — Vitest file reporters (junit, json) open their output file at startup, before global setup: never delete those files in setup (the reporter keeps writing to an unlinked inode and the report vanishes). Clean only what setup itself produces.
 - 2026-10-18 — Gate dev-only behaviour on an allowlist (`NODE_ENV === "development"`), never on `!== "production"`: Vitest sets NODE_ENV=test, `next start` kept it, and the dev-admin flag opened on a production build (found by the integration suite). Child servers started from tests must not inherit NODE_ENV.
