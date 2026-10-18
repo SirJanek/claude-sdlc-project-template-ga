@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-18 · **Agent:** Claude Code (Sonnet 5.5) via `om-auto-fix-issue` → `om-auto-write-spec` → `om-auto-implement-spec`
 **Issue:** #17 · **Spec PR:** #18
-Source doc: .ai/specs/2026-10-18-admin-skeleton-event-bus.md
+Source doc: .ai/specs/implemented/2026-10-18-admin-skeleton-event-bus.md
 
 ## Goal
 
@@ -35,8 +35,21 @@ See the PR body: unit tests at 100% coverage in every package, `make test-integr
 
 ## Status
 
-Implementation PR in review; spec PR #18 in review.
+Spec PR #18 merged (`7bccf9b`); implementation PR #19 awaiting Jan's QA.
 
 ## Handoff
 
 Jan: QA (screenshots in the PR), merge spec PR #18 and the implementation PR (spec first). Not merged and no `qa-approved` from the agent.
+
+## Close-out (Claude Code session, outside Cezar)
+
+- Merge conflict on this file (both PRs added it): kept the implementation version — it extends the
+  spec-phase log and supersedes its "Dashboard has no session check" line.
+- Independent re-review on `f19c9dd` (run in Cezar, Opus): no correctness/security defect; one process
+  major — `risk-high` by SDLC inference with the wrong-role integration case missing. Resolved by Jan's
+  maintainer waiver on PR #19 (no non-admin session before the auth spec) and the relabel to `risk-high`.
+- Spec PR #18 fixed after its review (risk class, Out list, Progress, step 8, AC5), re-reviewed: approve; merged.
+- Spec moved to `.ai/specs/implemented/` with Progress filled, in this PR.
+- Cezar on the company Mac needed `CEZ_CLAUDE_BIN` → `~/.cezar/bin/claude-auto` (auto instead of dontAsk,
+  because the C&F policy has no managed allow list); first attempt in dontAsk was blocked on every write.
+
