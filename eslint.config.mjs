@@ -28,6 +28,9 @@ export default tseslint.config(
       '**/next-env.d.ts',
       'packages/db/src/migrations/**',
       'docs/discovery/mockups/**',
+      // Agent worktrees (Open Mercato skills, Cezar) are full repo copies — lint them in place, not twice.
+      '.ai/tmp/**',
+      '.ai/cezar/worktrees/**',
     ],
   },
   js.configs.recommended,

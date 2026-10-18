@@ -80,3 +80,44 @@ runs; moving the evidence directory.
 and — for a CI job name — branch protection in the same change (a renamed required check blocks
 every PR until protection is updated). Workflow files are a protected path (AGENTS.md hard rule):
 ask first.
+
+## 7. Session, roles and CSRF (`packages/core/src/http/auth.ts`, `apiHandler.ts`, `ui/src/backend/api/apiCall.ts`)
+
+The `Session` shape (`userId`, `role`, `isDevSession`), the roles `mentee` / `mentor` / `admin`
+(`USER_ROLES` in `packages/db/src/entities/auth/user.entity.ts`) and the CSRF header
+`x-mentorhub-request: 1` (`REQUEST_HEADER`, sent by `apiCall`, checked by `apiHandler` on
+state-changing methods). Real authentication is not implemented yet: the only session is the
+local dev admin (`ALLOW_DEV_ADMIN=1` **and** `NODE_ENV=development`), every other caller is denied.
+**Breaking:** renaming or removing a role, the header or a `Session` field; loosening the
+dev-admin allowlist (that is a security defect, not a compatibility change); once auth ships,
+renaming the session cookie.
+**Required path:** change server (`core/src/http`) and client (`ui/src/backend/api`) in the same
+PR, with an integration test for the denied path; `risk-high` label and a second reviewer.
+
+## Product decisions
+
+None recorded yet. When `om-discover` writes `.ai/specs/product-brief.md`, its Non-goals,
+Business rules and Decisions tables become a protected contract here too (see `SDLC.md`): a change
+that contradicts an active entry needs a superseding entry approved by its owner in the same PR.
+
+## How to make a breaking change
+
+1. Name the surface and the section above in the PR body under **💥 Breaking changes**: who is
+   affected and how they migrate.
+2. Update this file in the same PR when the surface itself changes shape.
+3. Update every in-repo consumer in the same PR — `make check` and, for routes, pages and
+   migrations, a green **Integration** run (`run-integration` label) are the proof.
+4. Prefer expand-then-contract over a single cut for schema and export renames (add the new shape,
+   migrate consumers, remove the old one in a later PR).
+5. Label the PR `risk-high` where `SDLC.md` says so (schema migrations, shared contracts, auth,
+   money) and get a second reviewer.
+
+## What is not protected
+
+Internal, unexported helpers; Tailwind classes and page markup beyond what the integration tests
+assert on (`tests/integration/app.test.ts`: the landing `h1` text, the admin users table
+`[data-slot=data-table]` rows, the empty state `No users yet.`, the error alert text); the
+placeholder `User` fields of the bootstrap model; the output wording of `make setup` other than
+its exit codes; and anything under `docs/discovery/mockups/` (prototypes, not product). These
+still change through tests and migrations, just without the breaking-change paperwork.
+

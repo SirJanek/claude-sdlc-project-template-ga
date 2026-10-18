@@ -79,6 +79,28 @@ Stop reporting a finding once an earlier pass reported it.
 - A run log in `.ai/runs/` exists for AI-authored work, and the spec moves to
   `.ai/specs/implemented/` when the work is done.
 
+## Validation gate
+
+Every PR passes, in this order, the gate in `.ai/agentic.config.json` › `validation.commands`:
+
+1. `make check` — lint (ESLint + Prettier) → typecheck → unit tests at 100% coverage in every
+   package → build → audit.
+
+CI runs the same steps as five required checks (**Lint**, **Typecheck**, **Unit tests (100%
+coverage)**, **Build**, **Audit**). **Integration** (testcontainers + agent-browser) runs on demand:
+a PR touching a route, page or migration must carry `run-integration` and show a green run on its
+head. A failing or unexecuted gate step is a blocker, whoever caused it. Re-review after the last
+fix — an approval of an earlier head does not cover later commits.
+
+## Spec-driven development artifacts
+
+- Non-trivial work links a spec in `.ai/specs/YYYY-MM-DD-slug.md` with an accepted
+  `## Implementation plan`; the PR body carries `Source doc:` (and `Tracking plan:` for agent runs).
+- Every AI run leaves `.ai/runs/YYYY-MM-DD-slug.md` (decisions with reasons, verification).
+- The spec moves to `.ai/specs/implemented/` in the PR that completes it, with its Progress table
+  filled; a lesson that should persist goes to `.ai/lessons.md`, a standing rule change also
+  updates `AGENTS.md` in the same PR.
+
 ## Severity
 
 Report as **Important** (blocks approval) only if at least one holds:

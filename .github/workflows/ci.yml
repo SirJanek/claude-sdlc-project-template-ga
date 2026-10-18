@@ -52,11 +52,21 @@ jobs:
             echo '### Unit test coverage'
             echo '| Package | Lines | Branches | Functions | Statements |'
             echo '|---|---|---|---|---|'
-            for f in packages/*/coverage/coverage-summary.json; do
+            for f in packages/*/coverage/coverage-summary.json tools/*/coverage/coverage-summary.json; do
               [ -f "$f" ] || continue
               node -e 'const t=require("./'"$f"'").total;const p=process.argv[1];console.log(`| ${p} | ${t.lines.pct}% | ${t.branches.pct}% | ${t.functions.pct}% | ${t.statements.pct}% |`)' "$(basename "$(dirname "$(dirname "$f")")")"
             done
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload unit coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: unit-coverage-${{ github.run_id }}
+          path: |
+            packages/*/coverage/
+            tools/*/coverage/
+          retention-days: 7
+          if-no-files-found: warn
 
   build:
     name: Build
