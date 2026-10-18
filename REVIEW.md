@@ -2,6 +2,7 @@
 
 Read by the PR review agent (`.github/workflows/claude-review.yml`) and by `/code-review`.
 Humans still approve through branch protection; this file decides what the agent says first.
+The full repo-specific checklist used by the Open Mercato review skills is [`CODE_REVIEW.md`](CODE_REVIEW.md).
 
 ## Passes
 

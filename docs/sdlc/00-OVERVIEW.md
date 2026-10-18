@@ -1,5 +1,8 @@
 # SDLC — MentorHub
 
+> **Główny opis przepływu pracy to [`SDLC.md`](../../SDLC.md)** (pipeline Open Mercato: issue → PR,
+> labelki, bramka QA, claim). Ten plik zostaje jako kursowy przegląd etapów i pasm ryzyka.
+
 Jak pracujemy. Sześć etapów, każdy zostawia artefakt, który czyta następny.
 Historia commitów jest audit trailem — nie ma osobnego procesu „na zgodność".
 

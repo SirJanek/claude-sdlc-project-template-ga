@@ -33,7 +33,7 @@ build:     ## Production build of the Next.js app
 audit:     ## Dependency vulnerabilities (high and above); exceptions live in pnpm-workspace.yaml
 	pnpm audit --audit-level high
 
-check: lint typecheck test build audit   ## Everything CI runs. "Done" means this passed.
+check: lint typecheck test build audit   ## Every required CI check (integration is on demand: make test-integration). "Done" means this passed.
 
 dev: db-up ## Run locally: database in Docker + Next.js dev server on :3000 (dev-admin access on)
 	ALLOW_DEV_ADMIN=1 pnpm dev

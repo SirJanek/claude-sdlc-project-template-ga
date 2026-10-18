@@ -1,5 +1,5 @@
 # Safety net for every pull request (and pushes to develop). Each job is its own check so a
-# failure points at the broken layer. Same commands as locally — `make <target>` — so "green on my
+# failure points at the broken layer. Integration tests run on demand: see integration.yml. Same commands as locally — `make <target>` — so "green on my
 # machine" and "green in CI" mean the same thing. See AGENTS.md › Testing.
 name: CI
 
@@ -66,57 +66,6 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: make build
-
-  integration:
-    name: Integration (testcontainers + agent-browser)
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v7
-      - uses: ./.github/actions/setup
-      - name: agent-browser version
-        id: agent-browser
-        run: echo "version=$(node -p 'require("./node_modules/agent-browser/package.json").version')" >> "$GITHUB_OUTPUT"
-      - name: Cache agent-browser Chrome
-        uses: actions/cache@v6
-        with:
-          path: ~/.agent-browser/browsers
-          key: agent-browser-chrome-${{ runner.os }}-${{ steps.agent-browser.outputs.version }}
-      - name: Install the agent-browser Chrome and its system libraries
-        run: pnpm exec agent-browser install --with-deps
-      - run: make test-integration
-      - name: Integration summary
-        if: always()
-        run: |
-          node -e '
-            const fs = require("fs");
-            const file = "tests/integration/.evidence/results.json";
-            const out = ["### Integration tests (testcontainers + agent-browser)"];
-            if (!fs.existsSync(file)) { out.push("", "No results file — the suite did not reach the tests (see the job log and the evidence artifact)."); }
-            else {
-              const r = JSON.parse(fs.readFileSync(file, "utf8"));
-              out.push("", `**${r.numPassedTests} passed, ${r.numFailedTests} failed, ${r.numPendingTests} skipped** of ${r.numTotalTests}`, "", "| File | Passed | Failed | Skipped |", "|---|---|---|---|");
-              for (const t of r.testResults) {
-                const c = (s) => t.assertionResults.filter((a) => a.status === s).length;
-                out.push(`| ${t.name.split("tests/integration/")[1] ?? t.name} | ${c("passed")} | ${c("failed")} | ${c("pending") + c("skipped")} |`);
-              }
-              const failed = r.testResults.flatMap((t) => t.assertionResults.filter((a) => a.status === "failed").map((a) => a.fullName));
-              if (failed.length) out.push("", "**Failed:**", ...failed.map((f) => `- ${f}`));
-            }
-            out.push("", "Screenshots, server logs and reports: artifact `integration-evidence-${{ github.run_id }}` (Summary page of this run).");
-            console.log(out.join("\n"));
-          ' >> "$GITHUB_STEP_SUMMARY"
-      - name: Upload integration evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: integration-evidence-${{ github.run_id }}
-          path: tests/integration/.evidence/
-          retention-days: 14
-          # .evidence is a dot-folder: upload-artifact skips hidden files unless told otherwise.
-          include-hidden-files: true
-          # Missing evidence is a failure, not a warning — a green job without proof proves nothing.
-          if-no-files-found: error
 
   audit:
     name: Audit

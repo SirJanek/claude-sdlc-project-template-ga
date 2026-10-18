@@ -98,7 +98,7 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 | Typecheck | `make typecheck` |
 | Build | `make build` |
 | Audit | `make audit` (`pnpm audit --audit-level high`; documented exceptions in `pnpm-workspace.yaml`) |
-| Full local check | `make check` — lint, typecheck, unit tests, build, audit (CI also runs `make test-integration`) |
+| Full local check | `make check` — lint, typecheck, unit tests, build, audit (integration is on demand: `make test-integration`, or the `run-integration` PR label) |
 | Run locally | `make dev` (starts the DB, then Next.js on :3000 with dev-admin access) |
 | Database | `make db-up`, `make db-down`, `make db-migrate`, `make db-migration NAME=<slug>` |
 
@@ -113,7 +113,8 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   finding. When adding a rule, prove the test fails without it (mutation) before calling it done.
 - **Every new route, page or migration also gets an integration test** in `tests/integration/`
   (ephemeral PostgreSQL via testcontainers, the app driven by agent-browser in its own session).
-  Run `make test-integration` before opening the PR. Browser steps call `browser.screenshot(...)`;
+  Run `make test-integration` before opening the PR and add the `run-integration` label to the PR (CI then runs **Integration** on that PR and on every later push) or start it by hand (Actions → Integration → Run workflow); a green
+  **Integration** run is then expected before merge. Browser steps call `browser.screenshot(...)`;
   failures screenshot themselves. Evidence (screenshots, server logs, `junit.xml`, `results.json`)
   lands in `tests/integration/.evidence/` and CI uploads it as artifact
   `integration-evidence-<run id>` — on failure too. Look there before guessing why a test failed.
@@ -121,7 +122,11 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   (thin CLI entry points whose logic lives in tested modules). Adding an exclusion needs a spec.
 - Never put non-migration files in `packages/db/src/migrations/` (the migrator would load them).
 - CI (`.github/workflows/ci.yml`) runs on every PR: **Lint**, **Typecheck**, **Unit tests (100%
-  coverage)**, **Build**, **Integration (testcontainers + agent-browser)**, **Audit**.
+  coverage)**, **Build**, **Audit** — the five required checks. **Integration (testcontainers +
+  agent-browser)** (`.github/workflows/integration.yml`) runs **on demand only** (course
+  recommendation: too slow for every PR): `run-integration` label or a manual run. Not required
+  by branch protection — the rule above and `CODE_REVIEW.md` make it required for routes, pages
+  and migrations.
 
 ## Conventions
 
@@ -239,19 +244,18 @@ Rules — follow them on every task, without being reminded:
 `00-OVERVIEW.md`, `bands.yaml` and `LESSONS.md` (production incidents only — agent learnings
 go to `.ai/lessons.md`). The `/sdlc-*` commands read and write `.ai/specs/`.
 
-**Open Mercato skills (`om-*`) are installed per project (L03, 2026-10-18), the pipeline is not
-configured yet — run `/om-setup-agent-pipeline` only when Jan asks.** Installed with
-`npx skills add open-mercato/skills --skill '*' -a claude-code -a codex`: files live in
-`.agents/skills/` (Codex reads them directly, `$om-…`), `.claude/skills/om-*` are symlinks for
-Claude Code (`/om-…`), versions pinned by hash in `skills-lock.json`. Treat them as vendored: do
-not edit or reformat them (excluded from Prettier); update with `npx skills update -p`, restore
-on a fresh clone with `npx skills experimental_install`; project overrides go to `.ai/skills/`.
-Order agreed with the course: stack and repo setup (L02) → safety net (CI, tests,
-`make check` wired) → Open Mercato pipeline and SDLC (L03). When setup runs:
-`tracker: github`, `validation.commands: ["make check"]`, `paths.analysis: ".ai/analyses"`,
-`paths.prototypes: "docs/discovery/mockups"`, keep `runs`/`specs` defaults, and decide which
-process description is primary (`docs/sdlc/00-OVERVIEW.md` vs the generated `SDLC.md`). Until then the `om-*`
-skills stop on the missing `.ai/agentic.config.json` — that is expected.
+**Open Mercato pipeline is configured (L03, 2026-10-18).** The skills (`om-*`) read
+`.ai/agentic.config.json` (tracker `github` → `.ai/trackers/github.md`, browser `agent-browser` →
+`.ai/browsers/agent-browser.md`, validation `make check`, full label taxonomy, QA gate on,
+`paths.analysis: .ai/analyses`, `paths.prototypes: docs/discovery/mockups`). The process lives in
+`SDLC.md` (primary; `docs/sdlc/00-OVERVIEW.md` is the course overview), review rules in
+`CODE_REVIEW.md`, protected contracts in `BACKWARD_COMPATIBILITY.md` — change config and `SDLC.md`
+together and re-run `/om-setup-agent-pipeline` when the toolchain or labels change.
+Installed with `npx skills add open-mercato/skills --skill '*' -a claude-code -a codex`: files in
+`.agents/skills/` (Codex: `$om-…`), symlinks in `.claude/skills/om-*` (Claude Code: `/om-…`),
+pinned in `skills-lock.json`. Treat them as vendored: do not edit or reformat them; update with
+`npx skills update -p`, restore on a fresh clone with `npx skills experimental_install`;
+project overrides go to `.ai/skills/<skill-name>/SKILL.md`.
 
 ## Things agents get wrong
 
