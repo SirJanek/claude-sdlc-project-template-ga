@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
 import { devUrl, prodUrl, psql, stopDatabase } from './env';
 
@@ -13,6 +13,11 @@ beforeAll(() => {
   );
 });
 
+// A screenshot of the page at the moment a test fails — the most useful evidence of all.
+afterEach(({ task }) => {
+  if (task.result?.state === 'fail') browser.screenshot(`FAILED-${task.name}`);
+});
+
 afterAll(() => {
   browser.close();
 });
@@ -20,12 +25,14 @@ afterAll(() => {
 describe('MentorHub app (ephemeral PostgreSQL)', () => {
   it('renders the public landing page', () => {
     browser.open(`${devUrl()}/`);
+    browser.screenshot('landing');
     expect(browser.text('h1')).toBe('Grow faster with a mentor who has done it before');
   });
 
   it('redirects /admin to /admin/users and lists the seeded users in the DataTable', () => {
     browser.open(`${devUrl()}/admin`);
     browser.waitForText('Ops Admin');
+    browser.screenshot('admin-users');
     expect(browser.url()).toBe(`${devUrl()}/admin/users`);
     expect(browser.count('[data-slot=data-table] tbody tr')).toBe(2);
     expect(browser.text('[data-slot=data-table] tbody tr:first-child td:nth-child(2)')).toBe('ops@example.com');
@@ -62,6 +69,7 @@ describe('MentorHub app (ephemeral PostgreSQL)', () => {
     psql('delete from users');
     browser.open(`${devUrl()}/admin/users`);
     browser.waitForText('No users yet.');
+    browser.screenshot('admin-users-empty');
     expect(browser.count('[data-slot=data-table]')).toBe(0);
   });
 
@@ -73,6 +81,7 @@ describe('MentorHub app (ephemeral PostgreSQL)', () => {
     expect(await res.json()).toEqual({ status: 'degraded', db: 'down' });
     browser.open(`${devUrl()}/admin/users`);
     browser.waitForText('Something went wrong. Please try again.');
+    browser.screenshot('admin-users-db-down');
     expect(browser.text('[role=alert]')).toContain('Try again');
   });
 });

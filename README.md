@@ -67,6 +67,7 @@ Każdy pull request uruchamia w GitHub Actions ([ci.yml](.github/workflows/ci.ym
 
 - **Testy jednostkowe:** Vitest z pokryciem v8, próg **100%** (linie, gałęzie, funkcje, instrukcje) w każdym pakiecie. Każda nowa funkcja musi go utrzymać, co jest regułą w `AGENTS.md`.
 - **Testy integracyjne** (`tests/integration/`): każdy przebieg stawia świeży kontener PostgreSQL, puszcza migracje, uruchamia aplikację w trybie dev i produkcyjnym, a agent-browser klika po niej we własnej sesji. Po przebiegu nic nie zostaje, więc kilku agentów na osobnych worktree może testować równolegle.
+- **Dowody:** każdy krok w przeglądarce zapisuje zrzut ekranu, a porażka zapisuje zrzut `FAILED-…`. Do tego logi migracji, buildu i serwerów oraz raporty JUnit/JSON. W CI trafiają jako artefakt `integration-evidence-<run id>` (także przy porażce), a podsumowanie joba pokazuje tabelę wyników. Lokalnie są w `tests/integration/.evidence/`.
 
 Reguły dla agentów: [AGENTS.md](AGENTS.md) oraz `AGENTS.md` w każdym pakiecie.
 

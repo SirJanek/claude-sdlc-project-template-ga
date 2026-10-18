@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { evidencePath } from './evidence';
 
 const bin = fileURLToPath(new URL('../../node_modules/.bin/agent-browser', import.meta.url));
 
@@ -21,6 +22,8 @@ export function createBrowser(name: string) {
     text: (selector: string) => run('get', 'text', selector),
     count: (selector: string) => Number(run('get', 'count', selector)),
     url: () => run('get', 'url'),
+    /** Saves a full-page screenshot to the evidence folder as `<file>-<name>.png`. */
+    screenshot: (shot: string) => run('screenshot', '--full', evidencePath(`${name}-${shot}.png`)),
     close: () => run('close'),
   };
 }

@@ -1,7 +1,7 @@
 # Spec: CI safety net — build, lint, unit tests at 100% coverage, ephemeral integration tests
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
-**Standard:** [.ai/docs/engineering-standards.md](../docs/engineering-standards.md) › Code Review Checklist, Correctness & tests
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
+**Standard:** [.ai/docs/engineering-standards.md](../../docs/engineering-standards.md) › Code Review Checklist, Correctness & tests
 **Status:** accepted · requested by Jan on 2026-10-18 (prompt: CI for every PR — build, lint, unit tests, integration with testcontainers PostgreSQL + agent-browser; AGENTS.md rule of 100% unit coverage; cover existing code to 100%)
 
 ## Scope

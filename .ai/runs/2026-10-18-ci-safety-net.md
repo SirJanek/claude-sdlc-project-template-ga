@@ -1,7 +1,7 @@
 # Run: CI safety net (build, lint, unit 100%, integration with testcontainers + agent-browser)
 
 **Date:** 2026-10-18 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan
-**Spec:** [.ai/specs/2026-10-18-ci-safety-net.md](../specs/2026-10-18-ci-safety-net.md)
+**Spec:** [.ai/specs/implemented/2026-10-18-ci-safety-net.md](../specs/implemented/2026-10-18-ci-safety-net.md)
 **Branch:** `feat/ci-safety-net` from `develop` (`f9027ab`)
 **Status:** done — PR #5
 

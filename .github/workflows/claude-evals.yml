@@ -8,7 +8,7 @@
 # that arrives with a red badge teaches the team to ignore red — which is precisely what an
 # eval suite exists to prevent. It starts enforcing on its own the moment the stubs are gone.
 #
-# Setup: add ANTHROPIC_API_KEY to repository secrets.
+# Setup: add the CLAUDE_CODE_OAUTH_TOKEN secret (`claude setup-token`, subscription) — or ANTHROPIC_API_KEY.
 name: Claude evals
 
 on:
@@ -70,6 +70,7 @@ jobs:
         id: evals
         if: steps.wiring.outputs.ready == 'true'
         env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           set -o pipefail

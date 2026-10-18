@@ -4,7 +4,8 @@
 # changes is what the human reads: a diff that has already had its mechanical defects
 # found, so attention goes to judgement calls.
 #
-# Setup: add ANTHROPIC_API_KEY to repository secrets.
+# Setup: install the Claude GitHub App on this repo and add the CLAUDE_CODE_OAUTH_TOKEN secret
+# (`claude setup-token`, uses the Claude subscription instead of per-token API billing).
 name: Claude review
 
 on:
@@ -35,7 +36,7 @@ jobs:
 
       - uses: anthropics/claude-code-action@v1
         with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           prompt: |
             Review this pull request against REVIEW.md. Run every pass it defines, in order.
 
