@@ -64,7 +64,7 @@ describe('composition root', () => {
     const scope = await createRequestScope(c);
     expect(scope.cradle.eventBus).toBe(c.cradle.eventBus);
     expect(scope.cradle.userService).not.toBe((await createRequestScope(c)).cradle.userService);
-    await c.cradle.eventBus.emit('auth.user.created', { userId: 'u1', email: 'a@b.io' });
+    await c.cradle.eventBus.emit('auth.user.created', { userId: 'u1', email: 'a@b.io', method: 'admin' });
     expect(lines.filter((l) => l.includes('domain event'))).toHaveLength(1);
     const other = buildContainer({ getOrm: async () => fakeOrm(true), env, logger });
     expect(other.cradle.eventBus).not.toBe(c.cradle.eventBus);

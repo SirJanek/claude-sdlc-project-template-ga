@@ -1,5 +1,6 @@
 import { isUniqueViolation, User, type EntityManager, type UserRole } from '@mentorhub/db';
 import type { EventBus } from '../../events/event-bus';
+import type { SessionUser, SessionUserLookup } from '../../http/auth';
 import { ConflictError } from '../../http/errors';
 import type { UserCreateInput } from '../../validators/auth/user-create.schema';
 
@@ -24,13 +25,27 @@ function toListItem(user: User): UserListItem {
 }
 
 /** Users concept (auth). Request-scoped: owns the request's EntityManager fork. */
-export class UserService {
+export class UserService implements SessionUserLookup {
   private readonly em: EntityManager;
   private readonly eventBus: EventBus;
 
   constructor({ em, eventBus }: { em: EntityManager; eventBus: EventBus }) {
     this.em = em;
     this.eventBus = eventBus;
+  }
+
+  /** The fields requireSession compares a token against; `null` for an unknown id. */
+  async findForSession(userId: string): Promise<SessionUser | null> {
+    const user = await this.em.findOne(User, { id: userId });
+    if (!user) return null;
+    return {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      sessionVersion: user.sessionVersion,
+      emailVerifiedAt: user.emailVerifiedAt,
+    };
   }
 
   async list(): Promise<UserListItem[]> {
@@ -48,7 +63,7 @@ export class UserService {
       if (isUniqueViolation(error)) throw new ConflictError('A user with this email already exists.');
       throw error;
     }
-    await this.eventBus.emit('auth.user.created', { userId: user.id, email: user.email });
+    await this.eventBus.emit('auth.user.created', { userId: user.id, email: user.email, method: 'admin' });
     return toListItem(user);
   }
 }

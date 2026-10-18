@@ -17,7 +17,7 @@ const ctx = (params: Record<string, string> = {}) => ({ params: Promise.resolve(
 const write = (method: string, url: string, body?: string) =>
   new Request(url, { method, headers: { [REQUEST_HEADER]: '1' }, body });
 
-function make(authorize: (() => void) | 'public' | null = 'public', scoped = true) {
+function make(authorize: (() => Promise<void>) | 'public' | null = 'public', scoped = true) {
   const service: FakeService = { items: ['a', 'b'], calls: [] };
   const route = makeCrudRoute<FakeService, { name: string }, { name: string }>({
     service: () => service,
@@ -88,18 +88,25 @@ describe('makeCrudRoute', () => {
     }
   });
 
-  it('authorizes before calling the service, with a custom guard', async () => {
-    const { route, service } = make(() => {
+  it('awaits an async guard before calling the service: a rejected guard denies every method', async () => {
+    const { route, service } = make(async () => {
+      await Promise.resolve();
       throw new UnauthorizedError();
     });
     expect((await route.GET(new Request('http://local/api/x'), ctx())).status).toBe(401);
     expect((await route.POST(write('POST', 'http://local/api/x', '{"name":"Ann"}'), ctx())).status).toBe(401);
+    expect((await route.PUT(write('PUT', 'http://local/api/x?id=1', '{"name":"Ann"}'), ctx())).status).toBe(401);
+    expect((await route.DELETE(write('DELETE', 'http://local/api/x?id=1'), ctx())).status).toBe(401);
     expect(service.calls).toEqual([]);
   });
 
-  it('defaults to requireSession, which fails closed without the dev flag', async () => {
-    const res = await make(null).route.GET(new Request('http://local/api/x'), ctx());
+  it('defaults to requireSession: an unauthenticated GET /api/users is 401, never the list', async () => {
+    // Mutation check (spec › Phase 1 step 4): drop the `await` on authorize and this returns 200 with the data.
+    const { route, service } = make(null);
+    const res = await route.GET(new Request('http://local/api/users'), ctx());
     expect(res.status).toBe(401);
+    expect(await res.json()).toEqual({ ok: false, error: { code: 'unauthorized', message: 'Sign-in required.' } });
+    expect(service.items).toEqual(['a', 'b']);
   });
 
   it('defaults to withScope for the request scope', async () => {
