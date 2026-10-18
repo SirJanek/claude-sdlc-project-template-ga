@@ -12,7 +12,8 @@
     "migrate": "tsx src/scripts/migrate.ts up",
     "migrate:down": "tsx src/scripts/migrate.ts down",
     "migration:create": "tsx src/scripts/migrate.ts create",
-    "migrate:status": "tsx src/scripts/migrate.ts status"
+    "migrate:status": "tsx src/scripts/migrate.ts status",
+    "set-role": "tsx src/scripts/set-role.ts"
   },
   "dependencies": {
     "@mikro-orm/core": "^7.2.5",
