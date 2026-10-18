@@ -7,6 +7,8 @@ pnpm-lock.yaml
 docs/
 .ai/
 .claude/
+.agents/
+skills-lock.json
 .github/
 evals/
 packages/db/src/migrations/
