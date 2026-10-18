@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH_LIMITS, RULES, introPrice, isBookable, isFreeCancellation, platformFeePercent, sessionPrice } from './rules';
+import {
+  AUTH_LIMITS,
+  RULES,
+  introPrice,
+  isBookable,
+  isFreeCancellation,
+  platformFeePercent,
+  sessionPrice,
+} from './rules';
 
 const at = (iso: string) => new Date(iso);
 
