@@ -2,8 +2,8 @@
 
 - Date: 2026-10-18
 - Mode: own; Owner: Jan; Pass: Quick pass
-- Evidence basis: seven interviews held by the two founders between 2026-08-20 and 2026-09-03 (four developers looking for help, one of whom solves problems alone; three senior engineers on the mentor side), one 14-day help-channel export and one 54-response survey from the same developer Discord, five competitor pages checked on 2026-09-04, workshop and board exports, and decisions D01–D13. Interviews are founders' notes, conducted in Polish; the survey records stated intentions, not payments. The most consequential untested belief is A01: that a developer with a deadline pays for a scheduled text session.
-- Coverage: 61 claims — 54 sourced (interview 12, data 3, document 34, product 0, benchmark 5), 0 synthetic, 7 assumed; 1 entries on the collection plan
+- Evidence basis: seven interviews held by the two founders between 2026-08-20 and 2026-09-03 (four developers looking for help, one of whom solves problems alone; three senior engineers on the mentor side), one 14-day help-channel export and one 54-response survey from the same developer Discord, five competitor pages checked on 2026-09-04, workshop and board exports, and decisions D01–D16. Interviews are founders' notes, conducted in Polish; the survey records stated intentions, not payments. The most consequential untested belief is A01: that a developer with a deadline pays for a scheduled text session.
+- Coverage: 65 claims — 58 sourced (interview 12, data 3, document 38, product 0, benchmark 5), 0 synthetic, 7 assumed; 1 entries on the collection plan
 - Synthetic hypotheses outside Coverage: 0
 - Definition of Ready signed by: Jan, 2026-10-18, with A01 untested and to be tested; ready for: implementation planning of the stated scope
 - Sources: `.ai/specs/research/` (interviews, `2026-09-04-*` data and benchmark notes, `2026-09-0*-miro-board-*`, `2026-08-26-workshop-export.md`, `decisions/`); superseded: `docs/discovery/`, `docs/sdlc/intent.md` (see D01)
@@ -33,7 +33,7 @@ Mentors earn twice: once for the session, and again every time the knowledge fro
 - User (mentor): a senior engineer who already answers the same questions unpaid, from a private notes file. `[INTERVIEW]` research/2026-08-22-interview-mentor.md, 2026-09-03-interview-senior-python-meetups.md
 - Beachhead chosen by the founders: English-speaking TypeScript, React, Python and AI-agent developers. `[DOCUMENT]` research/2026-09-02-miro-board-vision-target-needs.md
 - Stakeholders: today the two founders hold every internal role; QA and legal have nobody. `[DOCUMENT]` research/2026-09-05-miro-board-raci-matrix.md
-- Decider for scope decisions: Jan (D01, D04–D13); founder A owns N01, N02.
+- Decider for scope decisions: Jan (D01, D04–D16); founder A owns N01, N02.
 
 ## Problems, with evidence
 
@@ -74,7 +74,7 @@ Mentors earn twice: once for the session, and again every time the knowledge fro
 
 ## Scope
 
-- **Now:** a mentor creates a profile (public-work link, R08), publishes 25/50-minute slots (R01) and shares a link; a mentor may join the catalogue (R09). A mentee reaches a mentor by link or catalogue, sees price and earliest start (R03, D05), creates a verified account (R13), books a slot, writes the question (R05), pays upfront at the mentor's price (R04, R11) and holds the session over text (N01). The mentor may decline (R12); cancellation and no-shows follow R06, R10; earnings are paid out per R14. D04, D06–D09, D12, D13.
+- **Now:** a mentor signs up openly (R15) and creates a profile (public-work link, R08), publishes 25/50-minute slots (R01) and shares a link; a mentor may join the catalogue (R09). A mentee reaches a mentor by link or catalogue, sees price and earliest start (R03, D05), creates a verified account (R13), books a slot, writes the question (R05), pays upfront at the mentor's price (R04, R11) and holds the session over text (N01). The mentor may decline (R12); cancellation and no-shows follow R06, R10; earnings are paid out per R14. D04, D06–D09, D12, D13.
 - **Later:** the knowledge vault, MCP access from coding agents, async questions with a 24 h reply, AI answers from mentor notes, session notes, subscriptions, team plans. D04
 - **Not doing:** see Non-goals
 
@@ -111,6 +111,7 @@ Mentors earn twice: once for the session, and again every time the knowledge fro
 | R11 | The mentor sets the price of the 25- and 50-minute session; commission is 10% on bookings through the mentor's link and 20% through the catalogue | pricing, payout | `[DOCUMENT]` research/decisions/D08-mentor-price-commission-by-channel.md | active | unknown | Jan | Jan | none |
 | R12 | The mentor may decline a booked question before the session; the mentee gets a full refund | booking, refunds | `[DOCUMENT]` research/decisions/D09-instant-booking-mentor-may-decline.md | active | Q08 | Jan | Jan | none |
 | R13 | A mentee has an account with a verified e-mail before booking a slot | sign-up, booking | `[DOCUMENT]` research/decisions/D12-mentee-account-before-booking.md | active | if A07 is refuted | Jan | Jan | none |
+| R15 | Anyone may create a mentor account at the mentor sign-up page; invitations are links to it | mentor onboarding | `[DOCUMENT]` research/decisions/D14-open-mentor-sign-up.md | active | if unknown or low-quality mentors appear | Jan | Jan | none |
 | R14 | A mentor's earnings after commission fall due once the session was held or the mentee did not show, and are paid out weekly | payout | `[DOCUMENT]` research/decisions/D13-payout-after-session-weekly.md | active | unknown | Jan | Jan | none |
 
 ## Non-goals
@@ -137,6 +138,9 @@ Mentors earn twice: once for the session, and again every time the knowledge fro
 | D11 | 2026-10-18 | R03 and R07 become active rules | proposed from the freelancer and senior Python interviews; Jan approved both | Jan | active | unknown | Jan | `[DOCUMENT]` research/decisions/D11-price-first-and-payout-details-later.md | none |
 | D12 | 2026-10-18 | Mentee account with verified e-mail before booking (R13) | Jan's choice against the agent's recommendation (e-mail at checkout); alternative account during checkout; conflicts with interview 2026-09-01 | Jan | active | if A07 is refuted | Jan | `[DOCUMENT]` research/decisions/D12-mentee-account-before-booking.md | none |
 | D13 | 2026-10-18 | Earnings due after the session, weekly payout (R14) | accepted agent recommendation; alternatives at booking, monthly | Jan | active | unknown | Jan | `[DOCUMENT]` research/decisions/D13-payout-after-session-weekly.md | none |
+| D14 | 2026-10-18 | Open mentor sign-up; invitations are links (R15) | Jan's choice at the E01 spec gate; alternative invitation-only as in the course backlog | Jan | active | if unknown mentors appear | Jan | `[DOCUMENT]` research/decisions/D14-open-mentor-sign-up.md | none |
+| D15 | 2026-10-18 | The founders' 25-hour build limit does not bind this repository | course calendar is the constraint; Stripe-only and no-video stay on their own grounds | Jan | active | unknown | Jan | `[DOCUMENT]` research/decisions/D15-workshop-build-limit-not-binding.md | none |
+| D16 | 2026-10-18 | Sign-in token rows kept 30 days | least personal data while Q05 has no owner; enough for a first A07 read | Jan | active | when Q05 is owned | Jan | `[DOCUMENT]` research/decisions/D16-auth-token-retention-30-days.md | none |
 
 ## Riskiest assumptions
 
@@ -173,7 +177,7 @@ None; no synthetic walkthrough has been run.
 
 ## Definition of Ready addendum (own)
 
-Problems and Target group rest on three developer accounts and one Discord export, all from the founders' network; the mentor side rests on three interviews. That supports building the first release scope, not a demand claim. Decisions D04–D13 are agreed and no open question blocks the Now stories. A01 is untested; Jan chose to keep it for a test rather than accept it untested, so building proceeds without evidence that developers pay. The commission rates (D08) and the 12-hour window (D07) are chosen policy, not tested with users.
+Problems and Target group rest on three developer accounts and one Discord export, all from the founders' network; the mentor side rests on three interviews. That supports building the first release scope, not a demand claim. Decisions D04–D16 are agreed and no open question blocks the Now stories. A01 is untested; Jan chose to keep it for a test rather than accept it untested, so building proceeds without evidence that developers pay. The commission rates (D08) and the 12-hour window (D07) are chosen policy, not tested with users.
 
 ## Collection plan
 
