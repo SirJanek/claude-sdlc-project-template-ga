@@ -8,6 +8,7 @@ export * from './components/ui/table';
 
 // Concept components (one folder per concept, same names as in db/core)
 export { SessionMenu, type SessionUserView } from './components/auth/SessionMenu';
+export { ExistingAccountNotice, EXISTING_ACCOUNT_NOTICE } from './components/auth/ExistingAccountNotice';
 
 // Reusable panel layer (engineering standards › Reusable API & UI layer)
 export { apiCall, apiCallOrThrow, ApiCallError, readJsonSafe } from './backend/api/apiCall';

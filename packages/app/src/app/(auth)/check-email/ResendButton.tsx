@@ -4,7 +4,17 @@ import { useEffect, useState } from 'react';
 import { apiCall } from '@mentorhub/ui';
 
 // Colocated with the check-email page (its only consumer).
-export function ResendButton({ email, next, waitSeconds }: { email: string; next?: string; waitSeconds: number }) {
+export function ResendButton({
+  email,
+  next,
+  intentRole,
+  waitSeconds,
+}: {
+  email: string;
+  next?: string;
+  intentRole?: 'mentor';
+  waitSeconds: number;
+}) {
   const [secondsLeft, setSecondsLeft] = useState(waitSeconds);
   const [status, setStatus] = useState<'idle' | 'sent' | 'error'>('idle');
   const [message, setMessage] = useState<string | null>(null);
@@ -18,7 +28,7 @@ export function ResendButton({ email, next, waitSeconds }: { email: string; next
   async function resend() {
     const result = await apiCall<{ sent: true }>('/api/auth/email/start', {
       method: 'POST',
-      body: JSON.stringify({ email, ...(next ? { next } : {}) }),
+      body: JSON.stringify({ email, ...(intentRole ? { intentRole } : {}), ...(next ? { next } : {}) }),
     });
     if (result.ok) {
       setStatus('sent');

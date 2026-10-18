@@ -1,5 +1,5 @@
 import { nextPathSchema } from '@mentorhub/core';
-import { SignInForm } from './SignInForm';
+import { EmailLinkForm } from '../EmailLinkForm';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -12,7 +12,13 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
   return (
     <main className="mx-auto max-w-md px-4 py-16">
       <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
-      <SignInForm next={next.success ? next.data : undefined} errorCode={first(params.error)} />
+      <EmailLinkForm next={next.success ? next.data : undefined} errorCode={first(params.error)} />
+      <p className="mt-6 text-sm text-slate-600">
+        Want to mentor?{' '}
+        <a href="/sign-up/mentor" className="font-medium text-indigo-700 underline">
+          Sign up as a mentor
+        </a>
+      </p>
     </main>
   );
 }
