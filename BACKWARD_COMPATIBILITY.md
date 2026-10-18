@@ -69,8 +69,9 @@ the same PR.
 ## 6. Developer and pipeline commands
 
 The `Makefile` targets (`install`, `setup-browser`, `test`, `test-integration`, `lint`,
-`typecheck`, `build`, `audit`, `check`, `dev`, `db-*`), root `package.json` scripts, the six CI
-job names (required checks in branch protection), `.ai/agentic.config.json` and the integration
+`typecheck`, `build`, `audit`, `check`, `dev`, `db-*`), root `package.json` scripts, the CI job names
+(five required checks in branch protection, plus the on-demand **Integration** workflow and its
+`run-integration` label), `.ai/agentic.config.json` and the integration
 evidence layout (`tests/integration/.evidence/`, uploaded by CI).
 **Breaking:** renaming or removing a target, script or CI job name; changing what `make check`
 runs; moving the evidence directory.

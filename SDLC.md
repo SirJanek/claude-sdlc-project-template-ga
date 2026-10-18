@@ -13,14 +13,17 @@ Before intake, the work is shaped: `om-brainstorm` turns a single idea or questi
 Specifics the generic flow above relies on; `AGENTS.md` stays the source for engineering rules.
 
 - **Base branch `develop` is protected**: merging needs a pull request, a branch up to date with
-  `develop`, and six green required checks from GitHub Actions — **Lint**, **Typecheck**, **Unit
-  tests (100% coverage)**, **Build**, **Integration (testcontainers + agent-browser)**, **Audit**.
+  `develop`, and five green required checks from GitHub Actions — **Lint**, **Typecheck**, **Unit
+  tests (100% coverage)**, **Build**, **Audit**.
   No direct or force pushes, admins included. Required approvals are 0 because this is a one-person
   repository (GitHub does not let an author approve their own PR); the reviewer role is played by
   `om-auto-review-pr` / `om-code-review` plus Jan, until a second maintainer joins.
-- **The local gate is `make check`; integration runs in CI.** `make test-integration` (Docker,
-  ephemeral PostgreSQL, agent-browser) is the required CI check; run it locally when a change
-  touches a route, page, or migration (the AGENTS.md testing rule).
+- **Integration tests run on demand.** `make check` is the local gate and none of the required
+  checks start Docker. **Integration (testcontainers + agent-browser)** runs only when a PR carries
+  the `run-integration` label (then on every push to it) or by a manual run of the Integration
+  workflow. A change touching a route, page, or migration must carry the label and show a green
+  Integration run before merge (AGENTS.md testing rule; `om-code-review` treats a missing run as
+  Important). The authoring skills add the label when the diff matches.
 - **Spec and run log before code.** Feature work starts from a spec in `.ai/specs/` with an
   accepted `## Implementation plan`; every AI run leaves `.ai/runs/YYYY-MM-DD-<slug>.md`; specs
   move to `.ai/specs/implemented/` when done. Lessons go to `.ai/lessons.md`.

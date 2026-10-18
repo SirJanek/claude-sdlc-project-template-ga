@@ -65,7 +65,9 @@ Stop reporting a finding once an earlier pass reported it.
 - Unit coverage stays at 100% (lines, branches, functions, statements); new exclusions beyond
   tests, configs and `packages/db/src/scripts/**` are findings.
 - A new route, page or migration has an integration test in `tests/integration/` that drives the
-  real app (agent-browser) or the real database (testcontainers), with screenshots in evidence.
+  real app (agent-browser) or the real database (testcontainers), with screenshots in evidence —
+  and the PR carries the `run-integration` label with a green **Integration** run on its head.
+  Integration is on demand, not a required check, so a missing or red run is **Important**.
 - A test edited in the same commit as the fix it validates is a finding.
 
 **Hygiene**
