@@ -1,7 +1,7 @@
 # Spec: Adopt the engineering standards (migration steps 1–3)
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
-**Standard:** [.ai/docs/engineering-standards.md](../docs/engineering-standards.md)
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
+**Standard:** [.ai/docs/engineering-standards.md](../../docs/engineering-standards.md)
 **Status:** accepted · requested by Jan on 2026-10-18 (scope "steps 1–3 + docs", dev-flag for `api/users`, standard in `.ai/docs`)
 **Supersedes:** architecture parts of `2026-10-17-stack-bootstrap.md` (container and services lived in `app`; `core` was framework-free; `db` could depend on `core`)
 

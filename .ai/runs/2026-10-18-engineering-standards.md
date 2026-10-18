@@ -1,7 +1,7 @@
 # Run: adopt the engineering standards (migration steps 1–3)
 
 **Date:** 2026-10-18 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan
-**Spec:** [.ai/specs/2026-10-18-engineering-standards.md](../specs/2026-10-18-engineering-standards.md)
+**Spec:** [.ai/specs/implemented/2026-10-18-engineering-standards.md](../specs/implemented/2026-10-18-engineering-standards.md)
 **Standard:** [.ai/docs/engineering-standards.md](../docs/engineering-standards.md)
 **Branch:** `feat/engineering-standards` from `feat/stack-bootstrap` (PR #2 not merged yet)
 **Status:** done — PR targeting `feat/stack-bootstrap`
