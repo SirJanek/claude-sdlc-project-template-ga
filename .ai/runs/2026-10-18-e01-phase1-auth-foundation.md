@@ -124,6 +124,17 @@ Verification (round 4): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 
 
 Verification (round 5): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 44 passed (44)` 34.78 s, run 2 `Tests 44 passed (44)` 35.01 s (auth 22, migrations 7, app 15).
 
+### Review fixes, round 6 (Codex on PR #46: two medium findings in `auth.test.ts`)
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | the intentionally abandoned `sleep` in the descendant-pipes test was killed only after the assertions | both shells are started up front, assertions inside `try`, `finally` kills each group and settles it with a 2 s bound |
+| 2 | the set-role CLI competitor had no timeout and `await cli.pending` could never reach `finally` | `runCompetitor(..., { timeout: 20_000 })` kills the group and rejects; the await is also raced through `within(promise, 25 s)`; the API revocation fetch is bounded the same way (`within(…, 20 s)`) |
+
+Audit of every `await` on a child process or psql pipe before a `finally` in the file: `holdTransaction` (30 s bound + termination), `waitUntilBlocking` (15 s, bounded polls), `commit`/`dispose` (bounded), the two competitor awaits (now `within`), the orphan cleanup (now `settleCompetitor` in `finally`); plain `fetch`/`post` calls against the servers remain as in the rest of the suite (Vitest's 120 s test timeout).
+
+Verification (round 6): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 44 passed (44)` 35.34 s, run 2 `Tests 44 passed (44)` 35.56 s (auth 22, migrations 7, app 15).
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
