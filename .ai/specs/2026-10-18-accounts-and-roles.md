@@ -361,6 +361,17 @@ Each phase is one PR, labelled `risk-high`, with `run-integration`. **Delivery o
 3. **Integration:** a visitor opens a page with `?slot=` → sign-in → link from the outbox → back on the exact
    URL with a verified session (AC1).
 
+### Progress
+
+| Phase | Status | Evidence |
+|---|---|---|
+| 1 Foundation + e-mail link | ✅ done | branch `feat/e01-phase1-auth-foundation`, commits `b06fd68` (env + `AUTH_LIMITS`, `make setup` secret) · `875ca9e` (migration `Migration20261018191125_auth_tokens`, up → down → up with rows, generator reports no changes) · `485a7f9` (`jose` session, async `requireSession`, awaited `authorize` — mutation: without the `await` an unauthenticated GET answers 200, 2 tests red) · `816d443` (`MailSender` + mock outbox, `AuthService` — mutation: without the `usedAt` condition a link clicked twice signs in again, 1 test red) · `8d7f618` (routes, `(auth)` pages, `SessionMenu`, env validated at boot) · `5d58f28` (`make set-role`) · `98464d3` (contracts §1/§3/§5/§7, SDLC Codex second reviewer, redaction, integration). `make check` exit 0 (lint, typecheck, 300 unit tests at 100 %, build, audit); `make test-integration` 35/35 (sign in by link from the outbox, GET consumes nothing, me, sign-out + everywhere, mentee denied on `/api/users`, 410/429/422/403, migration 3). Run log: `.ai/runs/2026-10-18-e01-phase1-auth-foundation.md` |
+| 2 GitHub sign-in | 🟡 planned | — |
+| 3 Mentor sign-up (#26) | 🟡 planned | next PR (delivery order 1 → 3 → 2 → 4) |
+| 4 Mentee return-to-slot (#27) | 🟡 planned | — |
+
+Phase 1 deviations from the text above, with reasons: `docker-compose.yml` has no app service, so the new variables are documented there in a comment and in `.env.example`; a valid `mh_session` cookie takes precedence over the dev-admin flag (the allowlist itself is unchanged), so real sessions can be exercised on `make dev` and in the dev-server integration tests; `next` is validated by `nextPathSchema` already in Phase 1 (storing an unvalidated path would be an open redirect waiting for Phase 4) and `consume` returns it — the end-to-end return-to-slot flow stays in Phase 4.
+
 ## 📝 Grill-me outcome (2026-10-18, Jan)
 
 | Q | Decision |

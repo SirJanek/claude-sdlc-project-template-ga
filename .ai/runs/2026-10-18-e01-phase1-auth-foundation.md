@@ -3,7 +3,7 @@
 **Date:** 2026-10-18 · **Agent:** Claude Code (Fable 5.1, subagent) · **Requested by:** Jan
 **Spec:** [.ai/specs/2026-10-18-accounts-and-roles.md](../specs/2026-10-18-accounts-and-roles.md) › Implementation Plan › Phase 1
 **Tracker:** #44 (E01-T01) · **Branch:** `feat/e01-phase1-auth-foundation` (worktree `…-wt/e01-phase1`)
-**Status:** in progress
+**Status:** done — Phase 1 complete on the branch; PR opened by Jan
 
 ## Goal
 
@@ -52,13 +52,26 @@ routes + pages, `set-role` CLI, docs/contracts, integration tests. No GitHub (Ph
 - [x] 5 mail port + 6 AuthService (`816d443`)
 - [x] 7 routes + pages + SessionMenu + instrumentation (`8d7f618`)
 - [x] 8 set-role CLI (`5d58f28`)
-- [ ] 9 docs/contracts + integration
-- [ ] 10 spec progress
+- [x] 9 docs/contracts + integration (`98464d3`)
+- [x] 10 spec progress (this commit)
 
 ## Verification
 
-(filled at the end: `make check`, `make test-integration`, the two mutation checks)
+- `make check` → exit 0: Prettier clean; unit tests tools/setup 51, db 28, ui 43, core 119, app 59 (all at
+  100 % lines/branches/functions/statements); `next build` compiled; `pnpm audit --audit-level high`:
+  1 high, ignored (the documented braces advisory).
+- `make test-integration` → `Test Files 3 passed (3)`, `Tests 35 passed (35)` (auth 13, migrations 7, app 15).
+- Mutation 1 (`makeCrudRoute`, `await authorize(request)` → `authorize(request)`): "awaits an async guard…"
+  and "defaults to requireSession: an unauthenticated GET /api/users is 401" fail with
+  `AssertionError: expected 200 to be 401`, plus unhandled rejections; restored, 9/9.
+- Mutation 2 (`AuthService.consumeEmailLink`, claim without `usedAt: null`): "rejects a link clicked twice —
+  single use" fails with `promise resolved "{ userId: 'id-2', …}" instead of rejecting`; restored, 21/21.
+- Migration rehearsed on a throw-away `postgres:17-alpine` container: up, rows in `users` (one with a null
+  name) and `auth_tokens`, down refused while a name is null, down after naming, up, rows kept,
+  `migration:create` → "No schema changes".
 
 ## Handoff
 
-Next step: see the unchecked box above. Open questions: none yet.
+Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
+`om-code-review` second-reviewer run per SDLC.md. Next phase by delivery order: Phase 3 (mentor sign-up,
+#26). Open questions: none — see the spec's Progress block for the three documented deviations.
