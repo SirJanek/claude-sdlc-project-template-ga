@@ -3,7 +3,7 @@
 **Date:** 2026-10-18 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan
 **Spec:** [.ai/specs/2026-10-18-ci-safety-net.md](../specs/2026-10-18-ci-safety-net.md)
 **Branch:** `feat/ci-safety-net` from `develop` (`f9027ab`)
-**Status:** in progress
+**Status:** done — PR #5
 
 ## Decisions
 
@@ -29,6 +29,17 @@
 - [x] Phase 3 integration (no install-script approvals needed for testcontainers or agent-browser — both reverted after checking)
 - [x] Phase 4 CI + rules (CI result on the PR recorded below)
 
+## Verification
+
+- Local: `make check` exit 0 (14 s, 112 unit tests at 100% in all packages); `make test-integration`
+  12/12 in 16 s, nothing left running.
+- Mutations: two test files removed → `make test` exit 2; broken empty state → integration exit 1;
+  old NODE_ENV condition → unit test exit 1.
+- GitHub (PR #5, first Actions run ever in this fork): all six CI checks green; Integration 63 s
+  on ubuntu-latest — the riskiest assumption held.
+- Template "Claude review" workflow failed: Claude GitHub App not installed, no `ANTHROPIC_API_KEY`.
+
 ## Handoff
 
-- **Next step:** phase 2.
+- **Next step:** Jan reviews/merges PR #5; decide branch protection (required checks) and whether to
+  enable the Claude review workflow (install the Claude GitHub App + `ANTHROPIC_API_KEY` secret).

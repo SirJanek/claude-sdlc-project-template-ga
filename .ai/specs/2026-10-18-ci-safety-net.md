@@ -94,4 +94,6 @@ regression; load testing; deploy pipeline.
 | 1 Spec | ✅ done | this commit |
 | 2 Unit framework + 100% | ✅ done | `make check` exit 0 (15 s): 112 unit tests, 100% lines/branches/functions/statements in core, db, ui, app; mutation: two test files removed → `make test` exit 2 |
 | 3 Integration | ✅ done | `pnpm test:integration` 12/12 in 16 s (testcontainers PostgreSQL, migrations, `next dev` + `next build`/`start`, agent-browser); no containers, servers or browser sessions left; mutation: broken empty state → exit 1; **found a real bug**: dev flag opened with NODE_ENV=test → flag now development-only |
-| 4 CI + rules | ⏳ | |
+| 4 CI + rules | ✅ done | PR #5 CI run 39084637168: Lint 28 s, Typecheck 32 s, Unit tests (100% coverage) 26 s, Build 32 s, **Integration (testcontainers + agent-browser) 63 s**, Audit 22 s — all green on GitHub-hosted Ubuntu; agent answers the testing rules from AGENTS.md |
+
+**All phases complete.** Open: make the six checks required on `develop` (branch protection); the template's "Claude review" workflow needs the Claude GitHub App and an `ANTHROPIC_API_KEY` secret (fails today, not part of this spec).
