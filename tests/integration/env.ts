@@ -184,25 +184,74 @@ export async function holdTransaction(
 }
 
 /**
+ * Runs a competing CLI in its own process group (`detached`), so `kill()` reaches the whole tree:
+ * `pnpm` spawns `tsx`, which spawns Node — killing only the parent leaves descendants holding the
+ * stdout/stderr pipes and the promise never settles. (`execFile` ignores `detached`; this uses `spawn`.)
+ * `pending` resolves with the output on exit code 0 and rejects otherwise (or on a spawn error / timeout).
+ */
+export function runCompetitor(
+  command: string,
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv; timeout?: number } = {},
+): { pending: Promise<{ stdout: string; stderr: string }>; kill: () => void } {
+  const child = spawn(command, args, { env: options.env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const kill = () => {
+    try {
+      if (child.pid) process.kill(-child.pid, 'SIGKILL'); // the whole group
+    } catch {
+      child.kill('SIGKILL'); // group already gone — the direct child at least
+    }
+  };
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (chunk: Buffer) => void (stdout += chunk.toString()));
+  child.stderr.on('data', (chunk: Buffer) => void (stderr += chunk.toString()));
+  const pending = new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const timer = options.timeout
+      ? setTimeout(() => (kill(), reject(new Error(`${command} timed out`))), options.timeout)
+      : undefined;
+    child.on('error', (error) => (clearTimeout(timer), reject(error)));
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`${command} exited with ${code ?? signal}: ${stderr || stdout}`));
+    });
+  });
+  return { pending, kill };
+}
+
+/**
  * Settles a competitor (a fetch or a CLI) within `timeoutMs` once the lock it may be waiting on has been
- * released; cancels it (abort / kill) when it still does not finish. Never throws: for `finally` blocks.
+ * released; cancels it (abort / kill) when it still does not finish, and after a second bound
+ * (`abandonMs`) gives up on a promise that still refuses to settle — reported on stderr, never thrown.
+ * For `finally` blocks.
  */
 export async function settleCompetitor(
   pending: Promise<unknown> | undefined,
   cancel: () => void,
   timeoutMs = 10_000,
-): Promise<'settled' | 'cancelled' | 'none'> {
+  abandonMs = 5_000,
+): Promise<'settled' | 'cancelled' | 'abandoned' | 'none'> {
   if (!pending) return 'none';
+  const quiet = pending.catch(() => undefined);
   const bound = deadline(timeoutMs, 'settling the competitor');
   try {
-    await Promise.race([pending.catch(() => undefined), bound.promise]);
+    await Promise.race([quiet, bound.promise]);
     return 'settled';
   } catch {
     cancel();
-    await pending.catch(() => undefined);
-    return 'cancelled';
   } finally {
     bound.clear();
+  }
+  const afterCancel = deadline(abandonMs, 'settling the cancelled competitor');
+  try {
+    await Promise.race([quiet, afterCancel.promise]);
+    return 'cancelled';
+  } catch (error) {
+    process.stderr.write(`settleCompetitor: ${(error as Error).message}; abandoning it\n`);
+    return 'abandoned';
+  } finally {
+    afterCancel.clear();
   }
 }
 

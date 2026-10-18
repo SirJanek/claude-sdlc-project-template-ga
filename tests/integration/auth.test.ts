@@ -1,6 +1,4 @@
-import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { promisify } from 'node:util';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
 import {
@@ -12,10 +10,9 @@ import {
   prodOutbox,
   prodUrl,
   psql,
+  runCompetitor,
   settleCompetitor,
 } from './env';
-
-const run = promisify(execFile);
 /** Signed-in cookie for `email` through the real link flow (one link per call). */
 async function signIn(base: string, outbox: string, email: string): Promise<string> {
   expect((await requestLink(base, email)).status).toBe(200);
@@ -66,11 +63,12 @@ afterEach(({ task }) => {
   if (task.result?.state === 'fail') browser.screenshot(`FAILED-${task.name}`);
 });
 
-// Leaves the database as it found it: app.test.ts counts the rows it seeds.
+// Leaves the database as it found it: app.test.ts counts the rows it seeds. Bounded: a leaked row
+// lock must fail this suite fast, not hang it.
 afterAll(() => {
   browser.close();
-  psql("delete from users where email like '%@example.com'");
-  psql('delete from auth_tokens');
+  psql("delete from users where email like '%@example.com'", undefined, 10_000);
+  psql('delete from auth_tokens', undefined, 10_000);
 });
 
 describe('sign-in by e-mail link (production server)', () => {
@@ -232,18 +230,22 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'promote@example.com'",
       'UPDATE 1',
     );
-    let cli: ReturnType<typeof run> | undefined;
+    let cli: ReturnType<typeof runCompetitor> | undefined;
     try {
-      cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
-        env: { ...process.env, DATABASE_URL: databaseUrl() },
-      });
+      cli = runCompetitor(
+        'pnpm',
+        ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'],
+        {
+          env: { ...process.env, DATABASE_URL: databaseUrl() },
+        },
+      );
       await held.waitUntilBlocking(); // the CLI's UPDATE is provably waiting on our row lock
       expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee');
       await held.commit();
-      expect((await cli).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+      expect((await cli.pending).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
     } finally {
       await held.dispose(); // release the lock FIRST
-      await settleCompetitor(cli, () => void cli?.child.kill('SIGKILL')); // then settle or kill the CLI
+      await settleCompetitor(cli?.pending, () => cli?.kill()); // then settle, or kill the whole CLI process tree
     }
     expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
@@ -257,29 +259,36 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'cleanup@example.com'",
       'UPDATE 1',
     );
-    // An asynchronous writer (its own psql process) that blocks on the held row until the lock is released.
-    const competitor = run(
-      'docker',
-      [
-        'exec',
-        containerId(),
-        'psql',
-        '-U',
-        'mentorhub',
-        '-d',
-        'mentorhub',
-        '-tAc',
-        "update users set name = 'written by the competitor' where email = 'cleanup@example.com'",
-      ],
-      { timeout: 20_000 },
-    );
-    await held.waitUntilBlocking();
-    const started = Date.now();
-    // The failure path of the overlap tests: no commit happened; cleanup releases first, then settles.
-    await held.dispose();
-    const outcome = await settleCompetitor(competitor, () => void competitor.child.kill('SIGKILL'));
+    let competitor: ReturnType<typeof runCompetitor> | undefined;
+    let outcome: Awaited<ReturnType<typeof settleCompetitor>> | undefined;
+    let started: number | undefined;
+    try {
+      // An asynchronous writer (its own psql process) that blocks on the held row until the lock is released.
+      competitor = runCompetitor(
+        'docker',
+        [
+          'exec',
+          containerId(),
+          'psql',
+          '-U',
+          'mentorhub',
+          '-d',
+          'mentorhub',
+          '-tAc',
+          "update users set name = 'written by the competitor' where email = 'cleanup@example.com'",
+        ],
+        { timeout: 20_000 },
+      );
+      await held.waitUntilBlocking();
+      started = Date.now();
+    } finally {
+      // The failure path of the overlap tests (no commit): release first, then settle — also when the
+      // wait above rejected, so this test can never leak its own lock either.
+      await held.dispose();
+      outcome = await settleCompetitor(competitor?.pending, () => competitor?.kill());
+    }
     expect(outcome).toBe('settled');
-    expect(Date.now() - started).toBeLessThan(5_000);
+    expect(Date.now() - started!).toBeLessThan(5_000);
     // The held increment was rolled back; the competitor's write went through once the lock was gone.
     expect(psql("select name, session_version from users where email = 'cleanup@example.com'")).toBe(
       'written by the competitor|0',
@@ -287,6 +296,21 @@ describe('sessions over the API (production server)', () => {
     expect(psql(`select count(*) from pg_stat_activity where pid = ${held.pid}`)).toBe('0'); // psql is gone
     // The suite's cleanup DELETE completes within a bound instead of waiting on a leaked lock.
     psql("delete from users where email = 'cleanup@example.com'", undefined, 5_000);
+  });
+
+  it('test helper: a cancelled CLI whose descendants keep the pipes open still settles within the bound (review round 5)', async () => {
+    // `sh` spawns a child holding stdout/stderr for 60 s: killing only `sh` would leave the promise pending.
+    const stubborn = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
+    const started = Date.now();
+    expect(await settleCompetitor(stubborn.pending, () => stubborn.kill(), 500, 2_000)).toBe('cancelled');
+    expect(Date.now() - started).toBeLessThan(3_000);
+    // And a cancel that cannot reach the tree is abandoned after the second bound instead of hanging.
+    const orphan = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
+    const again = Date.now();
+    expect(await settleCompetitor(orphan.pending, () => undefined, 500, 1_000)).toBe('abandoned');
+    expect(Date.now() - again).toBeLessThan(2_500);
+    orphan.kill(); // do not leave the sleep behind
+    await orphan.pending.catch(() => undefined);
   });
 
   it('test helper: readiness failure terminates the psql child and rejects (review round 4)', async () => {
