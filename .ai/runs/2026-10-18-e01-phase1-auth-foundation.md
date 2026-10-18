@@ -115,6 +115,15 @@ Verification (round 3): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 
 
 Verification (round 4): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 43 passed (43)` 32.27 s, run 2 `Tests 43 passed (43)` 36.87 s (auth 21, migrations 7, app 15).
 
+### Review fixes, round 5 (Codex on PR #46: two medium findings in the test helpers)
+
+| # | Finding | Fix | Proof |
+|---|---|---|---|
+| 1 | cancelling the CLI killed only `pnpm`; `tsx`/Node descendants kept the pipes open and the promise never settled; no bound after cancel | `runCompetitor` spawns the CLI `detached` (own process group; `execFile` silently drops `detached`, so it is built on `spawn`) and `kill()` sends SIGKILL to the group (`process.kill(-pid)`), falling back to the child; `settleCompetitor` has a second bound after cancel (`abandonMs`, 5 s) after which it reports on stderr and returns `'abandoned'` instead of hanging | new test: `sh -c 'sleep 60 & wait'` (a descendant holding stdout/stderr) through the helper → `'cancelled'` in < 3 s (observed ~2 s incl. the 0.5 s first bound); a cancel that cannot reach the tree → `'abandoned'` after the second bound (< 2.5 s), the sleep killed afterwards |
+| 2 | the cleanup proof held its transaction without `finally`; the suite's cleanup DELETE was unbounded | `try/finally`: dispose first, then settle the competitor — also when `waitUntilBlocking` rejects; `afterAll` DELETEs run with a 10 s `psql` timeout so a leaked lock fails fast | suite green twice |
+
+Verification (round 5): `make check` exit 0 (tools/setup 51, db 30, ui 43, core 125, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` run 1 `Tests 44 passed (44)` 34.78 s, run 2 `Tests 44 passed (44)` 35.01 s (auth 22, migrations 7, app 15).
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
