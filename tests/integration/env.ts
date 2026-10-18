@@ -220,6 +220,16 @@ export function runCompetitor(
   return { pending, kill };
 }
 
+/** Bounds an await so a hung child process or pipe fails the test instead of outliving Vitest's timeout. */
+export async function within<T>(promise: Promise<T>, timeoutMs: number, what: string): Promise<T> {
+  const bound = deadline(timeoutMs, what);
+  try {
+    return await Promise.race([promise, bound.promise]);
+  } finally {
+    bound.clear();
+  }
+}
+
 /**
  * Settles a competitor (a fetch or a CLI) within `timeoutMs` once the lock it may be waiting on has been
  * released; cancels it (abort / kill) when it still does not finish, and after a second bound

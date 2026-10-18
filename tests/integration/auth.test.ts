@@ -12,6 +12,7 @@ import {
   psql,
   runCompetitor,
   settleCompetitor,
+  within,
 } from './env';
 /** Signed-in cookie for `email` through the real link flow (one link per call). */
 async function signIn(base: string, outbox: string, email: string): Promise<string> {
@@ -214,7 +215,7 @@ describe('sessions over the API (production server)', () => {
       await held.waitUntilBlocking(); // the API's UPDATE is provably waiting on our row lock
       expect(sessionVersion('overlap@example.com')).toBe('0'); // nothing committed yet
       await held.commit();
-      expect((await revocation).status).toBe(200);
+      expect((await within(revocation, 20_000, 'the API revocation')).status).toBe(200);
     } finally {
       await held.dispose(); // release the lock FIRST — the competitor may be waiting on it
       await settleCompetitor(revocation, () => abort.abort()); // then let it finish, bounded, or abort it
@@ -235,14 +236,15 @@ describe('sessions over the API (production server)', () => {
       cli = runCompetitor(
         'pnpm',
         ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'],
-        {
-          env: { ...process.env, DATABASE_URL: databaseUrl() },
-        },
+        { env: { ...process.env, DATABASE_URL: databaseUrl() }, timeout: 20_000 }, // kills the group and rejects
       );
       await held.waitUntilBlocking(); // the CLI's UPDATE is provably waiting on our row lock
       expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee');
       await held.commit();
-      expect((await cli.pending).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+      // Bounded twice: the competitor's own timeout kills its tree; this race keeps `finally` reachable regardless.
+      expect((await within(cli.pending, 25_000, 'the set-role CLI')).stdout).toContain(
+        'promote@example.com: mentee → mentor (session version 2;',
+      );
     } finally {
       await held.dispose(); // release the lock FIRST
       await settleCompetitor(cli?.pending, () => cli?.kill()); // then settle, or kill the whole CLI process tree
@@ -301,16 +303,19 @@ describe('sessions over the API (production server)', () => {
   it('test helper: a cancelled CLI whose descendants keep the pipes open still settles within the bound (review round 5)', async () => {
     // `sh` spawns a child holding stdout/stderr for 60 s: killing only `sh` would leave the promise pending.
     const stubborn = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
-    const started = Date.now();
-    expect(await settleCompetitor(stubborn.pending, () => stubborn.kill(), 500, 2_000)).toBe('cancelled');
-    expect(Date.now() - started).toBeLessThan(3_000);
-    // And a cancel that cannot reach the tree is abandoned after the second bound instead of hanging.
     const orphan = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
-    const again = Date.now();
-    expect(await settleCompetitor(orphan.pending, () => undefined, 500, 1_000)).toBe('abandoned');
-    expect(Date.now() - again).toBeLessThan(2_500);
-    orphan.kill(); // do not leave the sleep behind
-    await orphan.pending.catch(() => undefined);
+    try {
+      const started = Date.now();
+      expect(await settleCompetitor(stubborn.pending, () => stubborn.kill(), 500, 2_000)).toBe('cancelled');
+      expect(Date.now() - started).toBeLessThan(3_000);
+      // And a cancel that cannot reach the tree is abandoned after the second bound instead of hanging.
+      const again = Date.now();
+      expect(await settleCompetitor(orphan.pending, () => undefined, 500, 1_000)).toBe('abandoned');
+      expect(Date.now() - again).toBeLessThan(2_500);
+    } finally {
+      // Whatever the assertions did, neither shell nor sleep outlives the test (bounded group kill).
+      for (const stray of [stubborn, orphan]) await settleCompetitor(stray.pending, () => stray.kill(), 0, 2_000);
+    }
   });
 
   it('test helper: readiness failure terminates the psql child and rejects (review round 4)', async () => {
