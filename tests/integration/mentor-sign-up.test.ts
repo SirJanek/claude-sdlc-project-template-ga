@@ -115,9 +115,17 @@ describe('mentor sign-up (#26, production server)', () => {
     browser.waitForText('Set up your mentor profile');
     expect(browser.count('[data-slot=account-notice]')).toBe(0); // only the parameter carries the notice
     // The consume response itself names the landing path, so any client lands the same way.
-    expect((await requestLink('newmentor@example.com', 'mentor')).status).toBe(200);
+    // A validated next with dot segments stays exactly as issued: never normalised to `//evil.example` (PR #47 review).
+    const dotted = '/a/..//evil.example';
+    const start = await post('/api/auth/email/start', {
+      email: 'newmentor@example.com',
+      intentRole: 'mentor',
+      next: dotted,
+    });
+    expect(start.status).toBe(200);
     const res = await post('/api/auth/email/consume', { token: tokenOf(linkFor('newmentor@example.com')) });
-    expect(await res.json()).toEqual({ ok: true, data: { next: `${PROFILE}?notice=existing_account` } });
+    expect(await res.json()).toEqual({ ok: true, data: { next: `${dotted}?notice=existing_account` } });
+    expect(userRow('newmentor@example.com')).toMatch(/\|mentor\|t$/);
   });
 
   it('no enumeration: the start response and the check-email page are the same for a known and an unknown e-mail', async () => {
