@@ -12,8 +12,6 @@ async function signIn(base: string, outbox: string, email: string): Promise<stri
   return cookieOf(await post(base, '/api/auth/email/consume', { token: tokenOf(linkFor(outbox, email)) }));
 }
 const sessionVersion = (email: string) => psql(`select session_version from users where email = '${email}'`);
-/** Lets a blocked statement reach the database before the held transaction commits. */
-const settle = () => new Promise((r) => setTimeout(r, 750));
 import { evidencePath } from './evidence';
 
 /**
@@ -200,11 +198,17 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'overlap@example.com'",
       'UPDATE 1',
     );
-    const revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
-    await settle();
-    expect(sessionVersion('overlap@example.com')).toBe('0'); // still blocked: nothing committed yet
-    await held.commit();
-    expect((await revocation).status).toBe(200);
+    let revocation: Promise<Response> | undefined;
+    try {
+      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
+      await held.waitUntilBlocking(); // the API's UPDATE is provably waiting on our row lock
+      expect(sessionVersion('overlap@example.com')).toBe('0'); // nothing committed yet
+      await held.commit();
+      expect((await revocation).status).toBe(200);
+    } finally {
+      await revocation?.catch(() => undefined); // settle before any cleanup touches the row
+      await held.dispose();
+    }
     // A read-then-write would have written the stale "0 + 1" over the held transaction's increment.
     expect(sessionVersion('overlap@example.com')).toBe('2');
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
@@ -216,14 +220,19 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'promote@example.com'",
       'UPDATE 1',
     );
-    const cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
-      env: { ...process.env, DATABASE_URL: databaseUrl() },
-    });
-    await settle();
-    expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee'); // CLI still blocked
-    await held.commit();
-    const { stdout } = await cli;
-    expect(stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+    let cli: ReturnType<typeof run> | undefined;
+    try {
+      cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
+        env: { ...process.env, DATABASE_URL: databaseUrl() },
+      });
+      await held.waitUntilBlocking(); // the CLI's UPDATE is provably waiting on our row lock
+      expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee');
+      await held.commit();
+      expect((await cli).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+    } finally {
+      await cli?.catch(() => undefined);
+      await held.dispose();
+    }
     expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
   });
