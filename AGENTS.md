@@ -113,7 +113,10 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
   finding. When adding a rule, prove the test fails without it (mutation) before calling it done.
 - **Every new route, page or migration also gets an integration test** in `tests/integration/`
   (ephemeral PostgreSQL via testcontainers, the app driven by agent-browser in its own session).
-  Run `make test-integration` before opening the PR.
+  Run `make test-integration` before opening the PR. Browser steps call `browser.screenshot(...)`;
+  failures screenshot themselves. Evidence (screenshots, server logs, `junit.xml`, `results.json`)
+  lands in `tests/integration/.evidence/` and CI uploads it as artifact
+  `integration-evidence-<run id>` — on failure too. Look there before guessing why a test failed.
 - Coverage exclusions are limited to test files, config files and `packages/db/src/scripts/**`
   (thin CLI entry points whose logic lives in tested modules). Adding an exclusion needs a spec.
 - Never put non-migration files in `packages/db/src/migrations/` (the migrator would load them).

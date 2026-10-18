@@ -14,4 +14,4 @@
 
 ## Handoff
 
-- **Next step:** phase 1.
+- **Next step:** phase 2 CI checks on the PR (artifact present, cache hit on a rerun).
