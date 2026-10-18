@@ -1,6 +1,6 @@
 # Spec: Stack bootstrap — pnpm monorepo with Next.js, MikroORM, Awilix, Tailwind and shadcn/ui
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints (course timeline, AI-native SDLC) — enabling work, no user-facing feature
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints (course timeline, AI-native SDLC) — enabling work, no user-facing feature
 **Status:** accepted · requested and accepted by Jan (product owner) on 2026-10-17 · course L02
 
 ## Scope

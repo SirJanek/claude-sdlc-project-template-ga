@@ -1,7 +1,7 @@
 # Run: stack bootstrap (pnpm monorepo, Next.js, MikroORM, Awilix, Tailwind, shadcn/ui)
 
 **Date:** 2026-10-17 · **Agent:** Claude Code (Opus 5.5) · **Requested by:** Jan (course L02 prompt)
-**Spec:** [.ai/specs/2026-10-17-stack-bootstrap.md](../specs/2026-10-17-stack-bootstrap.md)
+**Spec:** [.ai/specs/implemented/2026-10-17-stack-bootstrap.md](../specs/implemented/2026-10-17-stack-bootstrap.md)
 **Branch:** `feat/stack-bootstrap` from `develop` (after PR #1 merged as `ebe13a0`)
 **Status:** done — PR to `develop`
 

@@ -3,7 +3,7 @@
 Date: 2026-10-18 (adapted from the course standard dated 2026-09-01)
 Status: active · source of truth for code structure and review
 
-Grounded in the stack bootstrap (`.ai/specs/2026-10-17-stack-bootstrap.md`) and the product
+Grounded in the stack bootstrap (`.ai/specs/implemented/2026-10-17-stack-bootstrap.md`) and the product
 scope in `docs/discovery/` (~9 domain concepts — auth, mentors, availability, bookings,
 payments, messages, favorites, reviews — across a marketplace booking flow). Decisions
 confirmed with the project owner (Jan): **domain sub-folders inside the existing layered

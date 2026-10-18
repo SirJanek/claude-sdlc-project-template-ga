@@ -3,7 +3,7 @@
 Marketplace **mentoringu 1:1 przez wideo**: osoby rozwijające karierę w produkcie, inżynierii, AI i UX rezerwują sesje z praktykami, którzy „już to zrobili”. Projekt kursowy programu **AI Tech Leaders** (12.10–13.11.2026), prowadzony według AI-native SDLC.
 
 > [!NOTE]
-> **Status (2026-10-17):** discovery zakończone, [`intent.md`](docs/sdlc/intent.md) w wersji **draft** czeka na akceptację product ownera. Stack postawiony ([specyfikacja](.ai/specs/2026-10-17-stack-bootstrap.md)): monorepo pnpm z aplikacją Next.js, bazą PostgreSQL przez MikroORM, DI na Awilix, Tailwind i shadcn/ui. Wdrożony [standard inżynieryjny](.ai/docs/engineering-standards.md) ([specyfikacja](.ai/specs/2026-10-18-engineering-standards.md)). Funkcji produktu jeszcze nie ma — jest szkielet: strona publiczna, panel admina `/admin/users` z listą użytkowników (**dostęp tylko deweloperski, bez logowania**), `/api/users` i `/api/health`.
+> **Status (2026-10-17):** discovery zakończone, [`intent.md`](docs/sdlc/intent.md) w wersji **draft** czeka na akceptację product ownera. Stack postawiony ([specyfikacja](.ai/specs/implemented/2026-10-17-stack-bootstrap.md)): monorepo pnpm z aplikacją Next.js, bazą PostgreSQL przez MikroORM, DI na Awilix, Tailwind i shadcn/ui. Wdrożony [standard inżynieryjny](.ai/docs/engineering-standards.md) ([specyfikacja](.ai/specs/implemented/2026-10-18-engineering-standards.md)). Funkcji produktu jeszcze nie ma — jest szkielet: strona publiczna, panel admina `/admin/users` z listą użytkowników (**dostęp tylko deweloperski, bez logowania**), `/api/users` i `/api/health`.
 
 ## Od czego zacząć
 
