@@ -49,4 +49,4 @@ PR: #15
 
 - [x] R.1 Fresh-context review: request changes (2 major, 2 minor, 2 nits) — all fixed — d88ae3c
 - [x] R.2 Live stopped-container and other-checkout runs (PR comment); spec edge cases amended on PR #14
-
+- [x] R.3 QA finding (Jan, manual run): check output buried the results → quiet checks + failure tail + screen test — 8711f4f
