@@ -6,6 +6,17 @@ import { StepError } from './steps.mjs';
  * @typedef {import('./steps.mjs').Context} Context
  */
 
+/** The last few non-empty lines of a quiet command's output, indented. */
+function lastLines(/** @type {string} */ output, count = 5) {
+  return output
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .slice(-count)
+    .map((line) => `    ${line}`)
+    .join('\n');
+}
+
 const MARK = { ok: '✔', done: '✔', skipped: '↷' };
 const LABEL = { ok: 'ok', done: 'done', skipped: 'skipped' };
 
@@ -29,6 +40,8 @@ export async function runSetup({ steps, ctx, write }) {
       const message = error instanceof Error ? error.message : String(error);
       const hint = error instanceof StepError ? error.hint : 'Check the output above, then re-run the setup.';
       write(`✖ ${prefix} — failed: ${message}\n  → ${hint}\n`);
+      const tail = error instanceof StepError ? lastLines(error.output) : '';
+      if (tail) write(`  Last output:\n${tail}\n`);
       return 1;
     }
   }

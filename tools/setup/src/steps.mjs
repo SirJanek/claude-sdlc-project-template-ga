@@ -12,15 +12,21 @@
  * @typedef {{ id: string, title: string, run: (ctx: Context) => Promise<StepResult> }} Step
  */
 
-/** A step failure the user can fix: `message` says what is wrong, `hint` what to do. */
+/**
+ * A step failure the user can fix: `message` says what is wrong, `hint` what to do, `output` the
+ * captured output of a quiet check that failed (shown as its last lines — it was not streamed).
+ */
 export class StepError extends Error {
-  /** @param {string} message @param {string} hint */
-  constructor(message, hint) {
+  /** @param {string} message @param {string} hint @param {string} [output] */
+  constructor(message, hint, output = '') {
     super(message);
     this.name = 'StepError';
     this.hint = hint;
+    this.output = output;
   }
 }
+
+const QUIET = { quiet: true };
 
 export const MIN_NODE_MAJOR = 22;
 export const PNPM_MAJOR = 10;
@@ -51,11 +57,12 @@ export const prerequisites = {
         'Use the version in .nvmrc (26), e.g. "nvm use" or "fnm use".',
       );
     }
-    const pnpm = await exec('pnpm', ['--version']);
+    const pnpm = await exec('pnpm', ['--version'], QUIET);
     if (pnpm.code !== 0) {
       throw new StepError(
         'pnpm was not found.',
         'Install it with "npm i -g pnpm@10.34.5" (or "corepack enable" where corepack exists — Node ≥ 25 no longer ships it).',
+        pnpm.output,
       );
     }
     const pnpmVersion = pnpm.output.trim();
@@ -65,11 +72,21 @@ export const prerequisites = {
         'Install it with "npm i -g pnpm@10.34.5".',
       );
     }
-    if ((await exec('docker', ['info'])).code !== 0) {
-      throw new StepError('Docker is not installed or not running.', 'Start Docker Desktop, then re-run the setup.');
+    const docker = await exec('docker', ['info'], QUIET);
+    if (docker.code !== 0) {
+      throw new StepError(
+        'Docker is not installed or not running.',
+        'Start Docker Desktop, then re-run the setup.',
+        docker.output,
+      );
     }
-    if ((await exec('docker', ['compose', 'version'])).code !== 0) {
-      throw new StepError('Docker Compose v2 is not available.', 'Update Docker Desktop (it ships "docker compose").');
+    const compose = await exec('docker', ['compose', 'version'], QUIET);
+    if (compose.code !== 0) {
+      throw new StepError(
+        'Docker Compose v2 is not available.',
+        'Update Docker Desktop (it ships "docker compose").',
+        compose.output,
+      );
     }
     return { status: 'ok', detail: `Node ${nodeVersion} · pnpm ${pnpmVersion} · Docker` };
   },
@@ -135,7 +152,7 @@ export const database = {
   id: 'database',
   title: `Database (PostgreSQL in Docker, port ${DB_PORT})`,
   async run({ exec }) {
-    const ours = await exec('docker', ['compose', 'ps', '--format', 'json', 'db']);
+    const ours = await exec('docker', ['compose', 'ps', '--format', 'json', 'db'], QUIET);
     if (
       parseComposePs(ours.output).some((c) => c.Service === 'db' && c.State === 'running' && c.Health === 'healthy')
     ) {

@@ -65,4 +65,21 @@ describe('runSetup', () => {
       expect(out).not.toContain('    at ');
     }
   });
+
+  it('shows the last 5 lines of a failed quiet check, and nothing extra when there is none', async () => {
+    const output = ['l1', 'l2', '', 'l3', 'l4', 'l5', 'Cannot connect to the Docker daemon   '].join('\n');
+    const { out } = await capture([
+      step('a', async () => {
+        throw new StepError('Docker is not running.', 'Start Docker Desktop.', output);
+      }),
+    ]);
+    expect(out).toContain('  Last output:\n    l2\n    l3\n    l4\n    l5\n    Cannot connect to the Docker daemon\n');
+    expect(out).not.toContain('l1');
+    const plain = await capture([
+      step('a', async () => {
+        throw new StepError('x', 'y');
+      }),
+    ]);
+    expect(plain.out).not.toContain('Last output');
+  });
 });

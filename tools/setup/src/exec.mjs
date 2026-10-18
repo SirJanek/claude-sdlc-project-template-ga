@@ -3,12 +3,15 @@ import { spawn as nodeSpawn } from 'node:child_process';
 
 /**
  * @typedef {{ code: number, output: string }} ExecResult
- * @typedef {(command: string, args: string[]) => Promise<ExecResult>} Exec
+ * @typedef {{ quiet?: boolean }} ExecOptions
+ * @typedef {(command: string, args: string[], options?: ExecOptions) => Promise<ExecResult>} Exec
  */
 
 /**
- * Builds the command runner the steps use. Output is streamed to `write` (the user sees progress
- * of long installs) and captured (steps classify it). A command that cannot start — not installed —
+ * Builds the command runner the steps use. Output is always captured (steps classify it) and is
+ * streamed to `write` so the user sees progress of long installs — except for `quiet` commands:
+ * read-only checks whose output is noise on success (`docker info` alone is ~100 lines). A failing
+ * quiet check shows its output through the step error instead. A command that cannot start — not installed —
  * resolves with code 127 instead of throwing, so a missing tool becomes a step failure with a hint.
  * Arguments are fixed constants from steps.mjs — never user input. Windows needs a shell to resolve
  * the `pnpm.cmd` shim; there the command is passed as one string, because `shell: true` with an args
@@ -18,7 +21,7 @@ import { spawn as nodeSpawn } from 'node:child_process';
  * @returns {Exec}
  */
 export function createExec({ cwd, write, platform = process.platform, spawn = nodeSpawn }) {
-  return (command, args) =>
+  return (command, args, { quiet = false } = {}) =>
     new Promise((resolve) => {
       let output = '';
       const options = { cwd, env: process.env };
@@ -29,7 +32,7 @@ export function createExec({ cwd, write, platform = process.platform, spawn = no
       const collect = (/** @type {Buffer} */ chunk) => {
         const text = chunk.toString();
         output += text;
-        write(text);
+        if (!quiet) write(text);
       };
       child.stdout?.on('data', collect);
       child.stderr?.on('data', collect);

@@ -2,7 +2,9 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { EventEmitter } from 'node:events';
 import { REPO_ROOT, USAGE, realDeps, run } from './cli.mjs';
+import { createExec } from './exec.mjs';
 import { NO_PENDING_MIGRATIONS } from './steps.mjs';
 
 afterEach(() => vi.restoreAllMocks());
@@ -95,5 +97,44 @@ describe('realDeps', () => {
     deps.write('hi');
     expect(write).toHaveBeenCalledWith('hi');
     expect((await deps.exec(process.execPath, ['-e', 'process.exit(0)'])).code).toBe(0);
+  });
+});
+
+describe('what the user sees (QA finding: check output buried the results)', () => {
+  it('second run prints only the header, five step lines and the next-step hint — no command noise', async () => {
+    // Real createExec (streaming logic under test) over a fake spawn that answers like the real tools.
+    const DOCKER_INFO = Array.from({ length: 100 }, (_, i) => `docker info line ${i}`).join('\n');
+    /** @type {Record<string, string>} */
+    const outputs = {
+      'pnpm --version': '10.34.5\n',
+      'docker info': DOCKER_INFO,
+      'docker compose version': 'Docker Compose version v5.3.0\n',
+      'docker compose ps --format json db': JSON.stringify({ Service: 'db', State: 'running', Health: 'healthy' }),
+      'pnpm browser:install': 'Installing Chrome...\n✓ Chrome 155.0.8059.84 is already installed\n',
+      'pnpm db:migrate': `${NO_PENDING_MIGRATIONS}\n`,
+    };
+    const spawn = (/** @type {string} */ command, /** @type {string[]} */ args) => {
+      const child = Object.assign(new EventEmitter(), { stdout: new EventEmitter(), stderr: new EventEmitter() });
+      queueMicrotask(() => {
+        child.stdout.emit('data', Buffer.from(outputs[[command, ...args].join(' ')] ?? ''));
+        child.emit('close', 0);
+      });
+      return child;
+    };
+    let screen = '';
+    const write = (/** @type {string} */ t) => (screen += t);
+    const exec = createExec({ cwd: '/repo', write, platform: 'darwin', spawn: /** @type {any} */ (spawn) });
+    const deps = { write, exec, nodeVersion: 'v26.5.0', readFile: () => 'same lockfile' };
+
+    expect(await run(['--skip-browser'], deps)).toBe(0);
+
+    expect(screen).not.toContain('docker info line');
+    expect(screen).not.toContain('"Service"');
+    expect(screen).not.toMatch(/^10\.34\.5$/m);
+    const lines = screen.split('\n').filter(Boolean);
+    expect(lines[0]).toBe('MentorHub setup');
+    expect(lines.filter((l) => /^(✔|↷) \[\d\/5\]/.test(l))).toHaveLength(5);
+    // The only command output left is the migrator's own line (a streamed, mutating step).
+    expect(lines.filter((l) => !/^(MentorHub setup|✔|↷|Ready\.)/.test(l))).toEqual([NO_PENDING_MIGRATIONS]);
   });
 });

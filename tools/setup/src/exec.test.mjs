@@ -70,4 +70,12 @@ describe('createExec', () => {
     ]);
     expect(result.code).toBe(0);
   });
+
+  it('quiet: captures the output for the step but does not stream it to the user', async () => {
+    const written = /** @type {string[]} */ ([]);
+    const { spawn } = fakeSpawn({ stdout: ['Server Version: 29.6.1\n'] });
+    const exec = createExec({ cwd: '/repo', write: (t) => written.push(t), platform: 'darwin', spawn });
+    expect(await exec('docker', ['info'], { quiet: true })).toEqual({ code: 0, output: 'Server Version: 29.6.1\n' });
+    expect(written).toEqual([]);
+  });
 });

@@ -20,13 +20,20 @@ import {
 function fakeExec(answers = {}) {
   /** @type {string[]} */
   const calls = [];
-  const exec = async (/** @type {string} */ command, /** @type {string[]} */ args) => {
+  /** @type {string[]} commands run with { quiet: true } (output not streamed to the user) */
+  const quiet = [];
+  const exec = async (
+    /** @type {string} */ command,
+    /** @type {string[]} */ args,
+    /** @type {{ quiet?: boolean }} */ options = {},
+  ) => {
     const key = [command, ...args].join(' ');
     calls.push(key);
+    if (options.quiet) quiet.push(key);
     const answer = answers[key] ?? {};
     return { code: answer.code ?? 0, output: answer.output ?? '' };
   };
-  return { exec, calls };
+  return { exec, calls, quiet };
 }
 
 /** @param {Partial<import('./steps.mjs').Context>} overrides */
@@ -248,5 +255,48 @@ describe('pinned output strings', () => {
 describe('STEPS', () => {
   it('runs prerequisites first and migrations after the database', () => {
     expect(STEPS.map((s) => s.id)).toEqual(['prerequisites', 'dependencies', 'browser', 'database', 'migrations']);
+  });
+});
+
+describe('output noise', () => {
+  it('runs read-only checks quietly and streams only the long, mutating commands', async () => {
+    const { exec, calls, quiet } = fakeExec(PNPM_OK);
+    const c = ctx({ exec, readFile: () => null });
+    for (const step of STEPS) await step.run(c);
+    expect(quiet).toEqual([
+      'pnpm --version',
+      'docker info',
+      'docker compose version',
+      'docker compose ps --format json db',
+    ]);
+    expect(calls.filter((call) => !quiet.includes(call))).toEqual([
+      'pnpm install --frozen-lockfile',
+      'pnpm browser:install',
+      'docker compose up -d --wait db',
+      'pnpm db:migrate',
+    ]);
+  });
+
+  it('a failing quiet check carries its output into the error (it was never shown)', async () => {
+    const { exec } = fakeExec({
+      ...PNPM_OK,
+      'docker info': { code: 1, output: 'Cannot connect to the Docker daemon' },
+    });
+    const error = await prerequisites.run(ctx({ exec })).catch((e) => e);
+    expect(error.output).toBe('Cannot connect to the Docker daemon');
+    for (const [answers, expected] of [
+      [{ 'pnpm --version': { code: 127, output: 'spawn pnpm ENOENT' } }, 'spawn pnpm ENOENT'],
+      [
+        { ...PNPM_OK, 'docker compose version': { code: 1, output: "'compose' is not a docker command" } },
+        "'compose' is not a docker command",
+      ],
+    ]) {
+      const err = await prerequisites.run(ctx({ exec: fakeExec(/** @type {any} */ (answers)).exec })).catch((e) => e);
+      expect(err.output).toBe(expected);
+    }
+  });
+
+  it('StepError output defaults to empty', () => {
+    expect(new StepError('m', 'h').output).toBe('');
   });
 });
