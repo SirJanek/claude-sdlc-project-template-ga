@@ -37,8 +37,8 @@ for browser/migrations pinned by tests; Windows `.cmd` shims need `shell: true` 
 
 ### Phase 1: Installer
 
-- [ ] 1.1 Package scaffold, workspace wiring, shared vitest option
-- [ ] 1.2 exec and steps with unit tests
-- [ ] 1.3 main, cli and bin entry with unit tests
+- [x] 1.1 Package scaffold, workspace wiring, shared vitest option — 852ae2c
+- [x] 1.2 exec and steps with unit tests — c385e46
+- [x] 1.3 main, cli and bin entry with unit tests — 83ccd4a
 - [ ] 1.4 make target, root script and docs
 - [ ] 1.5 Evidence runs
