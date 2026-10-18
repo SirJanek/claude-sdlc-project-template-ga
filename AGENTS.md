@@ -239,19 +239,18 @@ Rules — follow them on every task, without being reminded:
 `00-OVERVIEW.md`, `bands.yaml` and `LESSONS.md` (production incidents only — agent learnings
 go to `.ai/lessons.md`). The `/sdlc-*` commands read and write `.ai/specs/`.
 
-**Open Mercato skills (`om-*`) are installed per project (L03, 2026-10-18), the pipeline is not
-configured yet — run `/om-setup-agent-pipeline` only when Jan asks.** Installed with
-`npx skills add open-mercato/skills --skill '*' -a claude-code -a codex`: files live in
-`.agents/skills/` (Codex reads them directly, `$om-…`), `.claude/skills/om-*` are symlinks for
-Claude Code (`/om-…`), versions pinned by hash in `skills-lock.json`. Treat them as vendored: do
-not edit or reformat them (excluded from Prettier); update with `npx skills update -p`, restore
-on a fresh clone with `npx skills experimental_install`; project overrides go to `.ai/skills/`.
-Order agreed with the course: stack and repo setup (L02) → safety net (CI, tests,
-`make check` wired) → Open Mercato pipeline and SDLC (L03). When setup runs:
-`tracker: github`, `validation.commands: ["make check"]`, `paths.analysis: ".ai/analyses"`,
-`paths.prototypes: "docs/discovery/mockups"`, keep `runs`/`specs` defaults, and decide which
-process description is primary (`docs/sdlc/00-OVERVIEW.md` vs the generated `SDLC.md`). Until then the `om-*`
-skills stop on the missing `.ai/agentic.config.json` — that is expected.
+**Open Mercato pipeline is configured (L03, 2026-10-18).** The skills (`om-*`) read
+`.ai/agentic.config.json` (tracker `github` → `.ai/trackers/github.md`, browser `agent-browser` →
+`.ai/browsers/agent-browser.md`, validation `make check`, full label taxonomy, QA gate on,
+`paths.analysis: .ai/analyses`, `paths.prototypes: docs/discovery/mockups`). The process lives in
+`SDLC.md` (primary; `docs/sdlc/00-OVERVIEW.md` is the course overview), review rules in
+`CODE_REVIEW.md`, protected contracts in `BACKWARD_COMPATIBILITY.md` — change config and `SDLC.md`
+together and re-run `/om-setup-agent-pipeline` when the toolchain or labels change.
+Installed with `npx skills add open-mercato/skills --skill '*' -a claude-code -a codex`: files in
+`.agents/skills/` (Codex: `$om-…`), symlinks in `.claude/skills/om-*` (Claude Code: `/om-…`),
+pinned in `skills-lock.json`. Treat them as vendored: do not edit or reformat them; update with
+`npx skills update -p`, restore on a fresh clone with `npx skills experimental_install`;
+project overrides go to `.ai/skills/<skill-name>/SKILL.md`.
 
 ## Things agents get wrong
 
