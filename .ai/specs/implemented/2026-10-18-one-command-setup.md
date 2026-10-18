@@ -1,8 +1,8 @@
 # Spec: One-command idempotent local setup (`npm run setup`)
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints › Process (AI-native SDLC: agents work in fresh worktrees) — no intent line asks for setup directly; requested in issue #13
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints › Process (AI-native SDLC: agents work in fresh worktrees) — no intent line asks for setup directly; requested in issue #13
 **Issue:** #13
-**Status:** proposed · autonomous spec (`om-auto-write-spec`, assumptions below await Jan's confirmation) · revised after fresh-context review (8 findings applied) · edge cases amended after the implementation review on PR #15
+**Status:** implemented (PR #15, QA approved by Jan) · autonomous spec (`om-auto-write-spec`, assumptions below await Jan's confirmation) · revised after fresh-context review (8 findings applied) · edge cases amended after the implementation review on PR #15
 
 ## 📝 TLDR
 
@@ -121,8 +121,7 @@ One phase — the capability is only useful whole (a setup that does half the st
 
 ## 📋 Implementation Plan
 
-**Accepted:** pending — autonomous spec; implementation proceeds under the resolved assumptions
-below unless Jan overrides them on the spec PR.
+**Accepted:** 2026-10-18 by Jan (spec PR #14 merged; QA approved on PR #15) — resolved assumptions below stand.
 
 | Step | What | Done when |
 |---|---|---|
@@ -136,7 +135,7 @@ below unless Jan overrides them on the spec PR.
 
 | Step | Status | Evidence |
 |---|---|---|
-| 1.1–1.5 | ⏳ | |
+| 1.1–1.5 | ✅ | PR #15 — `make check` green (48 tests in `tools/setup`, 100%), 10/10 mutants killed, live runs in the PR body; fresh-context review: 6 findings fixed; QA finding (check output noise) fixed; `QA head: b275824` |
 
 ## Resolved assumptions (autonomous defaults)
 
