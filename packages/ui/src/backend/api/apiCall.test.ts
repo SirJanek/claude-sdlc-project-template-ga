@@ -52,3 +52,43 @@ describe('apiCall', () => {
     });
   });
 });
+
+describe('apiCall — edge cases', () => {
+  it('rejects envelopes that are not objects or have a malformed error', async () => {
+    expect(await apiCall('/api/x', {}, respond('42'))).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_response' },
+    });
+    expect(await apiCall('/api/x', {}, respond('{"ok":false,"error":"nope"}', 400))).toMatchObject({
+      ok: false,
+      error: { code: 'invalid_response' },
+    });
+    expect(await apiCall('/api/x', {}, respond('{"ok":false,"error":null}', 400))).toMatchObject({
+      error: { code: 'invalid_response' },
+    });
+    expect(await apiCall('/api/x', {}, respond('{"ok":"maybe"}'))).toMatchObject({
+      error: { code: 'invalid_response' },
+    });
+  });
+
+  it('keeps a caller-supplied content type and uses the global fetch by default', async () => {
+    const original = globalThis.fetch;
+    let seen: Headers | undefined;
+    globalThis.fetch = (async (_url: string, init?: RequestInit) => {
+      seen = new Headers(init?.headers);
+      return new Response('{"ok":true,"data":1}');
+    }) as typeof fetch;
+    try {
+      await expect(
+        apiCall('/api/x', { method: 'POST', body: 'a=1', headers: { 'content-type': 'text/plain' } }),
+      ).resolves.toMatchObject({ ok: true, data: 1 });
+      expect(seen?.get('content-type')).toBe('text/plain');
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+
+  it('apiCallOrThrow returns the data on success', async () => {
+    await expect(apiCallOrThrow('/api/x', {}, respond('{"ok":true,"data":{"a":1}}'))).resolves.toEqual({ a: 1 });
+  });
+});

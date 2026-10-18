@@ -8,6 +8,7 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — Never put files other than migrations in `packages/db/src/migrations/`: the migrator glob `!(*.d).{js,ts}` picked up a test file as a pending migration. Migration tests live in `src/migrator/`.
 - 2026-10-18 — After moving or renaming Next.js routes, run `next dev` once (or `make dev`): stale `.next/dev/types` still point at the old files and break `tsc`, and neither `next typegen` nor `next build` refreshes them.
 - 2026-10-18 — Never silence `git add` (`2>/dev/null`) or pass it a deleted path: one missing pathspec aborts the whole add and the commit goes out with only what was staged before (f25fdf0 shipped without its new files; fixed by a follow-up commit, history not rewritten). Check `git status --short` is empty after committing.
 - 2026-10-18 — Review every generated migration: MikroORM turns a table rename into `create` + `drop … cascade` (data loss). Write renames by hand (`alter table … rename`, plus constraint renames), rehearse up → down → up with rows, then confirm `make db-migration` reports no changes.

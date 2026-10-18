@@ -34,3 +34,10 @@ describe('requireRole', () => {
     expect(() => requireRole(DEV_ADMIN_SESSION, 'admin')).not.toThrow();
   });
 });
+
+describe('requireSession — default environment', () => {
+  it('reads the process environment and denies without the flag', () => {
+    delete process.env.ALLOW_DEV_ADMIN;
+    expect(() => requireSession(req)).toThrow(UnauthorizedError);
+  });
+});

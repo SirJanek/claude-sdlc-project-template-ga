@@ -28,3 +28,12 @@ describe('keyboard shortcuts', () => {
     expect(isCancelShortcut({ key: 'Escape' })).toBe(true);
   });
 });
+
+describe('validateWithSchema — form-level errors', () => {
+  it('keys errors without a path as _form', () => {
+    expect(validateWithSchema(z.string().min(3, 'Too short.'), 'ab')).toEqual({
+      ok: false,
+      fieldErrors: { _form: ['Too short.'] },
+    });
+  });
+});

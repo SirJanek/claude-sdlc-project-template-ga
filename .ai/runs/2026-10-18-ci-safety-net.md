@@ -14,7 +14,7 @@
 ## Steps
 
 - [x] Phase 1 spec
-- [ ] Phase 2 unit framework + 100%
+- [x] Phase 2 unit framework + 100% (found and fixed: test file in src/migrations picked up as a migration; CrudForm error text inside <label> changed the accessible name)
 - [ ] Phase 3 integration
 - [ ] Phase 4 CI + rules
 

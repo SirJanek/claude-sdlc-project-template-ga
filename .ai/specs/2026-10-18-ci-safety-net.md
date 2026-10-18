@@ -92,6 +92,6 @@ regression; load testing; deploy pipeline.
 | Phase | Status | Evidence |
 |---|---|---|
 | 1 Spec | ✅ done | this commit |
-| 2 Unit framework + 100% | ⏳ | |
+| 2 Unit framework + 100% | ✅ done | `make check` exit 0 (15 s): 112 unit tests, 100% lines/branches/functions/statements in core, db, ui, app; mutation: two test files removed → `make test` exit 2 |
 | 3 Integration | ⏳ | |
 | 4 CI + rules | ⏳ | |
