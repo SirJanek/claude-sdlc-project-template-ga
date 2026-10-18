@@ -20,8 +20,13 @@ for this package only.
 - Admin pages share `src/app/admin/layout.tsx` (+ colocated `AdminNav`); every `/admin/**` page fetches through `apiCall` — a server component awaiting the DB crashes `next dev` when the database is down.
 - `/admin/**`, `/api/users` and `/api/admin/*` are admin-only through `await requireSession(request)` +
   `requireRole(session, 'admin')`; `(auth)` pages are server components that read `searchParams` and hand
-  values to colocated client parts (`SignInForm`, `ResendButton`, `ConfirmSignIn`) — client components never
-  import `@mentorhub/core` (it pulls the ORM into the bundle); `src/instrumentation.ts` validates the env at boot.
+  values to client parts (`EmailLinkForm` shared by `/sign-in` and `/sign-up/mentor`, colocated `ResendButton`,
+  `ConfirmSignIn`) — client components never import `@mentorhub/core` (it pulls the ORM into the bundle);
+  `src/instrumentation.ts` validates the env at boot.
+- Role-guarded server pages (`(mentor)/mentor/profile`) call `pageAccess(await headers(), { role, path })` from
+  `@mentorhub/core` and only switch on the outcome (`redirect` to sign-in, a refusal, or the content); they
+  export `dynamic = 'force-dynamic'`. A one-time notice after sign-in comes from the validated `?notice=`
+  parameter (`accountNoticeSchema`) and renders `ExistingAccountNotice` from `@mentorhub/ui`.
 - After moving routes run `make dev` once (stale `.next/dev/types` break `tsc`).
 - **Tests (100% coverage, see root AGENTS.md › Testing):** pages and components with Testing
   Library next to the file (`page.test.tsx`), mocking `apiCall` from `@mentorhub/ui`; route files

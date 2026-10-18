@@ -169,7 +169,8 @@ Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 - Roles: guest, mentee, mentor, admin. Built so far: `/` (public, `(marketing)`),
   `/admin` (Dashboard: database state) and `/admin/users` (users list) inside the shared admin layout with navigation (admin session or local dev admin), `/api/users` (list + admin create), `/api/admin/health`, `/api/health`; tables `users`, `auth_tokens`;
   auth Phase 1: `/sign-in`, `/check-email`, `/auth/confirm` (`(auth)` group), `/api/auth/email/{start,consume}`, `/api/auth/sign-out`, `/api/auth/me`, `AuthService`, `MailSender` port (`services/mail/`, mock adapter), `core/src/http/session.ts`;
-  `core/src/events` (typed `EventBus`, first event `auth.user.created { userId, email, method }`) and `core/src/validators/auth/`.
+  `core/src/events` (typed `EventBus`, first event `auth.user.created { userId, email, method }`) and `core/src/validators/auth/`;
+  auth Phase 3 (#26): `/sign-up/mentor` (`(auth)`, e-mail link with `intentRole: 'mentor'`), `/mentor/profile` (`(mentor)` group, placeholder until E02-S01; mentor role via `pageAccess` from `core/src/http/page-access.ts`), role-aware landing after a consumed link (`landing-path.ts`) and the one-time `?notice=existing_account` (`ExistingAccountNotice` in `ui`).
 - Domains to come (from discovery): catalogue, booking & holds, payments & plans, sessions &
   video room, messaging, mentor onboarding, payouts, admin moderation & disputes. External
   integrations go behind a port in `core` with a mock adapter first.
@@ -281,3 +282,6 @@ evals/README.md.
 - Mocking `apiCall` on `@mentorhub/ui` in an `app` test does not reach `ui` components (they import `backend/api/apiCall` by relative path): mock that module path (`vi.mock('../../../../ui/src/backend/api/apiCall', …)`) when a page renders `SessionMenu`.
 - A fake transaction must undo only its own writes: a snapshot taken before the advisory lock is acquired "rolls back" rows other transactions committed meanwhile, and a rate-limit test then passes 5 of 3 (seen in the `AuthService` fake). Keep an undo log per transaction.
 - With Vitest fake timers a React countdown needs one `act()` per tick: the next `setTimeout` is scheduled only after the re-render, so one `advanceTimersByTime(60_000)` moves the clock by a single second.
+- A server page that needs the session builds no `Request` by hand: call `pageAccess(await headers(), { role, path })` from `core` and switch on `kind` (`sign-in` → `redirect`, `forbidden` → render a refusal, `granted` → session + account). `requireSession` reads only the cookie header, so any absolute base URL would do, but the helper keeps that out of route files.
+- A test that compares a timestamp set by a service's `now = new Date()` default with a fixture clock taken earlier flakes on a millisecond boundary: always pass the harness clock as `now` (seen in the admin-created-user consume test).
+- The `(auth)` form is shared: `EmailLinkForm` in `src/app/(auth)/` (it needs `next/navigation`, so it cannot live in `ui`); a one-time notice after sign-in travels as a validated query parameter (`accountNoticeSchema`) on the landing path, never as free text from the URL.
