@@ -8,6 +8,7 @@ from a human, or when you learn something non-obvious about this project. Longer
 (context, root cause, evidence) go to lessons/YYYY-MM-DD-slug.md and are linked from here.
 -->
 
+- 2026-10-18 — Codex second review of E01 Phase 1 found five defects the author's own tests missed (control characters in redirect paths, a per-IP limit not covered by the e-mail lock, read-then-write session-version bumps, dev-admin fallback on a failed lookup, Next's dev request logger printing `?token=`): a second model reviewing the diff is worth the run — keep the SDLC rule.
 - 2026-10-18 — An async guard called without `await` lets the route run: `makeCrudRoute` now awaits `authorize`, and the mutation (drop the `await`) must turn the unauthenticated-GET test red before the change is called done; apply the same proof to every new guard.
 - 2026-10-18 — A fake database used for concurrency tests must roll back only its own writes (undo log per transaction); a snapshot taken before the advisory lock is acquired reverts rows other transactions committed meanwhile and makes a rate-limit test pass more requests than the limit.
 - 2026-10-18 — In `app` tests, mocking `apiCall` on `@mentorhub/ui` does not reach `ui` components: they import `backend/api/apiCall` by relative path, so mock that module path. With Vitest fake timers a React countdown advances one tick per `act()`.

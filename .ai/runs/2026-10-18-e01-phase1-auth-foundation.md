@@ -70,6 +70,20 @@ routes + pages, `set-role` CLI, docs/contracts, integration tests. No GitHub (Ph
   name) and `auth_tokens`, down refused while a name is null, down after naming, up, rows kept,
   `migration:create` → "No schema changes".
 
+## Review fixes (Codex `om-code-review` on PR #46 — REQUEST CHANGES, 5 findings)
+
+| # | Finding | Fix | Proof |
+|---|---|---|---|
+| H1 | `/\t/evil.example` passes `nextPathSchema`; parsers strip control chars → `https://evil.example/` | `isSameOriginPath`: printable characters only + parsed origin checked against a fixed base; `ConfirmSignIn.safeDestination` guards `window.location.assign` on the client too | schema regressions (tab, CR, LF, NUL, DEL, space), client test for `/\t/`, `//`, `https:`, `/\`; integration: 6 such `next` values → 422, no token row |
+| H2 | per-IP limit not atomic across e-mails | one `select pg_advisory_xact_lock(hashtext(?)), pg_advisory_xact_lock(hashtext(?))` with `email:<e-mail>` then `ip:<hash>` (fixed order, bound) | unit: 19 warm + 4 concurrent distinct e-mails → exactly 1 passes; integration: 26 concurrent distinct e-mails from one forwarded IP on real PostgreSQL → 20 × 200, 6 × 429, 20 rows, 20 mails |
+| H3 | `sessionVersion += 1` read-then-write (service and `set-role`) | `revokeSessions` in db: `update users set session_version = session_version + 1 … returning`; `set-role`: role + version in one UPDATE | unit: two concurrent revocations with a sign-in between → version 2, in-between cookie stale (fake rows are detached copies, so a read-then-write would lose the update); integration: sign-in between two revocations → both cookies 401, version 2; mutation below |
+| M4 | a failing lookup with ALLOW_DEV_ADMIN=1 fell through to the dev admin | a present cookie decides alone (invalid/stale/unknown/DB error → 401); only a request without a cookie may use the dev admin | unit: lookup throws / null / stale `sv` / garbage with the flag on → 401; integration on the dev server: garbage cookie → 401, bumped version → 401 on `me` and `/api/users` |
+| M5 | Next dev request logger prints `?token=` | `next.config.ts` `logging.incomingRequests.ignore: [/^\/auth\/confirm(\?\|$)/]` | integration: open a dev link in the browser + plain GET, then `server-dev.log` contains `GET /sign-in` but no token, no `token=`, no `/auth/confirm?` |
+
+Mutation 3 (new): `revokeSessions` call in `signOutEverywhere` replaced by `findOne` → `sessionVersion += 1` → `flush` — the two-revocations test must fail (see Verification).
+
+Verification after the fixes: `make check` exit 0 (tools/setup 51, db 30, ui 43, core 124, app 59 — 100 %; build; audit 1 high ignored); `make test-integration` → `Test Files 3 passed (3)`, `Tests 39 passed (39)` (auth 17, migrations 7, app 15). Mutations: (1) `await authorize` removed → 2 tests `expected 200 to be 401`; (2) `usedAt: null` removed → "rejects a link clicked twice" `promise resolved … instead of rejecting`; (3) read-then-write revocation → "two revocations with a sign-in between" `AssertionError: expected 1 to be 2`. All restored, suites green.
+
 ## Handoff
 
 Phase 1 is complete; Jan opens the PR (`risk-high`, `run-integration`, `needs-qa`) and the Codex
