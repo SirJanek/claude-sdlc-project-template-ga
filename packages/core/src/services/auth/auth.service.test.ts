@@ -362,7 +362,7 @@ describe('consumeEmailLink', () => {
   it('AC1 (#26): a mentor sign-up link creates a mentor account that lands on /mentor/profile', async () => {
     const h = harness();
     await h.request('m@example.com', { intentRole: 'mentor' });
-    await expect(h.service().consumeEmailLink(h.lastToken())).resolves.toEqual({
+    await expect(h.service().consumeEmailLink(h.lastToken(), h.db.clock)).resolves.toEqual({
       userId: 'id-2',
       sessionVersion: 0,
       next: '/mentor/profile',
