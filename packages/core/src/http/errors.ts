@@ -50,3 +50,21 @@ export class ConflictError extends AppError {
     super(message, { status: 409, code: 'conflict' });
   }
 }
+
+export class GoneError extends AppError {
+  constructor(message = 'This link has expired or was already used — send a new one.', code = 'link_invalid') {
+    super(message, { status: 410, code });
+  }
+}
+
+export class RateLimitedError extends AppError {
+  constructor(message = 'Too many requests. Please wait a while and try again.') {
+    super(message, { status: 429, code: 'rate_limited' });
+  }
+}
+
+export class ServiceUnavailableError extends AppError {
+  constructor(message = 'The service is temporarily unavailable. Please try again.', code = 'service_unavailable') {
+    super(message, { status: 503, code });
+  }
+}

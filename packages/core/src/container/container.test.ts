@@ -3,6 +3,8 @@ import type { Orm } from '@mentorhub/db';
 import { parseEnv } from '../config/env';
 import { createLogger } from '../logger';
 import { EventBus } from '../events/event-bus';
+import { AuthService } from '../services/auth/auth.service';
+import { MockMailSender } from '../services/mail/adapters/mock-mail-sender';
 import { buildContainer, createRequestScope, withScope } from './container';
 
 const silent = createLogger({ level: 'silent' });
@@ -54,6 +56,16 @@ describe('composition root', () => {
     const first = await withScope(async (cradle) => cradle.em, c);
     const second = await withScope(async (cradle) => cradle.em, c);
     expect(first).not.toBe(second);
+  });
+
+  it('registers the mail sender by MAIL_ADAPTER as a singleton, the auth service per scope, and the session lookup as the user service', async () => {
+    const c = build(async () => fakeOrm(true));
+    expect(c.cradle.mailSender).toBeInstanceOf(MockMailSender);
+    const scope = await createRequestScope(c);
+    expect(scope.cradle.mailSender).toBe(c.cradle.mailSender);
+    expect(scope.cradle.authService).toBeInstanceOf(AuthService);
+    expect(scope.cradle.authService).not.toBe((await createRequestScope(c)).cradle.authService);
+    expect(scope.cradle.sessionUserLookup).toBe(scope.cradle.userService);
   });
 
   it('registers the event bus as a singleton and wires the subscribers once per container', async () => {

@@ -1,0 +1,463 @@
+import { createHash } from 'node:crypto';
+import { describe, expect, it, vi } from 'vitest';
+import { AuthToken, User, type EntityManager } from '@mentorhub/db';
+import { parseEnv } from '../../config/env';
+import { AUTH_LIMITS } from '../../config/rules';
+import { DEV_ADMIN_SESSION } from '../../http/auth';
+import {
+  ConflictError,
+  GoneError,
+  RateLimitedError,
+  ServiceUnavailableError,
+  UnauthorizedError,
+} from '../../http/errors';
+import { verifySessionToken } from '../../http/session';
+import { createLogger } from '../../logger';
+import type { MailMessage } from '../mail/mail-sender.port';
+import { AuthService, DEV_ADMIN_USER } from './auth.service';
+
+// core never imports @mikro-orm/*: a stand-in violation, recognised by a stubbed isUniqueViolation.
+class UniqueViolation extends Error {}
+vi.mock('@mentorhub/db', async (original) => ({
+  ...(await original<typeof import('@mentorhub/db')>()),
+  isUniqueViolation: (error: unknown) => error instanceof UniqueViolation,
+}));
+
+type Row = Record<string, unknown> & { id?: string; createdAt?: Date };
+type Where = Record<string, unknown>;
+const LOCK_SQL = 'select pg_advisory_xact_lock(hashtext(?::text))';
+
+/** Condition subset the service uses: equality (incl. null) and $gte / $gt / $lt on dates. */
+function matches(row: Row, where: Where): boolean {
+  return Object.entries(where).every(([key, cond]) => {
+    const value = row[key];
+    if (cond !== null && typeof cond === 'object' && !(cond instanceof Date)) {
+      const ops = cond as { $gte?: Date; $gt?: Date; $lt?: Date };
+      const time = (value as Date).getTime();
+      if (ops.$gte && !(time >= ops.$gte.getTime())) return false;
+      if (ops.$gt && !(time > ops.$gt.getTime())) return false;
+      if (ops.$lt && !(time < ops.$lt.getTime())) return false;
+      return true;
+    }
+    return value === cond;
+  });
+}
+
+/**
+ * In-memory PostgreSQL stand-in: tables for users and auth_tokens, transactions with rollback,
+ * `pg_advisory_xact_lock` as a mutex keyed by the bound e-mail (held until the transaction ends),
+ * and the unique index on users.email. `clock` stamps createdAt so rate-limit windows are testable.
+ */
+class FakeDb {
+  users: Row[] = [];
+  tokens: Row[] = [];
+  /** Real time: the service defaults `now` to new Date(); tests that need a window pass `now` explicitly. */
+  clock = new Date();
+  failCommit = false;
+  /** Simulates another request inserting this e-mail between the service's lookup and its flush. */
+  raceEmail: string | undefined;
+  /** Makes the next flush fail with this error (anything but a unique violation). */
+  flushError: Error | undefined;
+  private seq = 0;
+  private readonly locks = new Map<string, Promise<void>>();
+
+  private table(entity: unknown): Row[] {
+    if (entity === User) return this.users;
+    if (entity === AuthToken) return this.tokens;
+    throw new Error('unknown entity');
+  }
+
+  private async acquire(key: string): Promise<() => void> {
+    const previous = this.locks.get(key) ?? Promise.resolve();
+    let release!: () => void;
+    const mine = new Promise<void>((resolve) => (release = resolve));
+    this.locks.set(
+      key,
+      previous.then(() => mine),
+    );
+    await previous;
+    return release;
+  }
+
+  em(): EntityManager {
+    const pending: { table: Row[]; row: Row }[] = [];
+    const releases: (() => void)[] = [];
+    /** Undo log: a rollback reverts this transaction's own writes only, like a real database. */
+    const undo: (() => void)[] = [];
+    const flush = async () => {
+      await Promise.resolve();
+      if (this.flushError) throw this.flushError;
+      for (const { table, row } of pending) {
+        if (table === this.users && this.users.some((u) => u.email === row.email && u !== row)) {
+          throw new UniqueViolation('duplicate key value violates unique constraint "users_email_unique"');
+        }
+        if (row.id === undefined) {
+          Object.assign(row, { id: `id-${++this.seq}`, createdAt: this.clock, updatedAt: this.clock });
+          table.push(row);
+          undo.push(() => table.splice(table.indexOf(row), 1));
+        }
+      }
+      pending.length = 0;
+    };
+    const em = {
+      execute: async (sql: string, params: unknown[]) => {
+        expect(sql).toBe(LOCK_SQL);
+        releases.push(await this.acquire(String(params[0])));
+        return [];
+      },
+      count: async (entity: unknown, where: Where) => this.table(entity).filter((r) => matches(r, where)).length,
+      findOne: async (entity: unknown, where: Where) => {
+        const found = this.table(entity).find((r) => matches(r, where)) ?? null;
+        if (entity === User && !found && this.raceEmail) {
+          this.users.push({ id: 'raced', email: this.raceEmail, sessionVersion: 0 });
+          this.raceEmail = undefined;
+        }
+        return found;
+      },
+      findOneOrFail: async (entity: unknown, where: Where) => {
+        const row = this.table(entity).find((r) => matches(r, where));
+        if (!row) throw new Error('not found');
+        return row;
+      },
+      nativeDelete: async (entity: unknown, where: Where) => {
+        const table = this.table(entity);
+        const removed = table.filter((r) => matches(r, where));
+        for (const row of removed) table.splice(table.indexOf(row), 1);
+        undo.push(() => table.push(...removed));
+        return removed.length;
+      },
+      nativeUpdate: async (entity: unknown, where: Where, data: Row) => {
+        const hits = this.table(entity).filter((r) => matches(r, where));
+        const before = hits.map((row) => ({ row, copy: { ...row } }));
+        for (const row of hits) Object.assign(row, data);
+        undo.push(() => before.forEach(({ row, copy }) => Object.assign(row, copy)));
+        return hits.length;
+      },
+      create: (entity: unknown, data: Row) => {
+        const row = { ...data };
+        pending.push({ table: this.table(entity), row });
+        return row;
+      },
+      flush,
+      transactional: async <T>(fn: (em: EntityManager) => Promise<T>): Promise<T> => {
+        const tx = this.em() as unknown as { flush: () => Promise<void>; rollback: () => void; release: () => void };
+        try {
+          const result = await fn(tx as unknown as EntityManager);
+          await tx.flush();
+          if (this.failCommit) throw new Error('could not serialize access (commit failed)');
+          return result;
+        } catch (error) {
+          tx.rollback();
+          throw error;
+        } finally {
+          tx.release();
+        }
+      },
+      rollback: () =>
+        undo
+          .splice(0)
+          .reverse()
+          .forEach((revert) => revert()),
+      release: () => releases.splice(0).forEach((release) => release()),
+    };
+    return em as unknown as EntityManager;
+  }
+}
+
+const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+const env = parseEnv({ NODE_ENV: 'test', APP_URL: 'https://mentorhub.test' });
+const logger = createLogger({ level: 'silent' });
+
+function harness(db = new FakeDb()) {
+  const sent: MailMessage[] = [];
+  const mailSender = { send: vi.fn(async (message: MailMessage) => void sent.push(message)) };
+  const eventBus = { emit: vi.fn(async () => {}) };
+  const service = () => new AuthService({ em: db.em(), env, logger, mailSender, eventBus: eventBus as never });
+  /** The raw token of the last e-mail, as a person would copy it from the link. */
+  const lastToken = () => new URL(sent.at(-1)!.text.match(/https?:\/\/\S+/)![0]).searchParams.get('token')!;
+  const request = (
+    email = 'ann@example.com',
+    extra: Partial<Parameters<AuthService['requestEmailLink']>[0]> = {},
+    now?: Date,
+  ) => service().requestEmailLink({ email, ip: '203.0.113.9', ...extra }, now ?? db.clock);
+  return { db, sent, mailSender, eventBus, service, lastToken, request };
+}
+
+describe('requestEmailLink', () => {
+  it('stores a hashed token (never the raw one), sends the link after commit, and reveals nothing', async () => {
+    const h = harness();
+    await expect(h.request()).resolves.toBeUndefined();
+    const raw = h.lastToken();
+    expect(raw).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(h.db.tokens).toHaveLength(1);
+    const row = h.db.tokens[0]!;
+    expect(row.tokenHash).toBe(sha256(raw));
+    expect(JSON.stringify(h.db.tokens)).not.toContain(raw);
+    expect(row).toMatchObject({ email: 'ann@example.com', intentRole: null, nextPath: null, usedAt: null });
+    expect(row.ipHash).toBe(sha256(`203.0.113.9${env.AUTH_SECRET}`));
+    expect(JSON.stringify(h.db.tokens)).not.toContain('203.0.113.9');
+    expect((row.expiresAt as Date).getTime() - h.db.clock.getTime()).toBe(AUTH_LIMITS.linkTtlMinutes * 60_000);
+    expect(h.sent[0]).toMatchObject({ to: 'ann@example.com', subject: 'Your MentorHub sign-in link' });
+    expect(h.sent[0]!.text).toContain(`https://mentorhub.test/auth/confirm?token=${raw}`);
+    expect(h.db.users).toHaveLength(0); // requesting a link for an address creates nothing
+  });
+
+  it('keeps the intended role and the validated return path on the token', async () => {
+    const h = harness();
+    await h.request('m@example.com', { intentRole: 'mentor', next: '/mentor/profile' });
+    expect(h.db.tokens[0]).toMatchObject({ intentRole: 'mentor', nextPath: '/mentor/profile' });
+  });
+
+  it('limits links per e-mail inside the window and frees up once the window passes', async () => {
+    const h = harness();
+    for (let i = 0; i < AUTH_LIMITS.linksPerEmail.max; i += 1) await h.request();
+    await expect(h.request()).rejects.toThrow(RateLimitedError);
+    await expect(h.request('other@example.com')).resolves.toBeUndefined(); // another address is unaffected
+    expect(h.sent).toHaveLength(AUTH_LIMITS.linksPerEmail.max + 1);
+    const later = new Date(h.db.clock.getTime() + AUTH_LIMITS.linksPerEmail.windowMinutes * 60_000 + 1);
+    await expect(h.request('ann@example.com', {}, later)).resolves.toBeUndefined();
+  });
+
+  it('limits links per IP hash across addresses', async () => {
+    const h = harness();
+    for (let i = 0; i < AUTH_LIMITS.linksPerIp.max; i += 1) await h.request(`person${i}@example.com`);
+    await expect(h.request('one-more@example.com')).rejects.toThrow(RateLimitedError);
+    await expect(h.request('one-more@example.com', { ip: '198.51.100.7' })).resolves.toBeUndefined();
+  });
+
+  it('concurrent requests for one e-mail cannot exceed the limit (advisory lock around count + insert)', async () => {
+    const h = harness();
+    const results = await Promise.allSettled(Array.from({ length: 6 }, () => h.request()));
+    expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(AUTH_LIMITS.linksPerEmail.max);
+    expect(results.filter((r) => r.status === 'rejected')).toHaveLength(6 - AUTH_LIMITS.linksPerEmail.max);
+    expect(h.db.tokens).toHaveLength(AUTH_LIMITS.linksPerEmail.max);
+    expect(h.sent).toHaveLength(AUTH_LIMITS.linksPerEmail.max);
+  });
+
+  it('deletes token rows older than the retention period on each creation', async () => {
+    const h = harness();
+    h.db.tokens.push({
+      id: 'old',
+      email: 'x@example.com',
+      tokenHash: 'h',
+      ipHash: 'i',
+      createdAt: new Date(h.db.clock.getTime() - (AUTH_LIMITS.tokenRetentionDays + 1) * 86_400_000),
+      usedAt: null,
+    });
+    h.db.tokens.push({ ...h.db.tokens[0]!, id: 'recent', createdAt: new Date(h.db.clock.getTime() - 86_400_000) });
+    await h.request();
+    expect(h.db.tokens.map((t) => t.id)).toEqual(['recent', 'id-1']);
+  });
+
+  it('marks the token dead and answers 503 when the mail adapter throws — no usable token without a sent e-mail', async () => {
+    const h = harness();
+    h.mailSender.send.mockRejectedValueOnce(new Error('SMTP down'));
+    await expect(h.request()).rejects.toThrow(ServiceUnavailableError);
+    expect(h.db.tokens).toHaveLength(1);
+    expect(h.db.tokens[0]!.usedAt).toEqual(h.db.clock);
+    const raw = 'A'.repeat(43);
+    expect(JSON.stringify(h.db.tokens)).not.toContain(raw);
+  });
+
+  it('sends nothing when the commit fails', async () => {
+    const h = harness();
+    h.db.failCommit = true;
+    await expect(h.request()).rejects.toThrow('commit failed');
+    expect(h.mailSender.send).not.toHaveBeenCalled();
+    expect(h.db.tokens).toHaveLength(0);
+  });
+});
+
+describe('peekEmailLink', () => {
+  it('names the e-mail of a valid link without consuming it; unknown, used or expired → null', async () => {
+    const h = harness();
+    await h.request();
+    const raw = h.lastToken();
+    await expect(h.service().peekEmailLink(raw)).resolves.toEqual({ email: 'ann@example.com' });
+    expect(h.db.tokens[0]!.usedAt).toBeNull(); // a prefetching mail scanner burns nothing
+    await expect(h.service().peekEmailLink('B'.repeat(43))).resolves.toBeNull();
+    const expired = new Date(h.db.clock.getTime() + AUTH_LIMITS.linkTtlMinutes * 60_000);
+    await expect(h.service().peekEmailLink(raw, expired)).resolves.toBeNull();
+    await h.service().consumeEmailLink(raw);
+    await expect(h.service().peekEmailLink(raw)).resolves.toBeNull();
+  });
+
+  it('treats a database error as an invalid link (fail closed) and logs it', async () => {
+    const lines: string[] = [];
+    const warnLogger = createLogger({ destination: { write: (line: string) => void lines.push(line) } });
+    const em = {
+      findOne: async () => {
+        throw new Error('connection refused');
+      },
+    } as unknown as EntityManager;
+    const service = new AuthService({
+      em,
+      env,
+      logger: warnLogger,
+      mailSender: { send: vi.fn() },
+      eventBus: {} as never,
+    });
+    await expect(service.peekEmailLink('C'.repeat(43))).resolves.toBeNull();
+    expect(lines.join('')).toContain('treating it as invalid');
+  });
+});
+
+describe('consumeEmailLink', () => {
+  it('creates a verified mentee for a new e-mail, emits auth.user.created once with method email, returns next', async () => {
+    const h = harness();
+    await h.request('new@example.com', { next: '/mentors/7?slot=1' });
+    const result = await h.service().consumeEmailLink(h.lastToken());
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]).toMatchObject({
+      email: 'new@example.com',
+      name: null,
+      role: 'mentee',
+      emailVerifiedAt: h.db.clock,
+      sessionVersion: 0,
+    });
+    expect(result).toEqual({ userId: 'id-2', sessionVersion: 0, next: '/mentors/7?slot=1' });
+    expect(h.eventBus.emit).toHaveBeenCalledTimes(1);
+    expect(h.eventBus.emit).toHaveBeenCalledWith('auth.user.created', {
+      userId: 'id-2',
+      email: 'new@example.com',
+      method: 'email',
+    });
+    expect(h.db.tokens[0]!.usedAt).toEqual(h.db.clock);
+  });
+
+  it('creates the intended role for a new account but never changes an existing account', async () => {
+    const h = harness();
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    expect((await h.service().consumeEmailLink(h.lastToken())).userId).toBe('id-2');
+    expect(h.db.users[0]!.role).toBe('mentor');
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    h.db.users[0]!.role = 'mentee';
+    await h.service().consumeEmailLink(h.lastToken());
+    expect(h.db.users).toHaveLength(1);
+    expect(h.db.users[0]!.role).toBe('mentee');
+  });
+
+  it('signs an existing (admin-created, unverified) user in, verifying the account, without an event', async () => {
+    const h = harness();
+    h.db.users.push({
+      id: 'u-admin-made',
+      email: 'ann@example.com',
+      name: 'Ann',
+      role: 'mentor',
+      emailVerifiedAt: null,
+      sessionVersion: 5,
+    });
+    await h.request();
+    const result = await h.service().consumeEmailLink(h.lastToken());
+    expect(result).toEqual({ userId: 'u-admin-made', sessionVersion: 5, next: '/' });
+    expect(h.db.users[0]!.emailVerifiedAt).toEqual(h.db.clock);
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+    const verifiedAt = new Date('2026-01-01T00:00:00Z');
+    h.db.users[0]!.emailVerifiedAt = verifiedAt;
+    await h.request();
+    await h.service().consumeEmailLink(h.lastToken());
+    expect(h.db.users[0]!.emailVerifiedAt).toBe(verifiedAt); // an earlier verification is kept
+  });
+
+  it('rejects a link clicked twice — single use', async () => {
+    // Mutation check (spec › Phase 1 step 6): drop `usedAt: null` from the claim and the second click succeeds.
+    const h = harness();
+    await h.request();
+    const raw = h.lastToken();
+    await expect(h.service().consumeEmailLink(raw)).resolves.toMatchObject({ userId: 'id-2' });
+    await expect(h.service().consumeEmailLink(raw)).rejects.toThrow(GoneError);
+    expect(h.db.users).toHaveLength(1);
+    expect(h.eventBus.emit).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an expired link, an unknown token and a dead (unsent) token', async () => {
+    const h = harness();
+    await h.request();
+    const raw = h.lastToken();
+    const expired = new Date(h.db.clock.getTime() + AUTH_LIMITS.linkTtlMinutes * 60_000);
+    await expect(h.service().consumeEmailLink(raw, expired)).rejects.toThrow(GoneError);
+    await expect(h.service().consumeEmailLink('D'.repeat(43))).rejects.toThrow(GoneError);
+    h.mailSender.send.mockRejectedValueOnce(new Error('SMTP down'));
+    await expect(h.request('dead@example.com')).rejects.toThrow(ServiceUnavailableError);
+    const dead = h.db.tokens.find((t) => t.email === 'dead@example.com')!;
+    expect(dead.usedAt).not.toBeNull();
+    expect(h.db.users).toHaveLength(0);
+  });
+
+  it('works from any device: the token is not bound to the requesting browser or IP', async () => {
+    const h = harness();
+    await h.request('ann@example.com', { ip: '203.0.113.9' });
+    const raw = h.lastToken();
+    await expect(
+      new AuthService({
+        em: h.db.em(),
+        env,
+        logger,
+        mailSender: h.mailSender,
+        eventBus: h.eventBus as never,
+      }).consumeEmailLink(raw),
+    ).resolves.toMatchObject({ userId: 'id-2' });
+  });
+
+  it('maps a lost race on users.email to 409 and leaves the token unused for a retry', async () => {
+    const h = harness();
+    await h.request();
+    const raw = h.lastToken();
+    h.db.raceEmail = 'ann@example.com'; // the user appears between findOne and flush
+    await expect(h.service().consumeEmailLink(raw)).rejects.toThrow(ConflictError);
+    expect(h.db.tokens[0]!.usedAt).toBeNull();
+    expect(h.db.users.map((u) => u.id)).toEqual(['raced']);
+    expect(h.eventBus.emit).not.toHaveBeenCalled();
+  });
+
+  it('rethrows any other flush error untouched and rolls the claim back', async () => {
+    const h = harness();
+    await h.request();
+    const raw = h.lastToken();
+    h.db.flushError = new Error('connection lost');
+    await expect(h.service().consumeEmailLink(raw)).rejects.toThrow('connection lost');
+    expect(h.db.tokens[0]!.usedAt).toBeNull();
+  });
+});
+
+describe('sessions', () => {
+  it('startSession issues the cookie with a JWT carrying the user id and session version', async () => {
+    const h = harness();
+    const cookie = await h.service().startSession({ userId: 'u1', sessionVersion: 3 });
+    expect(cookie).toMatch(/^mh_session=.+; Path=\/; HttpOnly; SameSite=Lax; Max-Age=604800$/);
+    const token = cookie.slice('mh_session='.length, cookie.indexOf(';'));
+    await expect(verifySessionToken(token, env.AUTH_SECRET)).resolves.toEqual({ sub: 'u1', sv: 3 });
+  });
+
+  it('signOutEverywhere bumps the session version (old cookies stop verifying) and fails closed for an unknown user', async () => {
+    const h = harness();
+    h.db.users.push({ id: 'u1', email: 'a@x.io', sessionVersion: 3 });
+    await h.service().signOutEverywhere('u1');
+    expect(h.db.users[0]!.sessionVersion).toBe(4);
+    await expect(h.service().signOutEverywhere('ghost')).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('currentUser returns the account behind a session, the fixed dev-admin record, or 401 for a vanished user', async () => {
+    const h = harness();
+    h.db.users.push({
+      id: 'u1',
+      email: 'a@x.io',
+      name: null,
+      role: 'mentor',
+      emailVerifiedAt: h.db.clock,
+      sessionVersion: 0,
+    });
+    const session = { userId: 'u1', role: 'mentor' as const, isDevSession: false, emailVerified: true };
+    await expect(h.service().currentUser(session)).resolves.toEqual({
+      id: 'u1',
+      email: 'a@x.io',
+      name: null,
+      role: 'mentor',
+      emailVerified: true,
+    });
+    h.db.users[0]!.emailVerifiedAt = null;
+    expect((await h.service().currentUser(session)).emailVerified).toBe(false);
+    await expect(h.service().currentUser(DEV_ADMIN_SESSION)).resolves.toBe(DEV_ADMIN_USER);
+    await expect(h.service().currentUser({ ...session, userId: 'ghost' })).rejects.toThrow(UnauthorizedError);
+  });
+});

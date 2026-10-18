@@ -3,8 +3,11 @@ import {
   AppError,
   ConflictError,
   ForbiddenError,
+  GoneError,
   MethodNotAllowedError,
   NotFoundError,
+  RateLimitedError,
+  ServiceUnavailableError,
   UnauthorizedError,
   ValidationError,
 } from './errors';
@@ -27,5 +30,20 @@ describe('AppError hierarchy', () => {
     expect(error.message).toBe('Check the form.');
     expect(error.fieldErrors).toEqual({ email: ['Required'] });
     expect(new NotFoundError('No such mentor.').message).toBe('No such mentor.');
+  });
+});
+
+describe('auth errors', () => {
+  it('map link, rate-limit and mail failures to 410, 429 and 503 with stable codes', () => {
+    const gone = new GoneError();
+    expect([gone.status, gone.code]).toEqual([410, 'link_invalid']);
+    expect(gone.message).toBe('This link has expired or was already used — send a new one.');
+    const limited = new RateLimitedError();
+    expect([limited.status, limited.code]).toEqual([429, 'rate_limited']);
+    expect(limited.message).not.toMatch(/e-?mail/i); // generic: reveals nothing about the address
+    const unavailable = new ServiceUnavailableError("We couldn't send the e-mail — try again.", 'mail_not_sent');
+    expect([unavailable.status, unavailable.code]).toEqual([503, 'mail_not_sent']);
+    expect(new ServiceUnavailableError().code).toBe('service_unavailable');
+    for (const error of [gone, limited, unavailable]) expect(error).toBeInstanceOf(AppError);
   });
 });
