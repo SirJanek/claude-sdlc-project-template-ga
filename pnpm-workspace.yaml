@@ -1,5 +1,6 @@
 packages:
   - 'packages/*'
+  - 'tools/*'
 
 # pnpm 10 blocks dependency build scripts unless listed here.
 onlyBuiltDependencies:
