@@ -1,8 +1,8 @@
 # Spec: Merge gate on develop and one-command browser setup
 
-**Intent:** [intent.md](../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
-**Builds on:** [2026-10-18-ci-safety-net.md](implemented/2026-10-18-ci-safety-net.md), [2026-10-18-integration-evidence.md](implemented/2026-10-18-integration-evidence.md)
-**Status:** accepted · requested by Jan on 2026-10-18 ("tak działaj" — close the two gaps against the course summary)
+**Intent:** [intent.md](../../../docs/sdlc/intent.md) › Constraints (AI-native SDLC process) — enabling work
+**Builds on:** [2026-10-18-ci-safety-net.md](2026-10-18-ci-safety-net.md), [2026-10-18-integration-evidence.md](2026-10-18-integration-evidence.md)
+**Status:** implemented · requested by Jan on 2026-10-18 ("tak działaj" — close the two gaps against the course summary)
 
 ## Scope
 
@@ -37,5 +37,5 @@ re-enabling Claude review (L03).
 
 | Phase | Status | Evidence |
 |---|---|---|
-| 1 Browser setup | ⏳ | |
-| 2 Merge gate | ⏳ | |
+| 1 Browser setup | ✅ | PR #8, CI run 39088770149 all green |
+| 2 Merge gate | ✅ | protection applied 2026-10-18; trial PR #9 (failing test) → Lint + Unit red, `mergeStateStatus: BLOCKED`, closed unmerged; direct push → GH006 rejected |
