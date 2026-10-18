@@ -53,3 +53,25 @@ export function platformFeePercent(hoursTaught: number, rules: Rules = RULES): n
 function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
+
+/**
+ * Authentication limits (spec: accounts and roles). Security parameters, not business ones, so they
+ * live next to RULES rather than inside it (BACKWARD_COMPATIBILITY §4 reserves RULES for the latter).
+ * Every value says why it is what it is.
+ */
+export const AUTH_LIMITS = {
+  /** A person retrying a typo or waiting on a slow inbox asks 2–3 times; a script asks far more. */
+  linksPerEmail: { max: 3, windowMinutes: 15 },
+  /** A shared office NAT puts many people behind one address; 20 an hour still stops a flood. */
+  linksPerIp: { max: 20, windowMinutes: 60 },
+  /** The link proves the inbox is read now; 15 min covers delivery delays and bounds a leaked link. */
+  linkTtlMinutes: 15,
+  /** Resend only after the first mail had a chance to arrive. */
+  resendAfterSeconds: 60,
+  /** 7 days fixed, no refresh, no sliding window (grill-me Q6/Q13): a mentee who books today still reaches tomorrow's session. */
+  sessionDays: 7,
+  /** Token rows are kept 30 days for the first A07 read (grill-me Q9), then deleted by the next token creation. */
+  tokenRetentionDays: 30,
+} as const;
+
+export type AuthLimits = typeof AUTH_LIMITS;

@@ -1,5 +1,6 @@
 // @ts-check
-import { readFileSync } from 'node:fs';
+import { appendFileSync, readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createExec } from './exec.mjs';
@@ -12,7 +13,8 @@ export const REPO_ROOT = fileURLToPath(new URL('../../..', import.meta.url));
 export const USAGE = `Usage: make setup | npm run setup [-- --skip-browser] | pnpm run setup [--skip-browser]
 
 Prepares a fresh clone: checks Node/pnpm/Docker, installs dependencies, the agent-browser Chrome,
-starts PostgreSQL (port 5433) and applies migrations. Steps already done are skipped.
+starts PostgreSQL (port 5433), applies migrations and generates a local AUTH_SECRET
+(packages/app/.env.local). Steps already done are skipped.
 Note: "pnpm setup" (without "run") is a built-in pnpm command and does not run this.
 
   --skip-browser  do not install the Chrome used by the integration tests
@@ -24,6 +26,8 @@ Note: "pnpm setup" (without "run") is a built-in pnpm command and does not run t
  *   write: (text: string) => void,
  *   exec: import('./exec.mjs').Exec,
  *   readFile: (repoRelativePath: string) => string | null,
+ *   appendFile: (repoRelativePath: string, content: string) => void,
+ *   randomSecret: () => string,
  *   nodeVersion: string,
  * }} Deps
  */
@@ -48,6 +52,11 @@ export function realDeps(root = REPO_ROOT) {
         return null;
       }
     },
+    appendFile: (path, content) => {
+      appendFileSync(join(root, path), content, 'utf8');
+    },
+    // 32 random bytes as hex (64 chars) — the standards' floor for the JWT secret.
+    randomSecret: () => randomBytes(32).toString('hex'),
     nodeVersion: process.version,
   };
 }
@@ -73,6 +82,8 @@ export async function run(argv, deps = realDeps()) {
     ctx: {
       exec: deps.exec,
       readFile: deps.readFile,
+      appendFile: deps.appendFile,
+      randomSecret: deps.randomSecret,
       nodeVersion: deps.nodeVersion,
       skipBrowser: argv.includes('--skip-browser'),
     },

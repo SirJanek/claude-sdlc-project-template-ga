@@ -1,5 +1,6 @@
 // @ts-check
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { EventEmitter } from 'node:events';
@@ -19,7 +20,14 @@ function setUpEnvironment(calls) {
   const deps = {
     write: (t) => (out += t),
     nodeVersion: 'v26.5.0',
-    readFile: (path) => (['pnpm-lock.yaml', 'node_modules/.pnpm/lock.yaml'].includes(path) ? 'same lockfile' : null),
+    readFile: (path) => {
+      if (['pnpm-lock.yaml', 'node_modules/.pnpm/lock.yaml'].includes(path)) return 'same lockfile';
+      return path === 'packages/app/.env.local' ? 'AUTH_SECRET=already-there\n' : null;
+    },
+    appendFile: () => {
+      throw new Error('nothing should be written on a set-up machine');
+    },
+    randomSecret: () => 'unused',
     exec: async (command, args) => {
       const key = [command, ...args].join(' ');
       calls.push(key);
@@ -41,7 +49,7 @@ describe('run', () => {
     expect(await run([], deps)).toBe(0);
     const out = output();
     expect(out).toContain('— ok (Node v26.5.0 · pnpm 10.34.5 · Docker)');
-    expect(out.match(/↷ /g)).toHaveLength(4);
+    expect(out.match(/↷ /g)).toHaveLength(5);
     expect(out).not.toMatch(/— done/);
     // No mutating command ran: no install, no compose up, nothing beyond the read-only checks.
     expect(calls).not.toContain('pnpm install --frozen-lockfile');
@@ -89,6 +97,16 @@ describe('realDeps', () => {
     expect(deps.readFile('pnpm-workspace.yaml')).toContain('tools/*');
     expect(deps.readFile('does/not/exist')).toBeNull();
     expect(deps.nodeVersion).toBe(process.version);
+    expect(deps.randomSecret()).toMatch(/^[0-9a-f]{64}$/);
+    expect(deps.randomSecret()).not.toBe(deps.randomSecret());
+  });
+
+  it('appends to files relative to the given root (creating them)', () => {
+    const root = mkdtempSync(join(tmpdir(), 'mentorhub-setup-'));
+    const deps = realDeps(root);
+    deps.appendFile('sub.env', 'A=1\n');
+    deps.appendFile('sub.env', 'B=2\n');
+    expect(readFileSync(join(root, 'sub.env'), 'utf8')).toBe('A=1\nB=2\n');
   });
 
   it('writes to stdout and runs commands in the given root', async () => {
@@ -101,7 +119,7 @@ describe('realDeps', () => {
 });
 
 describe('what the user sees (QA finding: check output buried the results)', () => {
-  it('second run prints only the header, five step lines and the next-step hint — no command noise', async () => {
+  it('second run prints only the header, six step lines and the next-step hint — no command noise', async () => {
     // Real createExec (streaming logic under test) over a fake spawn that answers like the real tools.
     const DOCKER_INFO = Array.from({ length: 100 }, (_, i) => `docker info line ${i}`).join('\n');
     /** @type {Record<string, string>} */
@@ -124,7 +142,16 @@ describe('what the user sees (QA finding: check output buried the results)', () 
     let screen = '';
     const write = (/** @type {string} */ t) => (screen += t);
     const exec = createExec({ cwd: '/repo', write, platform: 'darwin', spawn: /** @type {any} */ (spawn) });
-    const deps = { write, exec, nodeVersion: 'v26.5.0', readFile: () => 'same lockfile' };
+    /** @type {string[]} */
+    const written = [];
+    const deps = {
+      write,
+      exec,
+      nodeVersion: 'v26.5.0',
+      readFile: () => 'same lockfile',
+      appendFile: (/** @type {string} */ path, /** @type {string} */ content) => void written.push(path, content),
+      randomSecret: () => 'a'.repeat(64),
+    };
 
     expect(await run(['--skip-browser'], deps)).toBe(0);
 
@@ -133,7 +160,9 @@ describe('what the user sees (QA finding: check output buried the results)', () 
     expect(screen).not.toMatch(/^10\.34\.5$/m);
     const lines = screen.split('\n').filter(Boolean);
     expect(lines[0]).toBe('MentorHub setup');
-    expect(lines.filter((l) => /^(✔|↷) \[\d\/5\]/.test(l))).toHaveLength(5);
+    expect(lines.filter((l) => /^(✔|↷) \[\d\/6\]/.test(l))).toHaveLength(6);
+    // The only file written is the generated secret (the fake .env.local had none).
+    expect(written).toEqual(['packages/app/.env.local', expect.stringContaining('AUTH_SECRET=aaaa')]);
     // The only command output left is the migrator's own line (a streamed, mutating step).
     expect(lines.filter((l) => !/^(MentorHub setup|✔|↷|Ready\.)/.test(l))).toEqual([NO_PENDING_MIGRATIONS]);
   });

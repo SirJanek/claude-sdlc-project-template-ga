@@ -4,7 +4,7 @@ import { DEV_ADMIN_SESSION, requireRole, requireSession } from './auth';
 import { ForbiddenError, UnauthorizedError } from './errors';
 
 const req = new Request('http://local/api/users');
-const env = (vars: Record<string, string>) => () => parseEnv(vars);
+const env = (vars: Record<string, string>) => () => parseEnv({ AUTH_SECRET: 'x'.repeat(32), ...vars });
 
 describe('requireSession (fail closed)', () => {
   it('admits the dev admin only with the flag in development', () => {

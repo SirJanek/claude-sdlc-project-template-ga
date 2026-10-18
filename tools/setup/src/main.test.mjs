@@ -10,6 +10,8 @@ const step = (id, run) => ({ id, title: `Step ${id}`, run });
 const ctx = {
   exec: async () => ({ code: 0, output: '' }),
   readFile: () => null,
+  appendFile: () => {},
+  randomSecret: () => 'secret',
   nodeVersion: 'v26.5.0',
   skipBrowser: false,
 };
