@@ -133,6 +133,13 @@ encoding), service (`next=/mentor/profile?notice=bad` → exactly one `notice`, 
 `?notice=bad` → `/mentor/profile?notice=existing_account`, the page shows the notice). Against the pass-1
 helper the two new unit tests are red.
 
+## Second merge with Phase 1 (Codex-approved at `8d19808`, rounds 4–6)
+
+`git merge --no-ff origin/feat/e01-phase1-auth-foundation` (`d9b8667` … `8d19808`): no conflicts — the rounds
+touched only `tests/integration/env.ts` and `auth.test.ts` (bounded competitor/settlement helpers,
+failure-path and descendant-pipes tests) and Phase 1's run log. Phase 3 code untouched. Gates after the
+merge: see the handback report (`make check`, `make test-integration` ×2).
+
 ## Handoff
 
 Phase 3 is complete on the branch (stacked on Phase 1's branch — merge Phase 1's PR first, then open this
