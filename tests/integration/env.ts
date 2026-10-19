@@ -24,11 +24,13 @@ export const prodOutbox = () => inject('prodOutbox');
 export const devGithubFake = () => inject('devGithubFake');
 export const prodGithubFake = () => inject('prodGithubFake');
 export const databaseUrl = () => inject('databaseUrl');
+export const containerId = () => inject('containerId');
 
-/** Runs SQL in the suite's PostgreSQL container (seed data, assertions). */
-export function psql(sql: string, containerId = inject('containerId')): string {
+/** Runs SQL in the suite's PostgreSQL container (seed data, assertions). `timeoutMs` bounds a blocked statement. */
+export function psql(sql: string, containerId = inject('containerId'), timeoutMs?: number): string {
   return execFileSync('docker', ['exec', containerId, 'psql', '-U', 'mentorhub', '-d', 'mentorhub', '-tAc', sql], {
     encoding: 'utf8',
+    ...(timeoutMs === undefined ? {} : { timeout: timeoutMs }),
   }).trim();
 }
 
@@ -44,18 +46,31 @@ export interface HeldTransaction {
 }
 
 const HOLD_TIMEOUT_MS = 30_000;
+const DISPOSE_TIMEOUT_MS = 5_000;
+
+/** A promise that rejects after `ms`; `clear()` disarms it once the race it guards has settled. */
+function deadline(ms: number, what: string): { promise: Promise<never>; clear: () => void } {
+  let timer: NodeJS.Timeout | undefined;
+  const promise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} timed out after ${ms} ms`)), ms);
+  });
+  return { promise, clear: () => clearTimeout(timer) };
+}
 
 /**
  * Opens a psql session holding a transaction with `statement` executed but NOT committed, so a
  * concurrent writer of the same row blocks on it — a deterministic overlap for lost-update tests.
- * Rejects when psql cannot start, exits early or reports an error. Always `dispose()` in a `finally`:
- * a held row lock would otherwise block the suite's cleanup forever.
+ * Rejects when psql cannot start, exits early, reports an error or is not ready within
+ * `options.timeoutMs` — and in every such case the child is rolled back / terminated first, so no
+ * lock outlives the rejection. Always `dispose()` in a `finally` (idempotent).
  */
-export function holdTransaction(
+export async function holdTransaction(
   statement: string,
   tag: string,
   containerId = inject('containerId'),
+  options: { timeoutMs?: number } = {},
 ): Promise<HeldTransaction> {
+  const holdTimeoutMs = options.timeoutMs ?? HOLD_TIMEOUT_MS;
   const child = spawn('docker', [
     'exec',
     '-i',
@@ -90,43 +105,169 @@ export function holdTransaction(
     };
     child.stdout.on('data', check);
   });
-  const timeout = (ms: number, what: string) =>
-    new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`${what} timed out after ${ms} ms`)), ms));
+
+  const backendPid = () => Number(output.match(/^(\d+)$/m)?.[1]);
+  /** Best-effort server-side call during cleanup; a failure here must never mask the real error. */
+  const tryPsql = (sql: string) => {
+    try {
+      psql(sql, containerId, DISPOSE_TIMEOUT_MS);
+    } catch {
+      // the backend is already gone or the container is down — nothing left to release
+    }
+  };
+
+  /**
+   * Rolls back and waits briefly; a backend still stuck on a lock is cancelled server-side (psql then
+   * exits, ON_ERROR_STOP), and whatever survives the grace period is terminated and killed.
+   * Killing only the `docker exec` client would leave the server backend waiting on the lock.
+   * No-op once exited.
+   */
+  async function terminate(timeoutMs = DISPOSE_TIMEOUT_MS): Promise<void> {
+    if (finished) return;
+    if (!child.stdin.destroyed) child.stdin.end('rollback;\n');
+    const pid = backendPid();
+    if (pid) tryPsql(`select pg_cancel_backend(${pid})`);
+    const grace = deadline(timeoutMs, 'rollback');
+    try {
+      await Promise.race([exited, grace.promise]);
+    } catch {
+      if (pid) tryPsql(`select pg_terminate_backend(${pid})`);
+      child.kill('SIGKILL');
+    } finally {
+      grace.clear();
+    }
+    await exited;
+  }
 
   child.stdin.write(`select pg_backend_pid();\nbegin;\n${statement};\n`);
-  return Promise.race([ready, failed, timeout(HOLD_TIMEOUT_MS, 'holding the transaction')]).then(() => {
-    const pid = Number(output.match(/^(\d+)$/m)![1]);
-    const handle: HeldTransaction = {
-      pid,
-      async waitUntilBlocking(timeoutMs = 15_000) {
-        const deadline = Date.now() + timeoutMs;
-        while (Date.now() < deadline) {
-          const blocked = psql(
-            `select count(*) from pg_stat_activity where ${pid} = any(pg_blocking_pids(pid))`,
-            containerId,
-          );
-          if (blocked !== '0') return;
-          await new Promise((r) => setTimeout(r, 100));
-        }
-        throw new Error(`no session became blocked by pid ${pid} within ${timeoutMs} ms`);
-      },
-      async commit() {
-        child.stdin.end('commit;\n');
-        const code = await Promise.race([exited, timeout(HOLD_TIMEOUT_MS, 'commit')]);
-        if (code !== 0 || !output.includes('COMMIT')) {
-          throw new Error(`commit failed (exit ${code}): ${errors || output}`);
-        }
-      },
-      async dispose(timeoutMs = 5_000) {
-        if (finished) return;
-        child.stdin.end('rollback;\n');
-        await Promise.race([exited, new Promise((r) => setTimeout(r, timeoutMs))]);
-        if (!finished) child.kill('SIGKILL');
-        await exited;
-      },
-    };
-    return handle;
+  const startup = deadline(holdTimeoutMs, 'holding the transaction');
+  try {
+    await Promise.race([ready, failed, startup.promise]);
+  } catch (error) {
+    await terminate(); // never leave a half-started session holding locks behind a rejection
+    throw error;
+  } finally {
+    startup.clear();
+  }
+
+  const pid = backendPid();
+  return {
+    pid,
+    async waitUntilBlocking(timeoutMs = 15_000) {
+      const end = Date.now() + timeoutMs;
+      while (Date.now() < end) {
+        // The poll itself is bounded by what is left of the deadline (never below one second).
+        const left = Math.max(1_000, end - Date.now());
+        const blocked = psql(
+          `select count(*) from pg_stat_activity where ${pid} = any(pg_blocking_pids(pid))`,
+          containerId,
+          left,
+        );
+        if (blocked !== '0') return;
+        await new Promise((r) => setTimeout(r, 100));
+      }
+      throw new Error(`no session became blocked by pid ${pid} within ${timeoutMs} ms`);
+    },
+    async commit() {
+      child.stdin.end('commit;\n');
+      const bound = deadline(holdTimeoutMs, 'commit');
+      let code: number | null;
+      try {
+        code = await Promise.race([exited, bound.promise]);
+      } catch (error) {
+        await terminate();
+        throw error;
+      } finally {
+        bound.clear();
+      }
+      if (code !== 0 || !output.includes('COMMIT')) {
+        throw new Error(`commit failed (exit ${code}): ${errors || output}`);
+      }
+    },
+    dispose: terminate,
+  };
+}
+
+/**
+ * Runs a competing CLI in its own process group (`detached`), so `kill()` reaches the whole tree:
+ * `pnpm` spawns `tsx`, which spawns Node — killing only the parent leaves descendants holding the
+ * stdout/stderr pipes and the promise never settles. (`execFile` ignores `detached`; this uses `spawn`.)
+ * `pending` resolves with the output on exit code 0 and rejects otherwise (or on a spawn error / timeout).
+ */
+export function runCompetitor(
+  command: string,
+  args: string[],
+  options: { env?: NodeJS.ProcessEnv; timeout?: number } = {},
+): { pending: Promise<{ stdout: string; stderr: string }>; kill: () => void } {
+  const child = spawn(command, args, { env: options.env, detached: true, stdio: ['ignore', 'pipe', 'pipe'] });
+  const kill = () => {
+    try {
+      if (child.pid) process.kill(-child.pid, 'SIGKILL'); // the whole group
+    } catch {
+      child.kill('SIGKILL'); // group already gone — the direct child at least
+    }
+  };
+  let stdout = '';
+  let stderr = '';
+  child.stdout.on('data', (chunk: Buffer) => void (stdout += chunk.toString()));
+  child.stderr.on('data', (chunk: Buffer) => void (stderr += chunk.toString()));
+  const pending = new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+    const timer = options.timeout
+      ? setTimeout(() => (kill(), reject(new Error(`${command} timed out`))), options.timeout)
+      : undefined;
+    child.on('error', (error) => (clearTimeout(timer), reject(error)));
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      if (code === 0) resolve({ stdout, stderr });
+      else reject(new Error(`${command} exited with ${code ?? signal}: ${stderr || stdout}`));
+    });
   });
+  return { pending, kill };
+}
+
+/** Bounds an await so a hung child process or pipe fails the test instead of outliving Vitest's timeout. */
+export async function within<T>(promise: Promise<T>, timeoutMs: number, what: string): Promise<T> {
+  const bound = deadline(timeoutMs, what);
+  try {
+    return await Promise.race([promise, bound.promise]);
+  } finally {
+    bound.clear();
+  }
+}
+
+/**
+ * Settles a competitor (a fetch or a CLI) within `timeoutMs` once the lock it may be waiting on has been
+ * released; cancels it (abort / kill) when it still does not finish, and after a second bound
+ * (`abandonMs`) gives up on a promise that still refuses to settle — reported on stderr, never thrown.
+ * For `finally` blocks.
+ */
+export async function settleCompetitor(
+  pending: Promise<unknown> | undefined,
+  cancel: () => void,
+  timeoutMs = 10_000,
+  abandonMs = 5_000,
+): Promise<'settled' | 'cancelled' | 'abandoned' | 'none'> {
+  if (!pending) return 'none';
+  const quiet = pending.catch(() => undefined);
+  const bound = deadline(timeoutMs, 'settling the competitor');
+  try {
+    await Promise.race([quiet, bound.promise]);
+    return 'settled';
+  } catch {
+    cancel();
+  } finally {
+    bound.clear();
+  }
+  const afterCancel = deadline(abandonMs, 'settling the cancelled competitor');
+  try {
+    await Promise.race([quiet, afterCancel.promise]);
+    return 'cancelled';
+  } catch (error) {
+    process.stderr.write(`settleCompetitor: ${(error as Error).message}; abandoning it\n`);
+    return 'abandoned';
+  } finally {
+    afterCancel.clear();
+  }
 }
 
 export function stopDatabase(containerId = inject('containerId')): void {

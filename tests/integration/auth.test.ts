@@ -1,11 +1,19 @@
-import { execFile } from 'node:child_process';
 import { readFileSync } from 'node:fs';
-import { promisify } from 'node:util';
 import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { createBrowser } from './browser';
-import { databaseUrl, devOutbox, devUrl, holdTransaction, prodOutbox, prodUrl, psql } from './env';
-
-const run = promisify(execFile);
+import {
+  containerId,
+  databaseUrl,
+  devOutbox,
+  devUrl,
+  holdTransaction,
+  prodOutbox,
+  prodUrl,
+  psql,
+  runCompetitor,
+  settleCompetitor,
+  within,
+} from './env';
 /** Signed-in cookie for `email` through the real link flow (one link per call). */
 async function signIn(base: string, outbox: string, email: string): Promise<string> {
   expect((await requestLink(base, email)).status).toBe(200);
@@ -23,11 +31,12 @@ const browser = createBrowser('auth');
 const CSRF = { 'x-mentorhub-request': '1' };
 const EXPIRED = 'This link has expired or was already used — send a new one.';
 
-const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}) =>
+const post = (base: string, path: string, body: unknown, headers: Record<string, string> = {}, signal?: AbortSignal) =>
   fetch(`${base}${path}`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', ...CSRF, ...headers },
     body: JSON.stringify(body),
+    signal,
   });
 const requestLink = (base: string, email: string, next?: string) =>
   post(base, '/api/auth/email/start', { email, ...(next ? { next } : {}) });
@@ -55,11 +64,12 @@ afterEach(({ task }) => {
   if (task.result?.state === 'fail') browser.screenshot(`FAILED-${task.name}`);
 });
 
-// Leaves the database as it found it: app.test.ts counts the rows it seeds.
+// Leaves the database as it found it: app.test.ts counts the rows it seeds. Bounded: a leaked row
+// lock must fail this suite fast, not hang it.
 afterAll(() => {
   browser.close();
-  psql("delete from users where email like '%@example.com'");
-  psql('delete from auth_tokens');
+  psql("delete from users where email like '%@example.com'", undefined, 10_000);
+  psql('delete from auth_tokens', undefined, 10_000);
 });
 
 describe('sign-in by e-mail link (production server)', () => {
@@ -198,16 +208,17 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'overlap@example.com'",
       'UPDATE 1',
     );
+    const abort = new AbortController();
     let revocation: Promise<Response> | undefined;
     try {
-      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie });
+      revocation = post(prodUrl(), '/api/auth/sign-out', { everywhere: true }, { cookie }, abort.signal);
       await held.waitUntilBlocking(); // the API's UPDATE is provably waiting on our row lock
       expect(sessionVersion('overlap@example.com')).toBe('0'); // nothing committed yet
       await held.commit();
-      expect((await revocation).status).toBe(200);
+      expect((await within(revocation, 20_000, 'the API revocation')).status).toBe(200);
     } finally {
-      await revocation?.catch(() => undefined); // settle before any cleanup touches the row
-      await held.dispose();
+      await held.dispose(); // release the lock FIRST — the competitor may be waiting on it
+      await settleCompetitor(revocation, () => abort.abort()); // then let it finish, bounded, or abort it
     }
     // A read-then-write would have written the stale "0 + 1" over the held transaction's increment.
     expect(sessionVersion('overlap@example.com')).toBe('2');
@@ -220,21 +231,118 @@ describe('sessions over the API (production server)', () => {
       "update users set session_version = session_version + 1 where email = 'promote@example.com'",
       'UPDATE 1',
     );
-    let cli: ReturnType<typeof run> | undefined;
+    let cli: ReturnType<typeof runCompetitor> | undefined;
     try {
-      cli = run('pnpm', ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'], {
-        env: { ...process.env, DATABASE_URL: databaseUrl() },
-      });
+      cli = runCompetitor(
+        'pnpm',
+        ['--silent', '--filter', '@mentorhub/db', 'set-role', 'promote@example.com', 'mentor'],
+        { env: { ...process.env, DATABASE_URL: databaseUrl() }, timeout: 20_000 }, // kills the group and rejects
+      );
       await held.waitUntilBlocking(); // the CLI's UPDATE is provably waiting on our row lock
       expect(psql("select role from users where email = 'promote@example.com'")).toBe('mentee');
       await held.commit();
-      expect((await cli).stdout).toContain('promote@example.com: mentee → mentor (session version 2;');
+      // Bounded twice: the competitor's own timeout kills its tree; this race keeps `finally` reachable regardless.
+      expect((await within(cli.pending, 25_000, 'the set-role CLI')).stdout).toContain(
+        'promote@example.com: mentee → mentor (session version 2;',
+      );
     } finally {
-      await cli?.catch(() => undefined);
-      await held.dispose();
+      await held.dispose(); // release the lock FIRST
+      await settleCompetitor(cli?.pending, () => cli?.kill()); // then settle, or kill the whole CLI process tree
     }
     expect(psql("select role, session_version from users where email = 'promote@example.com'")).toBe('mentor|2');
     expect((await fetch(`${prodUrl()}/api/auth/me`, { headers: { cookie } })).status).toBe(401);
+  });
+
+  it('test helper: a failure before commit still releases the lock — the blocked writer finishes and cleanup is not stuck (review round 4)', async () => {
+    psql(
+      "insert into users (id, email, name, role, created_at, updated_at) values (gen_random_uuid(), 'cleanup@example.com', null, 'mentee', now(), now())",
+    );
+    const held = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'cleanup@example.com'",
+      'UPDATE 1',
+    );
+    let competitor: ReturnType<typeof runCompetitor> | undefined;
+    let outcome: Awaited<ReturnType<typeof settleCompetitor>> | undefined;
+    let started: number | undefined;
+    try {
+      // An asynchronous writer (its own psql process) that blocks on the held row until the lock is released.
+      competitor = runCompetitor(
+        'docker',
+        [
+          'exec',
+          containerId(),
+          'psql',
+          '-U',
+          'mentorhub',
+          '-d',
+          'mentorhub',
+          '-tAc',
+          "update users set name = 'written by the competitor' where email = 'cleanup@example.com'",
+        ],
+        { timeout: 20_000 },
+      );
+      await held.waitUntilBlocking();
+      started = Date.now();
+    } finally {
+      // The failure path of the overlap tests (no commit): release first, then settle — also when the
+      // wait above rejected, so this test can never leak its own lock either.
+      await held.dispose();
+      outcome = await settleCompetitor(competitor?.pending, () => competitor?.kill());
+    }
+    expect(outcome).toBe('settled');
+    expect(Date.now() - started!).toBeLessThan(5_000);
+    // The held increment was rolled back; the competitor's write went through once the lock was gone.
+    expect(psql("select name, session_version from users where email = 'cleanup@example.com'")).toBe(
+      'written by the competitor|0',
+    );
+    expect(psql(`select count(*) from pg_stat_activity where pid = ${held.pid}`)).toBe('0'); // psql is gone
+    // The suite's cleanup DELETE completes within a bound instead of waiting on a leaked lock.
+    psql("delete from users where email = 'cleanup@example.com'", undefined, 5_000);
+  });
+
+  it('test helper: a cancelled CLI whose descendants keep the pipes open still settles within the bound (review round 5)', async () => {
+    // `sh` spawns a child holding stdout/stderr for 60 s: killing only `sh` would leave the promise pending.
+    const stubborn = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
+    const orphan = runCompetitor('sh', ['-c', 'sleep 60 & wait']);
+    try {
+      const started = Date.now();
+      expect(await settleCompetitor(stubborn.pending, () => stubborn.kill(), 500, 2_000)).toBe('cancelled');
+      expect(Date.now() - started).toBeLessThan(3_000);
+      // And a cancel that cannot reach the tree is abandoned after the second bound instead of hanging.
+      const again = Date.now();
+      expect(await settleCompetitor(orphan.pending, () => undefined, 500, 1_000)).toBe('abandoned');
+      expect(Date.now() - again).toBeLessThan(2_500);
+    } finally {
+      // Whatever the assertions did, neither shell nor sleep outlives the test (bounded group kill).
+      for (const stray of [stubborn, orphan]) await settleCompetitor(stray.pending, () => stray.kill(), 0, 2_000);
+    }
+  });
+
+  it('test helper: readiness failure terminates the psql child and rejects (review round 4)', async () => {
+    psql(
+      "insert into users (id, email, name, role, created_at, updated_at) values (gen_random_uuid(), 'ready@example.com', null, 'mentee', now(), now())",
+    );
+    const blocker = await holdTransaction(
+      "update users set session_version = session_version + 1 where email = 'ready@example.com'",
+      'UPDATE 1',
+    );
+    try {
+      const started = Date.now();
+      await expect(
+        holdTransaction(
+          "update users set session_version = session_version + 1 where email = 'ready@example.com'",
+          'UPDATE 1',
+          undefined,
+          { timeoutMs: 1_500 },
+        ),
+      ).rejects.toThrow(/holding the transaction timed out after 1500 ms/);
+      expect(Date.now() - started).toBeLessThan(10_000);
+      // The second psql was terminated: nobody waits on the blocker any more.
+      expect(psql(`select count(*) from pg_stat_activity where ${blocker.pid} = any(pg_blocking_pids(pid))`)).toBe('0');
+    } finally {
+      await blocker.dispose();
+    }
+    psql("delete from users where email = 'ready@example.com'", undefined, 5_000);
   });
 
   it('a role change through the database ends the session too (sessionVersion bump = make set-role)', async () => {

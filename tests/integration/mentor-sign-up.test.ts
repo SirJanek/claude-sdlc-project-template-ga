@@ -115,9 +115,33 @@ describe('mentor sign-up (#26, production server)', () => {
     browser.waitForText('Set up your mentor profile');
     expect(browser.count('[data-slot=account-notice]')).toBe(0); // only the parameter carries the notice
     // The consume response itself names the landing path, so any client lands the same way.
-    expect((await requestLink('newmentor@example.com', 'mentor')).status).toBe(200);
+    // A validated next with dot segments stays exactly as issued: never normalised to `//evil.example` (PR #47 review).
+    const dotted = '/a/..//evil.example';
+    const start = await post('/api/auth/email/start', {
+      email: 'newmentor@example.com',
+      intentRole: 'mentor',
+      next: dotted,
+    });
+    expect(start.status).toBe(200);
     const res = await post('/api/auth/email/consume', { token: tokenOf(linkFor('newmentor@example.com')) });
-    expect(await res.json()).toEqual({ ok: true, data: { next: `${PROFILE}?notice=existing_account` } });
+    expect(await res.json()).toEqual({ ok: true, data: { next: `${dotted}?notice=existing_account` } });
+    expect(userRow('newmentor@example.com')).toMatch(/\|mentor\|t$/);
+    // A next that already carries a notice key: the API answers one authoritative notice, and the page shows it.
+    // (A seeded mentor: newmentor@ has used its 3 links per 15 minutes.)
+    psql(
+      "insert into users (id, email, name, role, created_at, updated_at) values (gen_random_uuid(), 'seeded@example.com', 'Seeded', 'mentor', now(), now())",
+    );
+    const stale = await post('/api/auth/email/start', {
+      email: 'seeded@example.com',
+      intentRole: 'mentor',
+      next: `${PROFILE}?notice=bad`,
+    });
+    expect(stale.status).toBe(200);
+    const res2 = await post('/api/auth/email/consume', { token: tokenOf(linkFor('seeded@example.com')) });
+    expect(await res2.json()).toEqual({ ok: true, data: { next: `${PROFILE}?notice=existing_account` } });
+    browser.open(`${prodUrl()}${PROFILE}?notice=existing_account`); // the mentor's browser session from above
+    browser.waitForText(NOTICE);
+    expect(browser.text('[data-slot=account-notice]')).toBe(NOTICE);
   });
 
   it('no enumeration: the start response and the check-email page are the same for a known and an unknown e-mail', async () => {

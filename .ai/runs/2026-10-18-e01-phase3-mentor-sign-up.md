@@ -101,6 +101,45 @@ cookie decides on its own" — new unit case: `mh_session=` (empty) and `mh_sess
 `ALLOW_DEV_ADMIN=1`/`development` → `sign-in`, never the dev admin, no lookup. No Phase 3 behaviour had
 to change. Gates after the merge: see the handback report (`make check`, `make test-integration` ×2).
 
+## Review fixes (Codex review of PR #47, two major findings)
+
+1. **`withAccountNotice` normalised dot segments** (`landing-path.ts`): the `URL` round-trip turned the
+   validated `/a/..//evil.example` into the protocol-relative `//evil.example?notice=…`, so the consume
+   API could return a `next` that breaks its same-origin contract (the client's `safeDestination` blocked
+   it, but fell back to `/` and lost the notice). Fix: pure string append on the validated input (query
+   joined with `?`/`&`, hash kept), then the joined string is re-checked with `isSameOriginPath` and, if it
+   would ever fail, replaced by `/?notice=…` (defence in depth; unreachable through `nextPathSchema`).
+   Regressions: `landing-path.test.ts` (literal and encoded dot segments, `/a/../b`, query + hash variant,
+   the fallback), `auth.service.test.ts` (existing account with `next=/a/..//evil.example` → exact path
+   kept, passes `nextPathSchema`; the two notice landings re-validated), integration (`mentor-sign-up`:
+   API consume with that `next` answers `/a/..//evil.example?notice=existing_account`). Against the old
+   helper the three new unit tests are red.
+2. **AC1 test repeated the timestamp flake**: `consumeEmailLink(h.lastToken())` stamped
+   `emailVerifiedAt` with the real clock while the test compared it with `h.db.clock`. Every Phase 3
+   consume call now passes `h.db.clock`; the exact assertion stays. The remaining default-clock call in the
+   file (`:448`, Phase 1's "earlier verification is kept") asserts no timestamp equality.
+
+## Review fixes, pass 2 (Codex on PR #47: one major regression from pass 1)
+
+`withAccountNotice` appended `notice` instead of replacing one already in the path: `/mentor/profile?notice=bad`
+became `…?notice=bad&notice=existing_account`, and the landing pages read the FIRST value, so the notice was
+rejected and not shown (AC3 broken for that `next`); `%6eotice=bad` had the same effect. Fix: keep the raw
+pathname and fragment, split the raw query on `&`, drop every pair whose DECODED key (percent- and
+plus-decoding, malformed left raw) is `notice`, keep the other pairs verbatim, append the authoritative
+`notice=existing_account`, re-check with `isSameOriginPath` as before. Regressions: helper (literal,
+`%6e`-encoded, repeated, bare `notice`, empty pairs + hash, a key that only starts with `notice=`, malformed
+encoding), service (`next=/mentor/profile?notice=bad` → exactly one `notice`, the authoritative one), page
+(renders the notice for the search params of the built URL), integration (seeded mentor, API consume with
+`?notice=bad` → `/mentor/profile?notice=existing_account`, the page shows the notice). Against the pass-1
+helper the two new unit tests are red.
+
+## Second merge with Phase 1 (Codex-approved at `8d19808`, rounds 4–6)
+
+`git merge --no-ff origin/feat/e01-phase1-auth-foundation` (`d9b8667` … `8d19808`): no conflicts — the rounds
+touched only `tests/integration/env.ts` and `auth.test.ts` (bounded competitor/settlement helpers,
+failure-path and descendant-pipes tests) and Phase 1's run log. Phase 3 code untouched. Gates after the
+merge: see the handback report (`make check`, `make test-integration` ×2).
+
 ## Handoff
 
 Phase 3 is complete on the branch (stacked on Phase 1's branch — merge Phase 1's PR first, then open this
