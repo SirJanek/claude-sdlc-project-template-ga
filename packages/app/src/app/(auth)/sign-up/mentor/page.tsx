@@ -1,4 +1,6 @@
+import { getEnv, isGitHubEnabled } from '@mentorhub/core';
 import { EmailLinkForm } from '../../EmailLinkForm';
+import { GitHubSignInButton } from '../../GitHubSignInButton';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -9,7 +11,7 @@ export const NO_BANK_DETAILS = 'No bank details needed until someone books you.'
 
 // Public (auth) page — the mentor sign-up: the same e-mail link as /sign-in, sent with intentRole 'mentor'.
 // A new account is created as a mentor and lands on /mentor/profile; an e-mail already in use signs in
-// to its account unchanged (spec › Flows 3). "Continue with GitHub" is added by Phase 2.
+// to its account unchanged (spec › Flows 3). "Continue with GitHub" (role=mentor) when GITHUB_* is configured.
 export default async function MentorSignUpPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
   return (
@@ -19,6 +21,7 @@ export default async function MentorSignUpPage({ searchParams }: { searchParams:
         Share what you have done and start taking intro sessions. <strong>{NO_BANK_DETAILS}</strong>
       </p>
       <EmailLinkForm intentRole="mentor" errorCode={first(params.error)} submitLabel="Send me a sign-up link" />
+      {isGitHubEnabled(getEnv()) ? <GitHubSignInButton role="mentor" /> : null}
       <p className="mt-6 text-sm text-slate-600">
         Already have an account?{' '}
         <a href="/sign-in" className="font-medium text-indigo-700 underline">

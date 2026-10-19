@@ -3,8 +3,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 const apiCall = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
+/** What the page's `getEnv()` answers: GitHub off by default, `fake` to show the button. */
+const github = vi.hoisted(() => ({ adapter: undefined as 'fake' | undefined }));
 vi.mock('@mentorhub/ui', async (original) => ({ ...(await original<typeof import('@mentorhub/ui')>()), apiCall }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@mentorhub/core', async (original) => {
+  const real = await original<typeof import('@mentorhub/core')>();
+  return { ...real, getEnv: () => real.parseEnv({ NODE_ENV: 'test', GITHUB_ADAPTER: github.adapter }) };
+});
 
 import SignInPage from './page';
 import { errorMessage } from '../EmailLinkForm';
@@ -13,6 +19,7 @@ afterEach(cleanup);
 beforeEach(() => {
   apiCall.mockReset();
   push.mockReset();
+  github.adapter = undefined;
 });
 
 async function renderPage(params: Record<string, string> = {}) {
@@ -35,6 +42,33 @@ describe('/sign-in', () => {
     expect(screen.getByText("No password. We'll e-mail you a link that signs you in.")).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Sign up as a mentor' }).getAttribute('href')).toBe('/sign-up/mentor');
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Continue with GitHub' })).toBeNull(); // GITHUB_* not configured
+  });
+
+  it('shows "Continue with GitHub" only when GitHub is configured, carrying the validated next (never an off-site one)', async () => {
+    github.adapter = 'fake';
+    await renderPage({ next: '/mentors/7?slot=1' });
+    expect(screen.getByRole('link', { name: 'Continue with GitHub' }).getAttribute('href')).toBe(
+      '/api/auth/github/start?next=%2Fmentors%2F7%3Fslot%3D1',
+    );
+    cleanup();
+    await renderPage({ next: 'https://evil.com' });
+    expect(screen.getByRole('link', { name: 'Continue with GitHub' }).getAttribute('href')).toBe(
+      '/api/auth/github/start',
+    );
+  });
+
+  it('renders the GitHub error messages behind ?error= (spec › Edge Cases copy)', async () => {
+    await renderPage({ error: 'github_failed' });
+    expect(screen.getByRole('alert').textContent).toBe("GitHub sign-in didn't complete — try again.");
+    cleanup();
+    await renderPage({ error: 'github_email_unverified' });
+    expect(screen.getByRole('alert').textContent).toBe(
+      "Your GitHub e-mail isn't verified — verify it on GitHub or use an e-mail link.",
+    );
+    cleanup();
+    await renderPage({ error: 'invalid_request' });
+    expect(screen.getByRole('alert').textContent).toBe('That sign-in request was not valid — please try again.');
   });
 
   it('requests a link and moves to /check-email with the address and the return path', async () => {
