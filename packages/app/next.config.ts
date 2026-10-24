@@ -8,8 +8,9 @@ const nextConfig: NextConfig = {
   // The ORM and its driver run as plain Node modules on the server, never bundled.
   serverExternalPackages: ['@mikro-orm/core', '@mikro-orm/postgresql', '@mikro-orm/sql', 'pg', 'kysely', 'pino'],
   // The dev server prints every incoming request with its query string, bypassing pino's redaction:
-  // the sign-in link (`/auth/confirm?token=…`) must never land in stdout (review finding 5).
-  logging: { incomingRequests: { ignore: [/^\/auth\/confirm(\?|$)/] } },
+  // the sign-in link (`/auth/confirm?token=…`) and GitHub's callback (`?code=…&state=…`) must never
+  // land in stdout (review finding 5).
+  logging: { incomingRequests: { ignore: [/^\/auth\/confirm(\?|$)/, /^\/api\/auth\/github\/callback(\?|$)/] } },
 };
 
 export default nextConfig;

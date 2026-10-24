@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiCall } from '@mentorhub/ui';
 
-/** Messages behind `?error=` (set by redirects, e.g. GitHub in Phase 2); anything unknown is generic. */
+/** Messages behind `?error=` (set by redirects — the GitHub routes); anything unknown is generic. */
 const ERROR_MESSAGES: Record<string, string> = {
   link_invalid: 'This link has expired or was already used — send a new one.',
   invalid_request: 'That sign-in request was not valid — please try again.',
+  github_failed: "GitHub sign-in didn't complete — try again.",
+  github_email_unverified: "Your GitHub e-mail isn't verified — verify it on GitHub or use an e-mail link.",
 };
 const GENERIC_ERROR = "Sign-in didn't complete — please try again.";
 

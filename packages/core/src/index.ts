@@ -9,7 +9,7 @@ export {
   isBookable,
   platformFeePercent,
 } from './config/rules';
-export { getEnv, parseEnv, AUTH_SECRET_MIN_LENGTH, TEST_AUTH_SECRET, type Env } from './config/env';
+export { getEnv, parseEnv, isGitHubEnabled, AUTH_SECRET_MIN_LENGTH, TEST_AUTH_SECRET, type Env } from './config/env';
 export { getLogger, createLogger, REDACTED_PATHS } from './logger';
 export type { Cradle } from './container/cradle';
 export { buildContainer, getContainer, createRequestScope, withScope, type AppContainer } from './container/container';
@@ -32,9 +32,26 @@ export {
   DEV_ADMIN_USER,
   type EmailLinkRequest,
   type ConsumedLink,
+  type GitHubSignIn,
+  type GitHubSignInIntent,
   type CurrentUser,
 } from './services/auth/auth.service';
 export { MENTOR_PROFILE_PATH, defaultLandingPath, withAccountNotice } from './services/auth/landing-path';
+export {
+  GitHubSignInService,
+  GITHUB_ERROR,
+  githubStartSchema,
+  type RedirectOutcome,
+} from './services/auth/github-sign-in.service';
+export { GitHubClientError, type GitHubClient, type GitHubUser } from './services/github/github-client.port';
+export {
+  FakeGitHubClient,
+  FAKE_GITHUB_CODE,
+  DEFAULT_FAKE_GITHUB_USER,
+  fakeGitHubScenarioSchema,
+  type FakeGitHubScenario,
+} from './services/github/adapters/fake-github-client';
+export { ArcticGitHubClient, GITHUB_CALLBACK_PATH } from './services/github/adapters/arctic-github-client';
 export type { MailSender, MailMessage } from './services/mail/mail-sender.port';
 export { MockMailSender } from './services/mail/adapters/mock-mail-sender';
 export { HealthService, type HealthReport } from './services/health/health.service';
@@ -49,6 +66,7 @@ export {
   GoneError,
   RateLimitedError,
   ServiceUnavailableError,
+  GitHubEmailUnverifiedError,
   type FieldErrors,
 } from './http/errors';
 export {
@@ -76,8 +94,21 @@ export {
   buildSessionCookie,
   clearSessionCookie,
   readSessionCookie,
+  readCookie,
+  buildCookie,
   type SessionClaims,
 } from './http/session';
+export {
+  GITHUB_STATE_COOKIE,
+  GITHUB_STATE_COOKIE_PATH,
+  signGitHubStateToken,
+  verifyGitHubStateToken,
+  buildGitHubStateCookie,
+  clearGitHubStateCookie,
+  readGitHubStateCookie,
+  type GitHubStateClaims,
+} from './http/github-state';
+export { redirectResponse } from './http/redirect';
 export { pageAccess, type PageAccess, type PageAccessDeps } from './http/page-access';
 export { readJsonBody } from './http/body';
 export { readClientIp, UNKNOWN_IP } from './http/client-ip';

@@ -68,3 +68,10 @@ export class ServiceUnavailableError extends AppError {
     super(message, { status: 503, code });
   }
 }
+
+/** A GitHub account whose primary e-mail GitHub has not verified cannot sign in (spec › Edge Cases). */
+export class GitHubEmailUnverifiedError extends AppError {
+  constructor(message = "Your GitHub e-mail isn't verified — verify it on GitHub or use an e-mail link.") {
+    super(message, { status: 403, code: 'github_email_unverified' });
+  }
+}

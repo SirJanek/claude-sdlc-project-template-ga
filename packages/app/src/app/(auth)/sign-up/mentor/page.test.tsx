@@ -3,8 +3,14 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 
 const apiCall = vi.hoisted(() => vi.fn());
 const push = vi.hoisted(() => vi.fn());
+/** What the page's `getEnv()` answers: GitHub off by default, `fake` to show the button. */
+const github = vi.hoisted(() => ({ adapter: undefined as 'fake' | undefined }));
 vi.mock('@mentorhub/ui', async (original) => ({ ...(await original<typeof import('@mentorhub/ui')>()), apiCall }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
+vi.mock('@mentorhub/core', async (original) => {
+  const real = await original<typeof import('@mentorhub/core')>();
+  return { ...real, getEnv: () => real.parseEnv({ NODE_ENV: 'test', GITHUB_ADAPTER: github.adapter }) };
+});
 
 import MentorSignUpPage, { NO_BANK_DETAILS } from './page';
 
@@ -12,6 +18,7 @@ afterEach(cleanup);
 beforeEach(() => {
   apiCall.mockReset();
   push.mockReset();
+  github.adapter = undefined;
 });
 
 async function renderPage(params: Record<string, string> = {}) {
@@ -26,7 +33,7 @@ const submit = async (email: string) => {
 };
 
 describe('/sign-up/mentor', () => {
-  it('renders the mentor copy: profile setup heading, the R07 line, the e-mail form and no GitHub button yet', async () => {
+  it('renders the mentor copy: profile setup heading, the R07 line, the e-mail form and no GitHub button while GitHub is not configured', async () => {
     await renderPage();
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Set up your mentor profile');
     expect(screen.getByText(NO_BANK_DETAILS)).toBeTruthy();
@@ -36,6 +43,16 @@ describe('/sign-up/mentor', () => {
     expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Send me a sign-up link']);
     expect(screen.getByRole('link', { name: 'Sign in' }).getAttribute('href')).toBe('/sign-in');
     expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Continue with GitHub' })).toBeNull();
+  });
+
+  it('shows "Continue with GitHub" with role=mentor when GitHub is configured', async () => {
+    github.adapter = 'fake';
+    await renderPage();
+    expect(screen.getByRole('link', { name: 'Continue with GitHub' }).getAttribute('href')).toBe(
+      '/api/auth/github/start?role=mentor',
+    );
+    expect(screen.getAllByRole('button').map((b) => b.textContent)).toEqual(['Send me a sign-up link']);
   });
 
   it('requests the link with intentRole mentor and moves to /check-email carrying the role for a resend', async () => {

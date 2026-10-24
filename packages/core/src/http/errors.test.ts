@@ -3,6 +3,7 @@ import {
   AppError,
   ConflictError,
   ForbiddenError,
+  GitHubEmailUnverifiedError,
   GoneError,
   MethodNotAllowedError,
   NotFoundError,
@@ -30,6 +31,16 @@ describe('AppError hierarchy', () => {
     expect(error.message).toBe('Check the form.');
     expect(error.fieldErrors).toEqual({ email: ['Required'] });
     expect(new NotFoundError('No such mentor.').message).toBe('No such mentor.');
+  });
+});
+
+describe('GitHub errors', () => {
+  it('an unverified GitHub e-mail is a 403 with the spec copy and a stable code', () => {
+    const error = new GitHubEmailUnverifiedError();
+    expect(error).toBeInstanceOf(AppError);
+    expect([error.status, error.code]).toEqual([403, 'github_email_unverified']);
+    expect(error.message).toBe("Your GitHub e-mail isn't verified — verify it on GitHub or use an e-mail link.");
+    expect(new GitHubEmailUnverifiedError('custom').message).toBe('custom');
   });
 });
 

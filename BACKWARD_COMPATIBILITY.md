@@ -20,9 +20,11 @@ stricter (deprecation windows) when the first external consumer or production da
 | `GET /api/admin/health` | admin only, envelope: `{ ok: true, data: { status, db: "up" \| "down" } }` — a down database is a `200` report, not an error |
 | `POST /api/auth/email/start` | public; body `{ email, intentRole?: 'mentor', next? }` (`next` a same-origin relative path) → **always** `200 { sent: true }` for a valid body, also for unknown or existing e-mails (no enumeration); `422` invalid (incl. `intentRole: 'admin'`); `429 rate_limited`; `503 mail_not_sent` |
 | `POST /api/auth/email/consume` | public; body `{ token }` → `200 { next }` + `Set-Cookie: mh_session=…`; `410 link_invalid` for an unknown, used or expired token; a token is consumed **only** here, never by `GET /auth/confirm`. `next` = the link's validated `next`, else the role's default (`/mentor/profile` for a mentor, `/` otherwise); a sign-up link (`intentRole`) used for an e-mail that already has an account signs in to **that** account, never changes its role, creates nothing, and appends `?notice=existing_account` (E01 Phase 3, #26) |
+| `GET /api/auth/github/start?role=&next=` | public (E01 Phase 2, #45); `role` only `mentor`, `next` a same-origin relative path (`nextPathSchema`) — anything else, or GitHub not configured, → `302 /sign-in?error=invalid_request` with no cookie; otherwise `302` to GitHub's authorize URL (PKCE S256) + `Set-Cookie: mh_github=…` (signed state, PKCE verifier, role, next; 10 min; `Path=/api/auth/github`) |
+| `GET /api/auth/github/callback?code&state` | public; always `303` and always clears `mh_github`: `state` ≠ cookie, cookie missing/expired, `error=` from GitHub, no code, exchange failure or timeout (10 s) → `/sign-in?error=github_failed`; primary e-mail not verified → `/sign-in?error=github_email_unverified`; else `Set-Cookie: mh_session=…` + `303` to the landing path (the cookie's `next`, else the role's default, `?notice=existing_account` when a `role=mentor` attempt met an existing account — same rules as `email/consume`). Linking: by `users.github_id`, else by the lower-cased verified e-mail (the id is then stored on that account), else a new account; an existing account's role, name and e-mail are never changed |
 | `POST /api/auth/sign-out` | body `{ everywhere?: boolean }` → `200 { signedOut: true }` + cookie cleared (`Max-Age=0`); `everywhere: true` needs a session (`401` otherwise) and bumps `sessionVersion` |
 | `GET /api/auth/me` | `200 { id, email, name, role, emailVerified }` for the session (the dev admin answers a fixed record with `id: 'dev-admin'`); `401` without one |
-| Pages `/sign-in`, `/check-email`, `/auth/confirm?token=` | `(auth)` route group; `/sign-in?next=` carries the return path, `?error=` renders an alert; `/auth/confirm` GET renders "Sign in as <e-mail>?" and consumes nothing |
+| Pages `/sign-in`, `/check-email`, `/auth/confirm?token=` | `(auth)` route group; `/sign-in?next=` carries the return path, `?error=` renders an alert (`link_invalid`, `invalid_request`, `github_failed`, `github_email_unverified`; unknown → generic); `/auth/confirm` GET renders "Sign in as <e-mail>?" and consumes nothing; `/sign-in` and `/sign-up/mentor` show "Continue with GitHub" (`a[data-slot=github-sign-in]` → `/api/auth/github/start`, `?role=mentor` on the sign-up, `?next=` on sign-in) **only** when `isGitHubEnabled(getEnv())` |
 | Pages `/sign-up/mentor`, `/mentor/profile` | `/sign-up/mentor` (`(auth)`) sends `intentRole: 'mentor'` and moves to `/check-email?role=mentor` (a resend keeps the intent); `/mentor/profile` (`(mentor)`) requires a mentor session — signed out → `307` to `/sign-in?next=%2Fmentor%2Fprofile`, another role → a refusal page ("Mentor account required"); shows `ExistingAccountNotice` for `?notice=existing_account`; **no payout, bank or card field or step** (R07) — adding one is a product decision, not a compatibility change |
 
 **Breaking:** removing or renaming a route, field or error `code`; changing a status code;
@@ -48,7 +50,7 @@ rollback note in the PR body.
 
 ## 3. Workspace package APIs
 
-`@mentorhub/core` (`src/index.ts` — incl. `EventBus`, `EventMap`, `userCreateSchema`, the auth schemas, `AuthService`, `MailSender`, the `http/session.ts` helpers, `AUTH_LIMITS`; event IDs `concept.entity.action` and their payloads, today `auth.user.created { userId, email, method: 'email' | 'github' | 'admin' }`, are part of the contract — `method` was added in E01 Phase 1, every emitter sets it), `@mentorhub/db` (`src/index.ts` — incl. `isUniqueViolation`, `AuthToken`), `@mentorhub/ui` (exports
+`@mentorhub/core` (`src/index.ts` — incl. `EventBus`, `EventMap`, `userCreateSchema`, the auth schemas, `AuthService`, `MailSender`, `GitHubClient` (+ `GitHubSignInService`, `isGitHubEnabled`, the fake adapter — the integration suite depends on its scenario file), the `http/session.ts` and `http/github-state.ts` helpers, `AUTH_LIMITS`; event IDs `concept.entity.action` and their payloads, today `auth.user.created { userId, email, method: 'email' | 'github' | 'admin' }`, are part of the contract — `method` was added in E01 Phase 1, every emitter sets it), `@mentorhub/db` (`src/index.ts` — incl. `isUniqueViolation`, `AuthToken`), `@mentorhub/ui` (exports
 map: `.`, `./styles.css`, `./components/*`, `./lib/*`, `./backend/*`). These are internal to the
 monorepo and not published.
 
@@ -72,11 +74,15 @@ carries unit tests for the boundary values.
 characters, **required** except under `NODE_ENV=test`, which uses a fixed test-only value — there is
 deliberately no development default; `make setup` writes one to `packages/app/.env.local`), `APP_URL`
 (default `http://localhost:3000`), `MAIL_ADAPTER` (`mock`; refused in production unless
-`ALLOW_TEST_ADAPTERS=1`), `MAIL_OUTBOX_FILE` (optional), `ALLOW_TEST_ADAPTERS` and their defaults.
+`ALLOW_TEST_ADAPTERS=1`), `MAIL_OUTBOX_FILE` (optional), `ALLOW_TEST_ADAPTERS`, and (E01 Phase 2)
+`GITHUB_ADAPTER` (`real` | `fake`; **unset = GitHub sign-in off, button hidden**; `real` requires
+`GITHUB_CLIENT_ID` + `GITHUB_CLIENT_SECRET`, and both credentials alone imply `real`; `fake` is refused in
+production unless `ALLOW_TEST_ADAPTERS=1`), `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, `GITHUB_FAKE_FILE`
+(optional scenario file for the fake), and their defaults.
 **Breaking:** renaming or removing a variable, adding a required variable without a default,
 changing a default that alters behaviour. `ALLOW_DEV_ADMIN` must stay honoured only in
 `NODE_ENV=development` — widening it, adding a development default for `AUTH_SECRET`, or letting a
-test adapter run in production without `ALLOW_TEST_ADAPTERS=1` is a security defect, not a
+test adapter (mock mail, fake GitHub) run in production without `ALLOW_TEST_ADAPTERS=1` is a security defect, not a
 compatibility change.
 **Required path:** update `.env.example`, `docker-compose.yml`, the CI workflow and the README in
 the same PR.
@@ -113,9 +119,15 @@ user; empty, malformed, stale, unknown user or a DB error → 401, never the dev
 request without any `mh_session` cookie may fall back to the dev admin, still only with `ALLOW_DEV_ADMIN=1` **and**
 `NODE_ENV=development`. `sessionVersion` is bumped atomically in the database
 (`session_version + 1`, `revokeSessions` / `make set-role`); a return path (`next`) must pass
-`nextPathSchema` (printable, same-origin, no `//` or `\`).
+`nextPathSchema` (printable, same-origin, no `//` or `\`). **GitHub state cookie `mh_github`**
+(`GITHUB_STATE_COOKIE` in `packages/core/src/http/github-state.ts`, E01 Phase 2): httpOnly, `SameSite=Lax`
+(the callback is a top-level cross-site navigation), `Path=/api/auth/github`, `Secure` in production,
+`Max-Age` 10 min; value = HS256 JWT with `state`, `codeVerifier`, optional `role` (`mentor`) and `next`;
+the callback accepts a `code` only when the echoed `state` equals the cookie's, and clears the cookie on
+every outcome.
 **Breaking:** renaming or removing a role, the header, the cookie or a `Session` field; loosening the
-dev-admin allowlist, skipping the `sv` comparison or the DB lookup, or making a session check fail
+dev-admin allowlist, skipping the `sv` comparison or the DB lookup, skipping the GitHub `state` comparison or the
+verified-e-mail requirement, or making a session check fail
 open (security defects, not compatibility changes); changing the JWT algorithm or claim names
 (every existing cookie stops verifying — a forced sign-out of everyone).
 **Required path:** change the server constant, the client constant and the integration test in the

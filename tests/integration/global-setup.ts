@@ -6,6 +6,12 @@ import type { TestProject } from 'vitest/node';
 import { evidencePath, resetEvidence } from './evidence';
 
 const DIST_DIR = '.next-integration';
+/** What the fake GitHub adapter answers until a test writes its own scenario (see FakeGitHubClient). */
+const DEFAULT_GITHUB_SCENARIO = {
+  githubId: 'it-default',
+  primaryEmail: { email: 'github.default@example.com', verified: true },
+  name: 'Default GitHub',
+};
 /** Test-only secret (≥ 32 chars): both servers sign the same cookies; never a real value. */
 const TEST_AUTH_SECRET = 'integration-suite-auth-secret-not-for-real-use-0123456789';
 
@@ -80,8 +86,10 @@ export default async function setup(project: TestProject) {
     LOG_LEVEL: 'silent',
     AUTH_SECRET: TEST_AUTH_SECRET,
     MAIL_ADAPTER: 'mock',
-    // The mock adapter is refused under NODE_ENV=production (next start) unless the suite says so.
+    // The mock mail and fake GitHub adapters are refused under NODE_ENV=production (next start) unless the suite says so.
     ALLOW_TEST_ADAPTERS: '1',
+    // No real GitHub in CI: the fake answers the scenario written to GITHUB_FAKE_FILE by the test (spec, Phase 2).
+    GITHUB_ADAPTER: 'fake',
   };
 
   execFileSync('pnpm', ['--filter', '@mentorhub/db', 'migrate'], {
@@ -100,15 +108,19 @@ export default async function setup(project: TestProject) {
   const devOutbox = evidencePath('outbox-dev.jsonl');
   const prodOutbox = evidencePath('outbox-prod.jsonl');
   for (const file of [devOutbox, prodOutbox]) writeFileSync(file, '');
+  // Each server also gets its own fake-GitHub scenario file (a verified person until a test rewrites it).
+  const devGithub = evidencePath('github-fake-dev.json');
+  const prodGithub = evidencePath('github-fake-prod.json');
+  for (const file of [devGithub, prodGithub]) writeFileSync(file, JSON.stringify(DEFAULT_GITHUB_SCENARIO));
   const servers = [
     startNext(
       ['dev', '--port', String(devPort)],
-      { ...env, APP_URL: devUrl, MAIL_OUTBOX_FILE: devOutbox },
+      { ...env, APP_URL: devUrl, MAIL_OUTBOX_FILE: devOutbox, GITHUB_FAKE_FILE: devGithub },
       'server-dev',
     ),
     startNext(
       ['start', '--port', String(prodPort)],
-      { ...env, APP_URL: prodUrl, MAIL_OUTBOX_FILE: prodOutbox },
+      { ...env, APP_URL: prodUrl, MAIL_OUTBOX_FILE: prodOutbox, GITHUB_FAKE_FILE: prodGithub },
       'server-prod',
     ),
   ];
@@ -126,6 +138,8 @@ export default async function setup(project: TestProject) {
     '/auth/confirm',
     '/mentor/profile',
     '/api/auth/me',
+    '/api/auth/github/start?role=admin',
+    '/api/auth/github/callback',
   ])
     await fetch(`${devUrl}${path}`);
 
@@ -133,6 +147,8 @@ export default async function setup(project: TestProject) {
   project.provide('prodUrl', prodUrl);
   project.provide('devOutbox', devOutbox);
   project.provide('prodOutbox', prodOutbox);
+  project.provide('devGithubFake', devGithub);
+  project.provide('prodGithubFake', prodGithub);
   project.provide('containerId', container.getId());
   project.provide('databaseUrl', container.getConnectionUri());
 

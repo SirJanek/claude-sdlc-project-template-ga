@@ -8,6 +8,9 @@ declare module 'vitest' {
     /** Mail outbox (JSON lines) of each server's MockMailSender. */
     devOutbox: string;
     prodOutbox: string;
+    /** Scenario file (JSON) of each server's FakeGitHubClient — rewritten by a test before each flow. */
+    devGithubFake: string;
+    prodGithubFake: string;
     containerId: string;
     /** Connection string of the suite's PostgreSQL (for CLIs such as set-role). */
     databaseUrl: string;
@@ -18,6 +21,8 @@ export const devUrl = () => inject('devUrl');
 export const prodUrl = () => inject('prodUrl');
 export const devOutbox = () => inject('devOutbox');
 export const prodOutbox = () => inject('prodOutbox');
+export const devGithubFake = () => inject('devGithubFake');
+export const prodGithubFake = () => inject('prodGithubFake');
 export const databaseUrl = () => inject('databaseUrl');
 export const containerId = () => inject('containerId');
 
