@@ -14,9 +14,20 @@ export interface PriceSummaryProps {
   className?: string;
 }
 
-export function PriceSummary({ mentorName, when, minutes, total, freeCancellationUntil, className }: PriceSummaryProps) {
+export function PriceSummary({
+  mentorName,
+  when,
+  minutes,
+  total,
+  freeCancellationUntil,
+  className,
+}: PriceSummaryProps) {
   return (
-    <section data-slot="price-summary" aria-label="Price summary" className={cn('grid gap-stack rounded-lg border border-border p-panel', className)}>
+    <section
+      data-slot="price-summary"
+      aria-label="Price summary"
+      className={cn('grid gap-stack rounded-lg border border-border p-panel', className)}
+    >
       <dl className="grid grid-cols-2 gap-inline">
         <dt className="text-muted-foreground">Mentor</dt>
         <dd className="text-right">{mentorName}</dd>

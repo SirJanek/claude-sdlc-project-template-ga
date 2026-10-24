@@ -36,11 +36,22 @@ export { ErrorMessage, ErrorState } from './backend/feedback/ErrorMessage';
 export { EmptyState } from './backend/feedback/EmptyState';
 export { RowAction, type RowActionProps, type RowActionState } from './backend/feedback/RowAction';
 export { PageHeader, type PageHeaderProps } from './backend/layout/PageHeader';
-export { FilterBar, FilterChip, resultCount, type FilterBarProps, type ActiveFilter } from './backend/filters/FilterBar';
+export {
+  FilterBar,
+  FilterChip,
+  resultCount,
+  type FilterBarProps,
+  type ActiveFilter,
+} from './backend/filters/FilterBar';
 
 // Product components (stage 3) — one folder per concept
 export { SlotList, groupSlotsByDay, type Slot, type SlotListProps } from './components/booking/SlotList';
-export { BookingRow, bookingStatusMeta, type BookingStatus, type BookingRowProps } from './components/booking/BookingRow';
+export {
+  BookingRow,
+  bookingStatusMeta,
+  type BookingStatus,
+  type BookingRowProps,
+} from './components/booking/BookingRow';
 export { PriceSummary, type PriceSummaryProps } from './components/booking/PriceSummary';
 export { MentorCard, type Mentor, type MentorCardProps } from './components/mentors/MentorCard';
 export { SessionEntry, type SessionEntryProps } from './components/session/SessionEntry';

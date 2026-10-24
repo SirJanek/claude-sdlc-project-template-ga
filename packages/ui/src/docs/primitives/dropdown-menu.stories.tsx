@@ -17,4 +17,4 @@ const items = (
 );
 
 export const Default: Story = { render: () => <DropdownMenu><DropdownMenuTrigger asChild><Button variant="outline">Booking actions</Button></DropdownMenuTrigger>{items}</DropdownMenu> };
-export const Open: Story = { render: () => <DropdownMenu defaultOpen><DropdownMenuTrigger asChild><Button variant="outline">Booking actions</Button></DropdownMenuTrigger>{items}</DropdownMenu> };
+export const Open: Story = { render: () => <DropdownMenu defaultOpen modal={false}><DropdownMenuTrigger asChild><Button variant="outline">Booking actions</Button></DropdownMenuTrigger>{items}</DropdownMenu> };

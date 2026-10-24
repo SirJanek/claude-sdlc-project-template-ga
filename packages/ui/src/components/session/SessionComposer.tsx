@@ -26,7 +26,11 @@ export function SessionComposer({ onSend, sending = false, closedReason, classNa
   };
   if (closedReason) {
     return (
-      <p data-slot="session-composer" role="status" className={cn('sticky bottom-0 border-t border-border bg-background p-panel text-muted-foreground', className)}>
+      <p
+        data-slot="session-composer"
+        role="status"
+        className={cn('sticky bottom-0 border-t border-border bg-background p-panel text-muted-foreground', className)}
+      >
         {closedReason}
       </p>
     );
@@ -34,7 +38,10 @@ export function SessionComposer({ onSend, sending = false, closedReason, classNa
   return (
     <form
       data-slot="session-composer"
-      className={cn('sticky bottom-0 flex items-end gap-inline border-t border-border bg-background p-panel', className)}
+      className={cn(
+        'sticky bottom-0 flex items-end gap-inline border-t border-border bg-background p-panel',
+        className,
+      )}
       onSubmit={(e) => {
         e.preventDefault();
         send();

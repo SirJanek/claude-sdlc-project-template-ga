@@ -108,7 +108,7 @@ function Catalogue({ state, initialTech = '' }: { state: ListState; initialTech?
           <p role="status" className="ml-auto text-sm text-muted-foreground">{state === 'loading' || state === 'error' ? '' : `${shown.length} mentors`}</p>
         </div>
       ) : null}
-      {state === 'loading' ? <div aria-busy="true" aria-label="Loading mentors" className="grid gap-stack">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div> : null}
+      {state === 'loading' ? <div role="status" aria-busy="true" aria-label="Loading mentors" className="grid gap-stack">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-16 w-full" />)}</div> : null}
       {state === 'error' ? <ErrorState title="Mentors did not load" message="The catalogue is unavailable right now. Try again; links shared by mentors still work." onRetry={() => {}} /> : null}
       {state === 'empty' ? <EmptyState title="No mentors in the catalogue yet" description="Mentors appear here only after they choose to join it (R09). Ask your mentor for their link." /> : null}
       {state === 'no-results' || (state !== 'loading' && state !== 'error' && state !== 'empty' && shown.length === 0) ? (

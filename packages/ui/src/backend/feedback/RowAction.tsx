@@ -20,11 +20,25 @@ export interface RowActionProps {
   onAction: () => void;
 }
 
-export function RowAction({ label, pendingLabel, accessibleName, state = 'idle', errorMessage = 'Did not work. Try again.', onAction }: RowActionProps) {
+export function RowAction({
+  label,
+  pendingLabel,
+  accessibleName,
+  state = 'idle',
+  errorMessage = 'Did not work. Try again.',
+  onAction,
+}: RowActionProps) {
   const pending = state === 'pending';
   return (
     <div data-slot="row-action" className="grid justify-items-end gap-1">
-      <Button variant="ghost" size="sm" onClick={onAction} disabled={pending} aria-busy={pending || undefined} aria-label={pending ? undefined : state === 'error' ? `Try again: ${accessibleName}` : accessibleName}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onAction}
+        disabled={pending}
+        aria-busy={pending || undefined}
+        aria-label={pending ? undefined : state === 'error' ? `Try again: ${accessibleName}` : accessibleName}
+      >
         {pending ? pendingLabel : state === 'error' ? 'Try again' : label}
       </Button>
       {state === 'error' ? (

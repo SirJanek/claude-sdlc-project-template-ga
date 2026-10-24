@@ -102,7 +102,9 @@
   --status-success-bg: var(--dm-success-100);
   --status-danger: var(--dm-danger-700); /* declined, refunded, no-show — 6.10 : 1 */
   --status-danger-bg: var(--dm-danger-100);
-  --overlay: oklch(0.23 0.02 45 / 0.5); /* PROPOSAL (batch 3): dialog backdrop, neutral-900 at 50 % — replaces shadcn bg-black/50 */
+  --overlay: oklch(
+    0.23 0.02 45 / 0.5
+  ); /* PROPOSAL (batch 3): dialog backdrop, neutral-900 at 50 % — replaces shadcn bg-black/50 */
   --status-warning: var(--dm-warning-700); /* awaiting payment, free cancellation ends in 12 h — 5.44 : 1 */
   --status-warning-bg: var(--dm-warning-100);
 

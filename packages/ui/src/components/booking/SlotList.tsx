@@ -28,7 +28,8 @@ export interface SlotListProps {
   className?: string;
 }
 
-const dayFmt = (tz?: string) => new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'short', timeZone: tz });
+const dayFmt = (tz?: string) =>
+  new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'short', timeZone: tz });
 const timeFmt = (tz?: string) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz });
 
 export function groupSlotsByDay(slots: Slot[], timeZone?: string) {

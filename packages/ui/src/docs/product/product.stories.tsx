@@ -33,7 +33,7 @@ export const E02MentorCardLoading: Story = {
   name: 'E02 · Mentor card — loading',
   render: () =>
     wrap(
-      <div aria-busy="true" aria-label="Loading mentors" className="grid gap-stack">
+      <div role="status" aria-busy="true" aria-label="Loading mentors" className="grid gap-stack">
         {[1, 2].map((i) => (
           <div key={i} className="flex gap-inline"><Skeleton className="size-10 rounded-full" /><div className="grid flex-1 gap-1"><Skeleton className="h-4 w-1/3" /><Skeleton className="h-4 w-2/3" /></div></div>
         ))}
@@ -93,7 +93,7 @@ export const E04SessionThread: Story = {
   name: 'E04 · Session entries + composer',
   render: () => (
     <div className="flex h-96 max-w-content flex-col border border-border">
-      <div className="grid flex-1 content-start gap-thread-gap overflow-y-auto p-panel">
+      <div role="region" aria-label="Session thread" tabIndex={0} className="grid flex-1 content-start gap-thread-gap overflow-y-auto p-panel">
         <SessionEntry author="Jakub Lewandowski" role="Mentee" time="18:01">{question}</SessionEntry>
         <SessionEntry author="Marta Kowalczyk" role="Mentor" time="18:03">
           Paste the tsconfig of packages/ui, please.

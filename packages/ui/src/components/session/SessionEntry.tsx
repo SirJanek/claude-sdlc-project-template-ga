@@ -25,7 +25,9 @@ export function SessionEntry({ author, time, dateTime, role, children, className
           {time}
         </time>
       </header>
-      <div className="text-lg break-words whitespace-pre-wrap [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-muted [&_pre]:p-panel [&_pre]:text-base">{children}</div>
+      <div className="text-lg break-words whitespace-pre-wrap [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:border [&_pre]:border-border [&_pre]:bg-muted [&_pre]:p-panel [&_pre]:text-base">
+        {children}
+      </div>
     </article>
   );
 }

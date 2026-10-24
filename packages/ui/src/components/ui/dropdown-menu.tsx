@@ -8,8 +8,7 @@ import { DropdownMenu as DropdownMenuPrimitive } from 'radix-ui';
 // --border-strong outline, no shadow, no animation, 40 px items, --accent highlight. No submenus, checkbox
 // or radio items (outside the plan). Destructive item = --destructive text.
 
-const popoverSurface =
-  'z-50 min-w-48 rounded-lg border border-border-strong bg-popover text-popover-foreground';
+const popoverSurface = 'z-50 min-w-48 rounded-lg border border-border-strong bg-popover text-popover-foreground';
 
 function DropdownMenu(props: React.ComponentProps<typeof DropdownMenuPrimitive.Root>) {
   return <DropdownMenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
@@ -21,7 +20,11 @@ function DropdownMenuGroup(props: React.ComponentProps<typeof DropdownMenuPrimit
   return <DropdownMenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />;
 }
 
-function DropdownMenuContent({ className, sideOffset = 4, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+function DropdownMenuContent({
+  className,
+  sideOffset = 4,
+  ...props
+}: React.ComponentProps<typeof DropdownMenuPrimitive.Content>) {
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
@@ -53,13 +56,21 @@ function DropdownMenuItem({
 }
 
 function DropdownMenuLabel({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Label>) {
-  return <DropdownMenuPrimitive.Label className={cn('px-3 py-1 text-sm text-muted-foreground', className)} {...props} />;
+  return (
+    <DropdownMenuPrimitive.Label className={cn('px-3 py-1 text-sm text-muted-foreground', className)} {...props} />
+  );
 }
 function DropdownMenuSeparator({ className, ...props }: React.ComponentProps<typeof DropdownMenuPrimitive.Separator>) {
   return <DropdownMenuPrimitive.Separator className={cn('-mx-1 my-1 h-px bg-border', className)} {...props} />;
 }
 
 export {
-  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel,
-  DropdownMenuSeparator, DropdownMenuTrigger, popoverSurface,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  popoverSurface,
 };

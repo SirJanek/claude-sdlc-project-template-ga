@@ -37,7 +37,16 @@ export interface MentorCardProps {
   className?: string;
 }
 
-export function MentorCard({ mentor, href, action, variant = 'full', hideNoSlotsBadge = false, unavailable = false, busy = false, className }: MentorCardProps) {
+export function MentorCard({
+  mentor,
+  href,
+  action,
+  variant = 'full',
+  hideNoSlotsBadge = false,
+  unavailable = false,
+  busy = false,
+  className,
+}: MentorCardProps) {
   const link = unavailable ? undefined : href;
   const Name = link ? 'a' : 'span';
   return (
@@ -49,7 +58,15 @@ export function MentorCard({ mentor, href, action, variant = 'full', hideNoSlots
     >
       <Avatar src={mentor.photoUrl} alt="" size="lg" />
       <div className="grid min-w-0 flex-1 gap-1">
-        <Name href={link} className={cn('font-semibold break-words', unavailable && 'text-muted-foreground', link && 'underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring')}>
+        <Name
+          href={link}
+          className={cn(
+            'font-semibold break-words',
+            unavailable && 'text-muted-foreground',
+            link &&
+              'underline-offset-2 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          )}
+        >
           {mentor.name}
         </Name>
         <p className="text-muted-foreground break-words">{mentor.headline}</p>
@@ -68,17 +85,20 @@ export function MentorCard({ mentor, href, action, variant = 'full', hideNoSlots
           </p>
         ) : null}
         {variant === 'full' && !unavailable ? (
-        <p className="flex flex-wrap gap-x-stack text-sm">
-          {mentor.priceLabel ? <span className="tabular-nums">{mentor.priceLabel}</span> : null}
-          {mentor.earliestStart ? (
-            <span>Earliest start: {mentor.earliestStart}</span>
-          ) : hideNoSlotsBadge ? null : (
-            <Badge variant="neutral">No slots yet</Badge>
-          )}
-        </p>
+          <p className="flex flex-wrap gap-x-stack text-sm">
+            {mentor.priceLabel ? <span className="tabular-nums">{mentor.priceLabel}</span> : null}
+            {mentor.earliestStart ? (
+              <span>Earliest start: {mentor.earliestStart}</span>
+            ) : hideNoSlotsBadge ? null : (
+              <Badge variant="neutral">No slots yet</Badge>
+            )}
+          </p>
         ) : null}
         {mentor.publicWorkUrl && !unavailable ? (
-          <a href={mentor.publicWorkUrl} className="w-fit text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+          <a
+            href={mentor.publicWorkUrl}
+            className="w-fit text-sm underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
             {mentor.publicWorkLabel ?? 'Public work'}
           </a>
         ) : null}

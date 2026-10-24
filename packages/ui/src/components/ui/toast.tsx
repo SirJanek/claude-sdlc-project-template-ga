@@ -44,7 +44,10 @@ function Toast({ className, children, ...props }: React.ComponentProps<typeof To
       data-slot="toast"
       type="background"
       defaultOpen
-      className={cn('rounded-lg border border-border-strong bg-popover p-panel text-base text-popover-foreground', className)}
+      className={cn(
+        'rounded-lg border border-border-strong bg-popover p-panel text-base text-popover-foreground',
+        className,
+      )}
       {...props}
     >
       <ToastPrimitive.Title>{children}</ToastPrimitive.Title>
@@ -55,7 +58,10 @@ function Toast({ className, children, ...props }: React.ComponentProps<typeof To
 function ToastViewport({ className, ...props }: React.ComponentProps<typeof ToastPrimitive.Viewport>) {
   return (
     <ToastPrimitive.Viewport
-      className={cn('fixed right-0 bottom-0 z-50 m-0 flex w-full max-w-sm list-none flex-col gap-inline p-panel outline-hidden', className)}
+      className={cn(
+        'fixed right-0 bottom-0 z-50 m-0 flex w-full max-w-sm list-none flex-col gap-inline p-panel outline-hidden',
+        className,
+      )}
       {...props}
     />
   );

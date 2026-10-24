@@ -8,7 +8,7 @@ type Story = StoryObj<typeof meta>;
 export const MentorRow: Story = {
   name: 'Loading mentor list',
   render: () => (
-    <div aria-busy="true" aria-label="Loading mentors" className="grid max-w-md gap-stack">
+    <div role="status" aria-busy="true" aria-label="Loading mentors" className="grid max-w-md gap-stack">
       {[1, 2, 3].map((i) => (
         <div key={i} className="flex items-center gap-inline">
           <Skeleton className="size-10 rounded-full" />

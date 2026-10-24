@@ -7,7 +7,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const content = (
-  <PopoverContent>
+  <PopoverContent aria-label="Price breakdown">
     <p className="font-semibold">How the 120 zł is split</p>
     <p className="text-muted-foreground">Mentor 102 zł · DevMentor fee 18 zł (15 %). The money is held until the session ends.</p>
   </PopoverContent>

@@ -11,7 +11,13 @@ function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPrimitive
   return <TabsPrimitive.Root data-slot="tabs" className={cn('grid gap-stack', className)} {...props} />;
 }
 function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.List>) {
-  return <TabsPrimitive.List data-slot="tabs-list" className={cn('flex gap-inline border-b border-border', className)} {...props} />;
+  return (
+    <TabsPrimitive.List
+      data-slot="tabs-list"
+      className={cn('flex gap-inline border-b border-border', className)}
+      {...props}
+    />
+  );
 }
 function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
@@ -26,7 +32,16 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
   );
 }
 function TabsContent({ className, ...props }: React.ComponentProps<typeof TabsPrimitive.Content>) {
-  return <TabsPrimitive.Content data-slot="tabs-content" className={cn('focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring', className)} {...props} />;
+  return (
+    <TabsPrimitive.Content
+      data-slot="tabs-content"
+      className={cn(
+        'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring',
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export { Tabs, TabsContent, TabsList, TabsTrigger };
