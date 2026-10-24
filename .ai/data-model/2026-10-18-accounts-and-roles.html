@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Data model — accounts and roles</title>
+<style>
+body{margin:0;font:14px system-ui,sans-serif;background:#f8fafc;color:#111}
+header{padding:10px 16px;border-bottom:1px solid #e5e7eb;background:#fff}
+svg{width:100%;height:calc(100vh - 48px);cursor:grab}
+.n rect{rx:8}.new rect{fill:#2f6feb;stroke:#1b4fb0}.new text{fill:#fff}
+.old rect{fill:#e5e7eb;stroke:#9ca3af}.dim{opacity:.2}
+</style></head><body>
+<header>Accounts and roles — new (blue) vs existing (grey) entities. Drag to pan, wheel to zoom, click a node to focus.</header>
+<svg id="s"><g id="v"></g></svg>
+<script>
+const data = {"nodes":[{"id":"entity_1","label":"users (changed): email_verified_at, github_id, session_version","kind":"old","x":80,"y":120},{"id":"entity_2","label":"auth_tokens (new): email, token_hash, intent_role, next_path, ip_hash, expires_at, used_at","kind":"new","x":80,"y":300}],"edges":[{"from":"entity_2","to":"entity_1","label":"n-1 by email, no FK"}]};
+const NS='http://www.w3.org/2000/svg',v=document.getElementById('v'),svg=document.getElementById('s');
+const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e};
+const W=640,H=56,pos={};
+data.edges.forEach(e=>{const a=data.nodes.find(n=>n.id===e.from),b=data.nodes.find(n=>n.id===e.to);
+ const g=el('g',{'data-a':e.from,'data-b':e.to,class:'edge'});g.appendChild(el('line',{x1:a.x+W/2,y1:a.y,x2:b.x+W/2,y2:b.y+H,stroke:'#6b7280','stroke-width':2}));
+ const t=el('text',{x:a.x+W/2+8,y:(a.y+b.y+H)/2,fill:'#374151'});t.textContent=e.label;g.appendChild(t);v.appendChild(g)});
+data.nodes.forEach(n=>{const g=el('g',{class:'n '+n.kind,'data-id':n.id});g.appendChild(el('rect',{x:n.x,y:n.y,width:W,height:H}));
+ const t=el('text',{x:n.x+12,y:n.y+33});t.textContent=n.label;g.appendChild(t);
+ g.addEventListener('click',ev=>{ev.stopPropagation();const keep=new Set([n.id]);data.edges.forEach(e=>{if(e.from===n.id)keep.add(e.to);if(e.to===n.id)keep.add(e.from)});
+  document.querySelectorAll('.n').forEach(x=>x.classList.toggle('dim',!keep.has(x.dataset.id)));
+  document.querySelectorAll('.edge').forEach(x=>x.classList.toggle('dim',!(keep.has(x.dataset.a)&&keep.has(x.dataset.b))))});
+ v.appendChild(g)});
+svg.addEventListener('click',()=>document.querySelectorAll('.dim').forEach(x=>x.classList.remove('dim')));
+let k=1,tx=0,ty=0,drag=null;const ap=()=>v.setAttribute('transform',`translate(${tx},${ty}) scale(${k})`);
+svg.addEventListener('wheel',e=>{e.preventDefault();k=Math.min(4,Math.max(.3,k*(e.deltaY<0?1.1:.9)));ap()},{passive:false});
+svg.addEventListener('mousedown',e=>drag=[e.clientX-tx,e.clientY-ty]);addEventListener('mouseup',()=>drag=null);
+addEventListener('mousemove',e=>{if(drag){tx=e.clientX-drag[0];ty=e.clientY-drag[1];ap()}});
+</script></body></html>
