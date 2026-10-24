@@ -1,0 +1,109 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './badge.stories';
+
+<Meta of={Stories} />
+
+# Badge
+
+## 1. Purpose
+
+A badge shows the state of a booking or payment so the user sees it from a distance — the only place where colour carries meaning.
+
+## 2. When to use
+
+- Booking and payment states: **Awaiting payment**, **Paid**, **Declined**, **Refunded**, **No-show**, **Held**, **Paid out** (E03, R01.3).
+- Time-bound warnings: **Free cancellation ends in 12 h** (E03-S03).
+- Neutral labels in admin tables: role **Mentor**, **Admin** (existing admin screen).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| Counts of unread items, "New" | nothing — not in the product | R02.4, A01 |
+| Ratings, "Top rated", membership | nothing | A03, A04 |
+| An action | Button | WAI-ARIA |
+| A message the user must act on | Alert (batch 3) | prompt "What to avoid" |
+| A tag or filter chip | not in plan → "What is missing" | rule 6 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Pill | yes | `--radius-full` — the only pill in the system (R01.3) |
+| Text | yes | 13 px medium; the state in words, always |
+| Icon | no | not used; text carries the meaning (PROPOSAL) |
+
+## 5. Variants
+
+| Variant | When | Tokens | Contrast |
+|---|---|---|---|
+| `neutral` (default) | roles, "Not in catalogue" | `--secondary` / `--secondary-foreground` | 8.29 : 1 |
+| `success` | paid, held, paid out | `--status-success-bg` / `--status-success` | 6.16 : 1 |
+| `warning` | awaiting payment, cancellation window closing | `--status-warning-bg` / `--status-warning` | 5.44 : 1 |
+| `danger` | declined, refunded, no-show | `--status-danger-bg` / `--status-danger` | 6.10 : 1 |
+
+The admin panel uses `neutral` (roles), `success` ("Connected"), `danger` ("Database unreachable") and `warning` ("Local only"). Legacy shadcn names were removed on 2026-10-24 after the app migrated.
+
+<Canvas of={Stories.Statuses} />
+<Canvas of={Stories.InAListRow} />
+<Canvas of={Stories.AdminPanel} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+A badge is not interactive: hover, focus, pressed, disabled, loading and error do not apply. Its variants are the states of the thing it labels. Never use a badge as a link (PROPOSAL; `asChild` remains for compatibility).
+
+## 7. Behaviour and accessibility
+
+- Plain text in a `span`; screen readers read the word, so the state is never colour alone (WCAG 1.4.1, R01.3).
+- In a table, the badge sits in its own "Status" column so the header names it (WCAG 1.3.1).
+- No tab stop; not a target.
+
+<Canvas of={Stories.TextAlwaysPresent} />
+
+## 8. Content
+
+- One to four words, sentence case, past participle or state: **Paid**, **Awaiting payment** (L3).
+- Durations short and concrete: **ends in 12 h**; dates as **30 Oct**.
+- No emoji, no exclamation marks (L3, R02.5). Longer translations: the badge does not wrap; the row wraps instead.
+
+## 9. Responsive behaviour
+
+Same size at every width; in list rows at 320 px the badge moves under the row text (flex-wrap).
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `variant` | `'neutral' \| 'success' \| 'warning' \| 'danger'` | `'neutral'` | State colour |
+| `asChild` | `boolean` | `false` | Kept for compatibility; avoid |
+
+## 11. Code
+
+```tsx
+<Badge variant="success">Paid</Badge>
+```
+
+```tsx
+const look = { awaiting_payment: 'warning', paid: 'success', declined: 'danger', refunded: 'danger' } as const;
+const text = { awaiting_payment: 'Awaiting payment', paid: 'Paid', declined: 'Declined', refunded: 'Refunded' };
+<Badge variant={look[booking.status]}>{text[booking.status]}</Badge>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| **Refunded** in `danger` with the word (R01.3). | A red dot with no text (WCAG 1.4.1). |
+| Colour only on states (R01.3, K2). | Badges for skills or stacks in accent colour — "everything in pills" (A01). |
+| Status in its own column. | A badge as the only way to cancel or pay. |
+
+## 13. Related
+
+- Confused with: Alert (message with action), Button (action), tag chips (missing).
+- Appears in: bookings list (E03), payouts (E03-S05), admin users (existing), List with filters pattern (stage 3).

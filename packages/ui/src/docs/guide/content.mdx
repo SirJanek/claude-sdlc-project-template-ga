@@ -1,0 +1,39 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Content" />
+
+# Content
+
+## Tone (L3)
+Short and concrete: what happened and what to do. No exclamation marks, no "Super!", no emoji, no marketing inside the app.
+
+| DevMentor says | DevMentor does not say |
+|---|---|
+| "Payment did not go through. Try another card." | "Oops! Something went wrong 😕" |
+| "Earliest start: Tomorrow, 18:00" | "Top-rated mentors waiting for you!" |
+| "Marta has not published slots after Friday." | "Join our growing community of 10,000 developers" |
+
+## Buttons
+Verb + object, ≤ ~4 words / 32 characters: **Book this time**, **Pay $45**, **Decline question**, **Save prices**. Never "OK", "Submit", "Yes" (prompt, stage 2 decision 10).
+
+## Errors
+What happened + what to do + reassurance about data: "Prices were not saved. The server returned an error. Your values are kept. Try again in a minute."
+
+## Empty states
+Why it is empty + next step: "No sessions yet. Open a mentor's link or the catalogue to book your first 25-minute session."
+
+## Formats (PROPOSAL — not in the brief)
+
+| What | Format | Example |
+|---|---|---|
+| Date | `en-GB`, weekday short + day + month | Tue 27 Oct |
+| Time | 24 h, viewer's time zone | 18:00 |
+| Duration | number + "min" | 25 min |
+| Money | USD, `$` + whole number, `tabular-nums` | $45 |
+| Code, file names, commands | monospace (R01.2) | `packages/ui/tsconfig.json` |
+
+## Spelling (PROPOSAL, agent test 1)
+British English in UI copy ("Favourite", "colour", "cancelled"); American English in code paths and identifiers (`favorites`, `color`), following AGENTS.md concept names.
+
+## Result counts and row actions
+"3 mentors", "2 of 3 saved mentors" (`resultCount`). Pending labels: verb + "…" ("Removing…"). Row action failure: "Not removed. Check your connection and try again." 

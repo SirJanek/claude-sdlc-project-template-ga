@@ -1,0 +1,60 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { SpaceScale, LayoutFrame } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Spacing and layout" />
+
+# Spacing and layout
+
+One scale (4, 8, 12, 16, 24, 32, 48, 64 px) used only through **relation tokens**: a component says
+"between items in a group", never "8 px". Two densities exist on purpose (K1): lists are as tight as a
+GitHub pull-request list (R01.1); the text session has more air between messages (R02.2).
+
+## Relations
+
+<Unstyled>
+  <SpaceScale
+    rows={[
+      { token: '--space-inline', relation: 'between items in a group', example: 'badge next to a name, icon next to a label, two buttons side by side', source: 'R01.1' },
+      { token: '--space-stack', relation: 'between groups inside a panel', example: 'form fields, a title and its list, a message and the next', source: 'R01.1' },
+      { token: '--space-panel', relation: 'inside a panel or card (padding)', example: 'card padding, dialog padding', source: 'R01.1' },
+      { token: '--space-section', relation: 'between sections of a page', example: 'profile header and slot list, two cards on a page', source: 'R01.5' },
+      { token: '--density-list-row-height', relation: 'list density: row height', example: 'slots, questions, users', source: 'K1' },
+      { token: '--density-list-row-padding-x', relation: 'list density: row padding, horizontal', example: 'cells of a list row', source: 'K1' },
+      { token: '--density-thread-gap', relation: 'thread density: between messages', example: 'text session', source: 'K1, R02.1' },
+      { token: '--density-thread-author-gap', relation: 'thread density: author line to message body', example: 'text session', source: 'R02.1' },
+    ]}
+  />
+</Unstyled>
+
+Tailwind utilities: `gap-inline`, `space-y-stack`, `p-panel`, `py-section`, `px-list-row-x`, `py-list-row-y`,
+`gap-thread-gap`. Any numeric spacing class (`p-5`, `mt-7`) or arbitrary value (`p-[13px]`) is a lint error.
+
+## Layout
+
+Content is a single column, left-aligned, with a maximum width of `--layout-max` (64 rem, the app's current
+`max-w-5xl`). Check every screen at the three widths below; at 320 px nothing scrolls horizontally.
+
+<Unstyled>
+  <div style={{ display: 'grid', gap: 'var(--space-section)' }}>
+    <LayoutFrame width={320}>
+      <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-base)' }}>One column. Navigation collapses to a menu. The question panel of a session stacks above the thread and can be collapsed.</p>
+    </LayoutFrame>
+    <LayoutFrame width={768}>
+      <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-base)' }}>One column with full navigation. Session: question panel above the thread. Lists show all columns; long cells wrap.</p>
+    </LayoutFrame>
+    <LayoutFrame width={1040}>
+      <p style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 'var(--text-base)' }}>1440 px viewport, content capped at 64 rem and left-aligned. Session: question panel beside the thread (R02.3). Nothing is centred on the page except dialogs.</p>
+    </LayoutFrame>
+  </div>
+</Unstyled>
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Spacing comes from relation tokens; a number in a class is a lint error. | K1, prompt rule 3 |
+| Lists are rows separated by `--border` lines, never cards in a grid. | R01.1, A03 |
+| Flat navigation: Sessions, Profile, Payouts for mentors; mentees see only their sessions. No sidebar with sections. | R02.6 |
+| Session layout: question and context beside the thread from 1024 px up, stacked below that. | R02.3 |
+| Content is left-aligned; centring is for dialogs only. | A01 ("everything centred") |
+| 320, 768 and 1440 px are checked for every screen; horizontal scroll at 320 px is a defect (the current admin header fails this). | audit 2026-10-19 |

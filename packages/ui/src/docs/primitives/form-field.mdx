@@ -1,0 +1,124 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './form-field.stories';
+
+<Meta of={Stories} />
+
+# Label and form field
+
+`Label` is the shadcn primitive (`@mentorhub/ui` → `Label`). `FormField` (`@mentorhub/ui` → `FormField`, in
+`src/backend/forms/`) wires a label, one control, a hint and an error together so the accessibility links are never
+forgotten.
+
+## 1. Purpose
+
+A form field tells the user what to enter, how, whether it is needed, and what went wrong — next to the field.
+
+## 2. When to use
+
+- Every Input and Textarea in sign-up (E01), profile and prices (E02), booking question (E03).
+- `Label` alone next to a Checkbox (label to the right) or where a control already has its own layout.
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| A group of checkboxes or radios | `<fieldset>` with `<legend>` (see Checkbox → Group) | WCAG 1.3.1 |
+| An error about the whole form or the server | Alert at the top of the form (batch 3), focus moves to the first field error | prompt stage 3, WCAG 3.3.1 |
+| Saved confirmation | Toast (Etap 0 decision 3) | — |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Label | yes | 14 px medium, above the control |
+| Necessity marker | optional | "Required" or "Optional" in 13 px muted text after the label |
+| Control | yes | exactly one: Input, Textarea or a component that takes `id` and `aria-*` |
+| Hint | optional | 13 px `--muted-foreground`, below the control |
+| Error | when invalid | icon + 13 px `--destructive` text, below the control, read first |
+
+## 5. Variants
+
+| Variant | When | Source |
+|---|---|---|
+| Plain | the field is obvious | — |
+| With hint | format or consequence must be known before typing | WCAG 3.3.2 |
+| `necessity="required"` | the form mixes required and optional fields; marks the control `required` | WCAG 3.3.2 |
+| `necessity="optional"` | mark the minority: if most fields are required, mark the optional ones | PROPOSAL |
+
+<Canvas of={Stories.Parts} />
+<Canvas of={Stories.LabelOnly} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | What changes | Source |
+|---|---|---|
+| Default, hover, focus | from the control (see Input) | — |
+| Error | message with icon below, `aria-invalid="true"` on the control, `--destructive` border | WCAG 1.4.1, 3.3.1 |
+| Disabled | label stays readable; hint says why | WCAG 3.3.2, PROPOSAL |
+| Pressed, selected, loading | not applicable to a field wrapper | — |
+
+## 7. Behaviour and accessibility
+
+- The label is a real `<label for>`: clicking it focuses the control (WCAG 1.3.1).
+- `aria-describedby` lists the error first, then the hint, then any description the control already had; screen readers read "Link to public work, required, invalid entry, Enter a full link…" (WCAG 3.3.1, 4.1.2).
+- Validation runs when the user leaves the field and on submit, never on every key press (prompt stage 3).
+- The error icon is decorative (`aria-hidden`); the text carries the meaning (WCAG 1.4.1).
+
+<Canvas of={Stories.Validation} />
+
+## 8. Content
+
+- Label: noun phrase, sentence case, no colon, at most about 5 words (L3).
+- Hint: one sentence with the consequence or format: "Mentees see it instead of ratings." (A03).
+- Error: what happened and what to do, with an example: "Enter a full link starting with https://, for example https://github.com/anna-kowalska." No "Invalid input", no exclamation marks (L3).
+- Long labels and errors wrap; never truncate them.
+
+## 9. Responsive behaviour
+
+One column at 320 px; label always above the control (never side by side) at 768 and 1440 px too, so long translations fit (PROPOSAL).
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `label` | `string` | — | Visible name; required |
+| `children` | `ReactElement` | — | Exactly one control |
+| `hint` | `ReactNode` | — | Help shown below the control |
+| `error` | `ReactNode` | — | Error message; sets `aria-invalid` |
+| `necessity` | `'required' \| 'optional'` | — | Marker after the label; `required` also sets `required` on the control |
+| `className` | `string` | — | Layout of the wrapper only |
+
+`Label` takes all props of Radix Label (`htmlFor`, `className`).
+
+## 11. Code
+
+```tsx
+<FormField label="E-mail" necessity="required">
+  <Input type="email" autoComplete="email" />
+</FormField>
+```
+
+```tsx
+<FormField label="Price for a 50-minute session (USD)" hint="Shown on your profile next to each slot." error={errors.price50}>
+  <Input inputMode="decimal" className="font-mono" value={price50} onChange={onPrice50} onBlur={validatePrice50} />
+</FormField>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Error under the field, saying what to do (L3, WCAG 3.3.3). | Error only in a toast — it disappears and is not next to the field (Etap 0 decision 3). |
+| Label above the field, always visible (WCAG 3.3.2). | Placeholder as label. |
+| Validate on blur and on submit (prompt stage 3). | Red error while the user is still typing the first character. |
+
+## 13. Related
+
+- Confused with: Alert (form-level message), Tooltip (never for information needed to act).
+- Appears in: Form pattern, sign-up, profile, prices and booking screens (stage 3); `CrudForm` will move to FormField in a later batch (PROPOSAL).

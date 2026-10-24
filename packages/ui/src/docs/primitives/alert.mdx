@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './alert.stories';
+
+<Meta of={Stories} />
+
+# Alert
+
+## 1. Purpose
+
+Shows a message in the page next to its cause: what happened and what to do.
+
+## 2. When to use
+
+Booking confirmations, cancellation windows, payment errors after an action.
+
+## 3. When not to use
+
+Short save confirmations (Toast), states of a row (Badge), empty lists (Empty state).
+
+## 4. Anatomy
+
+Box (`--border`, `--status-*-bg`), title 14 px semibold, description. No icon as the only carrier.
+
+## 5. Variants
+
+`neutral`, `success`, `warning`, `danger` on `--status-*` (shadcn: `default`/`destructive`).
+
+<Canvas of={Stories.Variants} />
+
+## 6. States
+
+Static. `danger` gets `role="alert"`, others `role="status"`.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+`variant`, `role` override.
+
+## 11. Code
+
+```tsx
+<Alert variant="warning"><AlertTitle>Free cancellation ends in 12 h</AlertTitle><AlertDescription>After that 120 zł is charged.</AlertDescription></Alert>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Toast, Badge, Error state. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

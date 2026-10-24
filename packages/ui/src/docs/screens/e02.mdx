@@ -1,0 +1,32 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './e02.stories';
+
+<Meta of={S} />
+
+# E02 Mentors become bookable
+
+Backlog: E02 (#21), S01 (#28), S02 (#29), S03 (#30), S04 (#31). **No spec yet** — screens are PROPOSALS from the brief.
+
+## Flow
+1. Mentor writes headline and link to public work (R08, no scores — N02).
+2. Mentor sets 25/50-minute prices (R11) and publishes slots (R01).
+3. Mentor shares the link; optionally joins the catalogue (R09, D06).
+4. Mentee opens the link or catalogue and sees price and earliest start before writing anything (R03, D05).
+
+## Screens and state map
+
+| State | Story |
+|---|---|
+| Profile editing | Mentor · edit profile |
+| Prices form (all API states in Patterns/Form) | Mentor · set prices |
+| Mentor page | Mentee · mentor page from link |
+| Page does not exist / unpublished | Mentee · mentor page — not found |
+| Catalogue results / loading / error / empty / no results | Mentee · catalogue … |
+
+<Canvas of={S.PublicProfile} />
+<Canvas of={S.Catalogue} />
+
+## Work left in the product
+- Slot publishing editor (mentor side) — no component; needs spec (What is missing).
+- Profile photo field (Avatar is photo-only).
+- Tabs vs flat navigation for mentor (R02.6) — screens use flat navigation.

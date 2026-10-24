@@ -60,7 +60,7 @@ export function SessionMenu({
       <span data-slot="session-user" className="font-medium">
         {user.name ?? user.email}
       </span>
-      {user.id === DEV_ADMIN_ID ? <Badge variant="destructive">Dev admin — local only</Badge> : null}
+      {user.id === DEV_ADMIN_ID ? <Badge variant="warning">Dev admin — local only</Badge> : null}
       <Button variant="outline" size="sm" onClick={signOut}>
         Sign out
       </Button>

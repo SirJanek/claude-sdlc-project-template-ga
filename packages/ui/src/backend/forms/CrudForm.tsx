@@ -26,7 +26,7 @@ export interface CrudFormProps<T> {
 }
 
 const inputClass =
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive';
+  'h-control w-full rounded-lg border border-border-strong bg-background px-3 text-base outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring aria-invalid:border-status-danger';
 
 /** Schema-driven create/edit form: client validation, server field errors, Cmd/Ctrl+Enter, Escape. */
 export function CrudForm<T>({
@@ -81,7 +81,7 @@ export function CrudForm<T>({
   return (
     <form noValidate onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="grid gap-4">
       {formError ? (
-        <p role="alert" className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+        <p role="alert" className="rounded-lg bg-status-danger-bg p-3 text-sm text-status-danger">
           {formError}
         </p>
       ) : null}

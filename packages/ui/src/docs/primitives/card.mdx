@@ -1,0 +1,116 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './card.stories';
+
+<Meta of={Stories} />
+
+# Card and panel
+
+## 1. Purpose
+
+A card (panel) groups the information about one thing on a white surface so it reads as one unit on the warm page background.
+
+## 2. When to use
+
+- Booking summary on the mentor page: name, prices, earliest start, **Book session** (E02-S03).
+- Session question panel next to the conversation (R02.3, E04-S01).
+- Admin panels: Database status, Users table (existing `packages/app` admin screens), payouts per week (E03-S05).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| A list of slots, bookings, users | Rows divided by `--border`, no cards | R01.1 |
+| A group inside a card | A `--border` line and `--space-stack` gap — never a card in a card | A01 |
+| A grid of identical mentor tiles | List rows | A03 (marketplace tiles), A01 (three identical cards) |
+| Separating content by shadow | A 1 px `--border` line | R01.1 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Surface | yes | `--card`, 1 px `--border`, 6 px radius, padding `--space-panel` 16 px, no shadow |
+| Header | optional | grid: title + description; action on the right when present |
+| Title | optional | heading (`h2` by default, `as="h3"` inside sections), 20 px semibold (`--text-xl` "panel title") |
+| Description | optional | 13 px `--muted-foreground` |
+| Action | optional | one badge or small button top-right |
+| Content | yes | free layout; groups separated by `--border` |
+| Footer | optional | row of actions, gap `--space-inline` |
+
+## 5. Variants
+
+One variant. "Panel" is the same component used as a page region (session question, admin table); there is no separate component.
+
+<Canvas of={Stories.WithActionAndFooter} />
+<Canvas of={Stories.GroupsInsideOneCard} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+A card is not interactive: hover, focus, pressed, selected, disabled and error do not apply. Do not make the whole card clickable; put a Button or link inside (WCAG 2.4.4, PROPOSAL). Loading, empty, error and long-data states belong to the product components built on it (stage 3).
+
+## 7. Behaviour and accessibility
+
+- The title is a real heading, so screen-reader users can jump between panels (WCAG 1.3.1, 2.4.6). Choose the level that fits the page outline with `as`.
+- No role or tab stop on the card itself.
+- Hit-area rule applies to the buttons inside (WCAG 2.5.8).
+
+<Canvas of={Stories.NoShadowNoNesting} />
+
+## 8. Content
+
+- Title names the thing: **Booking DM-4821**, **Payouts**, a person's name — not "Details" (L3).
+- Description is one line of context (date and time with time zone, length).
+- Numbers right-aligned with `tabular-nums`; identifiers in monospace (R01.2).
+
+## 9. Responsive behaviour
+
+Cards take the column width (max `--layout-max`). At 320 px the header action wraps under the title only if the title is very long; text wraps, never truncates.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Component | Props | Default | Description |
+|---|---|---|---|
+| `Card` | `div` props | — | Surface |
+| `CardHeader` | `div` props | — | Two columns when a `CardAction` is inside (`--card-header-columns`) |
+| `CardTitle` | `as?: 'h2' \| 'h3' \| 'h4'` | `'h2'` | Heading (shadcn rendered a `div`) |
+| `CardDescription` | `p` props | — | Muted line |
+| `CardAction` | `div` props | — | Top-right slot |
+| `CardContent`, `CardFooter` | `div` props | — | Body, actions row |
+
+## 11. Code
+
+```tsx
+<Card>
+  <CardHeader><CardTitle>Payouts</CardTitle></CardHeader>
+  <CardContent>…</CardContent>
+</Card>
+```
+
+```tsx
+<Card className="max-w-md">
+  <CardHeader>
+    <CardTitle>Marta Kowalczyk</CardTitle>
+    <CardDescription>Platform engineer · Kubernetes, Helm, Terraform</CardDescription>
+  </CardHeader>
+  <CardContent>{/* prices and earliest start */}</CardContent>
+  <CardFooter><Button>Book session</Button></CardFooter>
+</Card>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Groups inside a card divided by lines (R01.1). | A card inside a card (A01). |
+| 1 px line, no shadow (R01.1). | `shadow-md` to lift the card (A01). |
+| One card for the booking summary next to a list. | Three identical cards with an icon each (A01). |
+
+## 13. Related
+
+- Confused with: list rows (use for collections), Dialog (batch 3).
+- Appears in: mentor page (E02-S03), session layout (E04-S01), admin (E05-S01), Detail view pattern (stage 3).

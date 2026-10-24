@@ -87,3 +87,27 @@ jobs:
       - uses: actions/checkout@v7
       - uses: ./.github/actions/setup
       - run: make audit
+
+  tokens:
+    name: Design tokens
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      # Own linter from Storybook stage 1 instead of the lesson grep: it also catches raw --dm-* and
+      # opacity on action colours, and its own bait-file test runs first (lekcja 06).
+      - run: make lint-tokens
+
+  storybook:
+    name: Storybook tests (a11y + interactions)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: ./.github/actions/setup
+      # vitest.config.ts launches the installed Chrome (channel: 'chrome'), not bundled Chromium
+      - name: Install Playwright Chrome
+        run: pnpm --filter @mentorhub/ui exec playwright install --with-deps chrome
+      # Light theme only (L2): .dark stays unused until a dark theme is decided
+      - run: make test-storybook

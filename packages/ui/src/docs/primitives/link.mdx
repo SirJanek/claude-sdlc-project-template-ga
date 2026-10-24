@@ -1,0 +1,118 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './link.stories';
+
+<Meta of={Stories} />
+
+# Link and text action
+
+This page documents one component used two ways: `Button variant="link"` for an **action** on this page, and
+`Button variant="link" asChild` with `<a href>` for **navigation**. There is no separate Link component (rule 6);
+a dedicated `TextLink` for running text is a PROPOSAL in "What is missing".
+
+## 1. Purpose
+
+A link takes the user somewhere else (a profile, the session, the rules); a text action does something small without the weight of a button.
+
+## 2. When to use
+
+- Navigation: **Anna Kowalska’s profile** in a booking row, **Open session** in a reminder, **cancellation rules** in a sentence (R02.6: flat navigation).
+- Text action: **Change slot** next to the chosen slot at checkout, **View public work** on a mentor row (R01.5: secondary actions as link).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| The main action of the screen | Button `default` | R01.5 |
+| An action that changes money or a booking (Pay, Decline) | Button `default` / `destructive` | R01.3, R01.5 |
+| Opening a menu of actions | Menu (batch 3) | WAI-ARIA APG |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Text | yes | underlined, `--primary` |
+| Element | yes | `<button>` for actions, `<a href>` for navigation |
+| Icon | optional | trailing external-link icon only for links leaving DevMentor (PROPOSAL) |
+
+## 5. Variants
+
+| Variant | When | Source |
+|---|---|---|
+| Text action (`<button>`) | Does something on this page | WAI-ARIA APG Button |
+| Navigation link (`<a href>`) | Goes to another URL | WAI-ARIA APG Link |
+| Link in running text | Inside a sentence | WCAG 1.4.1 |
+
+<Canvas of={Stories.TextAction} />
+<Canvas of={Stories.NavigationLink} />
+<Canvas of={Stories.InRunningText} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Default | `--primary` text, always underlined | WCAG 1.4.1, decision 4 |
+| Hover, pressed | `--primary-hover` text | K2 |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Disabled | `--muted-foreground`, only for text actions; links are never disabled — remove them instead | PROPOSAL |
+| Loading, selected, error | not applicable: a link has no such states | — |
+
+Why disabled: the reason sits in the same sentence or row, e.g. "Slot changes close 12 h before the session" (R06).
+
+## 7. Behaviour and accessibility
+
+- Link: Enter follows it; Tab focuses it. Text action: Enter and Space activate it (WAI-ARIA APG).
+- Role: `link` for `<a href>`, `button` for the text action — screen readers announce which one it is.
+- Underline is the non-colour cue (WCAG 1.4.1); link colour on the page background is 5.66 : 1.
+- Target: stand-alone text actions are at least 24 px tall (`min-h-6`); links inside a sentence are exempt (WCAG 2.5.8, inline exception).
+
+<Canvas of={Stories.ClickAndKeyboard} />
+<Canvas of={Stories.LinkIsAnchor} />
+
+## 8. Content
+
+- Link text names the destination: **cancellation rules**, **Anna Kowalska’s profile**; never **here** or **read more** (WCAG 2.4.4).
+- Text action: verb + object, at most 3 words: **Change slot** (L3).
+- Translation: link text may wrap inside running text; stand-alone text actions do not wrap (PROPOSAL).
+
+## 9. Responsive behaviour
+
+Same at 320, 768 and 1440 px; in running text the link wraps with the sentence.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+Uses the Button API (see Button). Relevant props: `variant="link"`, `asChild`, `onClick`, `disabled`. `size` is ignored for links.
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `variant` | `'link'` | — | Required to get link styling |
+| `asChild` | `boolean` | `false` | `true` with an `<a href>` child for navigation |
+| `onClick` | `() => void` | — | Text action only |
+
+## 11. Code
+
+```tsx
+<Button variant="link" onClick={onChangeSlot}>Change slot</Button>
+```
+
+```tsx
+<Button variant="link" asChild>
+  <a href={`/m/${mentor.slug}`}>{mentor.name}’s profile</a>
+</Button>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Underlined **cancellation rules** in the sentence — recognisable without colour (WCAG 1.4.1). | Underline only on hover — colour becomes the only cue. |
+| `<a href>` for a profile — middle-click and "open in new tab" work. | `<button onClick={() => router.push()}>` for navigation — breaks browser behaviour (WAI-ARIA APG). |
+| **Open session** | **Click here** (WCAG 2.4.4). |
+
+## 13. Related
+
+- Confused with: Button `ghost` (action with more weight), Tabs (switching views, batch 4).
+- Appears in: booking rows (mentor name), checkout (Change slot), notices with rules (stage 3 patterns).
