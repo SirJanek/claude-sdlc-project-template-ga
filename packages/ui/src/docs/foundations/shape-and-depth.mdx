@@ -1,0 +1,35 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { ShapeSamples, TokenValue } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Shape and depth" />
+
+# Shape and depth
+
+Flat and lined. Content is separated by **1 px lines**, not by shadows or stacked cards (R01.1). Corners are
+small; the only pill is the status badge (A01).
+
+<Unstyled>
+  <ShapeSamples />
+  <p><TokenValue token="--radius" /> · <TokenValue token="--radius-full" /> · <TokenValue token="--shadow-card" /></p>
+</Unstyled>
+
+## When to use what
+
+| Element | Radius | Border | Shadow | Source |
+|---|---|---|---|---|
+| Button, text field, select | `--radius` (6 px) | `--border-strong` for outline buttons and fields | none | R01.1, WCAG 1.4.11 |
+| Card, panel, dialog | `--radius` | `--border` | none (`--shadow-card`) | R01.1, A01 |
+| List row | none | bottom `--border` | none | R01.1 |
+| Status badge | `--radius-full` | none | none | R01.3 |
+| Popover, menu | `--radius` | `--border-strong` | none | R01.1 |
+| Avatar (photo only) | `--radius` | `--border` | none | stage 0 decision 2 |
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| No `rounded-2xl`, `rounded-3xl`, no pill-shaped buttons or cards. | A01 |
+| No card inside a card. A card contains rows, text or a form, never another card. | A01 |
+| Shadows are not used to separate content; a border is. | R01.1 |
+| A popover or menu that floats over content is separated by `--border-strong` and the page is not dimmed. | R01.1 |
+| No glass: no `backdrop-blur`, no translucent surfaces. | A01 |

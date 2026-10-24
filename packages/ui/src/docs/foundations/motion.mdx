@@ -1,0 +1,24 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { MotionSample } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Motion" />
+
+# Motion
+
+Motion confirms an interaction and nothing more. Hover and focus transitions take `--motion-fast` (120 ms);
+nothing animates on entrance, nothing pulses, nothing floats (A01). Users who ask for reduced motion get none:
+`globals.css` sets every transition and animation to 0.01 ms under `prefers-reduced-motion: reduce`.
+
+<Unstyled>
+  <MotionSample />
+</Unstyled>
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Transitions only on hover, focus, pressed and open/close of menus and dialogs; duration `--motion-fast`. | proposal accepted in tokeny.md ("ruch") |
+| No reveal-on-scroll, no counters counting up, no floating cards, no pulsing dots. | A01, audit 2026-10-19 |
+| Loading is shown with a skeleton or a loading message that says what is loading, not with a spinning hero. | R02.4 (signals only for money and time) |
+| `prefers-reduced-motion: reduce` disables all motion globally; components do not need to handle it individually. | WCAG 2.3.3 |
+| A message sent in the session appears immediately in place; no slide-in. | R02.2 |

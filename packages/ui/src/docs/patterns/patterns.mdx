@@ -1,0 +1,41 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './patterns.stories';
+
+<Meta of={S} />
+
+# Patterns
+
+Each pattern has every state as a separate story (see the sidebar).
+
+## Form — "Set your prices" (E02-S02)
+
+Rules: label always visible, placeholder is only an example (WCAG 3.3.2); validate on blur and on submit; after a failed submit focus moves to the first error (WCAG 3.3.1); typed values stay; double submit blocked (button disabled + `aria-busy`); success shown only after the server confirms. Server and network errors are an `Alert` in the form, never a toast (stage 0 decision 3).
+
+API states: success, pending, field error, server error, no network — simulated with a fake async call in the story (PROPOSAL instead of MSW handlers).
+
+<Canvas of={S.FormFieldError} />
+
+## List with filters — catalogue (E02-S04)
+
+Result count in a `role="status"` line; active filter shown as a removable button ("Python ×", named "Remove filter Python"); separate states "no results for filters" (action **Clear filters**) and "nothing here yet" (explains why: mentors opt in, R09).
+
+<Canvas of={S.ListFiltered} />
+<Canvas of={S.ListNoResults} />
+
+## Detail view — mentor page (E02-S03)
+
+Name, price and earliest start and the main action are above the fold (R03, D05). Missing or unpublished page = its own state with a way out.
+
+<Canvas of={S.DetailDefault} />
+
+## Destructive confirmation — decline question (E03-S02)
+
+The question names the person and the consequence (full refund, R12); **Keep booking** is outline, left, focused first; the action is a verb (**Decline question**), never "OK".
+
+<Canvas of={S.ConfirmDecline} />
+
+## Key backlog patterns
+
+Book and pay (E03-S01): question → price summary → **Pay $45** → confirmed on payment (R04, R05, R10). Status always as text + colour (R01.3).
+
+<Canvas of={S.BookAndPay} />

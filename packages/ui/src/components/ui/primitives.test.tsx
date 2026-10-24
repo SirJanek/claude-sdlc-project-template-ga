@@ -29,7 +29,7 @@ describe('shadcn primitives', () => {
   it('Badge renders as span or as its child element', () => {
     render(
       <>
-        <Badge variant="secondary">mentor</Badge>
+        <Badge variant="neutral">mentor</Badge>
         <Badge asChild>
           <a href="/y">tag</a>
         </Badge>
@@ -37,7 +37,7 @@ describe('shadcn primitives', () => {
     );
     expect(screen.getByText('mentor').tagName).toBe('SPAN');
     expect(screen.getByText('tag').tagName).toBe('A');
-    expect(badgeVariants({ variant: 'destructive' })).toContain('destructive');
+    expect(badgeVariants({ variant: 'danger' })).toContain('text-status-danger');
   });
 
   it('Card renders every part with its data-slot', () => {

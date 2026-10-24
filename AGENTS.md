@@ -87,6 +87,10 @@ New reusable components have one designated home each — never scattered ad hoc
 Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 `app/src/app/admin/users/page.tsx` (`apiCall` + `DataTable`).
 
+## Design system (read first for any UI work)
+
+Before building or changing a screen, read [`docs/design-system.md`](docs/design-system.md): components with when/when-not, semantic tokens, "if… then use…" guides and what to avoid. Storybook: `pnpm --filter @mentorhub/ui storybook`.
+
 ## Commands
 
 | Task | Command |

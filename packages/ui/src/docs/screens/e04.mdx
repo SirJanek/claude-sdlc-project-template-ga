@@ -1,0 +1,26 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './e04.stories';
+
+<Meta of={S} />
+
+# E04 Text session
+
+Backlog: E04 (#23), S01 (#33). **No spec yet** — layout PROPOSAL from R02.2, R02.3.
+
+## Flow
+1. Before start: question visible, writing closed.
+2. Live: full-width entries (author bold, time small grey — R02.1), composer at the bottom, Enter sends (R02.2).
+3. Ended: composer replaced by a sentence; the conversation stays, visible only to the two people (E04-S01, R02).
+
+## Screens and state map
+
+| State | Story |
+|---|---|
+| Before start | Before start |
+| Live | Live |
+| Ended | Ended |
+
+<Canvas of={S.Live} />
+
+## Work left in the product
+- Sending failure and reconnect states; time remaining indicator (PROPOSAL, not specified). No "typing…", no read receipts (A05).

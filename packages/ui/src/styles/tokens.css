@@ -1,0 +1,145 @@
+/*
+ * DevMentor design tokens.
+ * Source of every value: lekcja-06/tokeny.md (approved by Jan, 2026-10-20), derived from
+ * lekcja-06/referencje.md (R = reference, A = anti-reference, K = resolved conflict, L = gap decision).
+ *
+ * Three layers:
+ *   1. Raw values  (--dm-*)        — used ONLY in this file. Never in a component.
+ *   2. Semantic    (purpose names) — what components use. shadcn/ui names are kept so the
+ *                                     generated primitives keep working; new names where shadcn has none.
+ *   3. Component   (--density-*)   — only where a component needs its own value (K1: two densities).
+ *
+ * Contrast of every pair below was computed from these exact values before saving (see
+ * tokeny.md § "Pary kolorów z kontrastem"; lowest text pair 4.95 : 1, lowest UI pair 4.98 : 1).
+ * Light theme only in the first release (L2). The `.dark` block in globals.css is untouched and unused.
+ */
+
+:root {
+  /* ---------- Layer 1: raw palette (R01.4 + K2: warm undertone, hue 45–80) ---------- */
+  --dm-neutral-0: oklch(1 0 0);
+  --dm-neutral-50: oklch(0.985 0.004 80);
+  --dm-neutral-100: oklch(0.962 0.007 80);
+  --dm-neutral-200: oklch(0.915 0.009 80);
+  --dm-neutral-300: oklch(0.84 0.012 75);
+  --dm-neutral-500: oklch(0.52 0.018 65);
+  --dm-neutral-700: oklch(0.4 0.02 55);
+  --dm-neutral-900: oklch(0.23 0.02 45);
+
+  /* K2: one warm accent, used only for the primary action and links */
+  --dm-accent-100: oklch(0.95 0.024 50);
+  --dm-accent-600: oklch(0.52 0.16 42);
+  --dm-accent-700: oklch(0.45 0.135 42);
+
+  /* R01.3: colour carries state and nothing else */
+  --dm-success-100: oklch(0.95 0.04 150);
+  --dm-success-700: oklch(0.45 0.12 150);
+  --dm-danger-100: oklch(0.95 0.022 25);
+  --dm-danger-700: oklch(0.48 0.18 28);
+  /* Stage 2 batch 2 (default accepted 2026-10-24, to be verified by Jan): one darker step for destructive hover, by analogy to accent-700 (K2) */
+  --dm-danger-800: oklch(0.42 0.16 28);
+  --dm-warning-100: oklch(0.96 0.038 85);
+  --dm-warning-700: oklch(0.5 0.105 75);
+
+  /* L1: system font stacks, nothing downloaded; R01.2: monospace for code and file names */
+  --dm-font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --dm-font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* L1 + R01.5: type scale 13–24 px. Line heights are a PROPOSAL (not in tokeny.md). */
+  --dm-text-sm: 13px;
+  --dm-text-sm--line-height: 18px;
+  --dm-text-base: 14px;
+  --dm-text-base--line-height: 20px;
+  --dm-text-lg: 16px;
+  --dm-text-lg--line-height: 24px;
+  --dm-text-xl: 20px;
+  --dm-text-xl--line-height: 28px;
+  --dm-text-2xl: 24px;
+  --dm-text-2xl--line-height: 32px;
+
+  /* K1: one spacing scale, used only through the relation tokens below */
+  --dm-space-1: 4px;
+  --dm-space-2: 8px;
+  --dm-space-3: 12px;
+  --dm-space-4: 16px;
+  --dm-space-5: 24px;
+  --dm-space-6: 32px;
+  --dm-space-7: 48px;
+  --dm-space-8: 64px;
+
+  /* ---------- Layer 2: semantic tokens ---------- */
+  /* Surfaces */
+  --background: var(--dm-neutral-50); /* R01.4 — page background */
+  --foreground: var(--dm-neutral-900); /* R01 — ink for body text */
+  --card: var(--dm-neutral-0); /* R01.1 — panels and cards */
+  --card-foreground: var(--dm-neutral-900);
+  --popover: var(--dm-neutral-0); /* R01.1 */
+  --popover-foreground: var(--dm-neutral-900);
+  --muted: var(--dm-neutral-100); /* R01.1 — table headers, inactive field background */
+  --muted-foreground: var(--dm-neutral-500); /* R02.1 — timestamps, helper text */
+
+  /* Lines */
+  --border: var(--dm-neutral-200); /* R01.1 — row dividers, card outlines (decorative, 1.29 : 1) */
+  --input: var(--dm-neutral-200); /* shadcn name; fields themselves use --border-strong */
+  --border-strong: var(--dm-neutral-500); /* R01.1 + WCAG 1.4.11 — only border of an interactive element (5.53 : 1) */
+
+  /* Actions */
+  --primary: var(--dm-accent-600); /* K2, R01.5 — the one primary action per screen, and links */
+  --primary-foreground: var(--dm-neutral-0); /* K2 — 5.91 : 1 on --primary */
+  --primary-hover: var(--dm-accent-700); /* K2 — 7.90 : 1 with white; replaces primary/90 */
+  --secondary: var(--dm-neutral-100); /* R01.5 — secondary buttons, neutral badges */
+  --secondary-foreground: var(--dm-neutral-700);
+  --accent: var(--dm-accent-100); /* K2 — hover background in navigation, highlighted row */
+  --accent-foreground: var(--dm-accent-700); /* K2 — 6.79 : 1 on --accent */
+  --destructive: var(--dm-danger-700); /* R01.3 — decline, cancel */
+  --destructive-foreground: var(--dm-neutral-0); /* 7.18 : 1 on --destructive */
+  --destructive-hover: var(
+    --dm-danger-800
+  ); /* K2 by analogy to --primary-hover — 9.18 : 1 with white (computed 2026-10-24) */
+  --ring: var(--dm-accent-600); /* L1 accessibility — keyboard focus on every element (5.20 : 1) */
+
+  /* States (R01.3) — badge text on badge background, always with a text label */
+  --status-success: var(--dm-success-700); /* paid, held, paid out — 6.16 : 1 on its background */
+  --status-success-bg: var(--dm-success-100);
+  --status-danger: var(--dm-danger-700); /* declined, refunded, no-show — 6.10 : 1 */
+  --status-danger-bg: var(--dm-danger-100);
+  --overlay: oklch(0.23 0.02 45 / 0.5); /* PROPOSAL (batch 3): dialog backdrop, neutral-900 at 50 % — replaces shadcn bg-black/50 */
+  --status-warning: var(--dm-warning-700); /* awaiting payment, free cancellation ends in 12 h — 5.44 : 1 */
+  --status-warning-bg: var(--dm-warning-100);
+
+  /* Typography roles (L1) */
+  --font-sans: var(--dm-font-sans);
+  --font-mono: var(--dm-font-mono);
+  --measure: 65ch; /* PROPOSAL — maximum line length for running text (prompt requirement) */
+
+  /* Spacing relations (K1, R01.1, R01.5) */
+  --space-inline: var(--dm-space-2); /* between items in a group */
+  --space-stack: var(--dm-space-4); /* between groups inside a panel */
+  --space-panel: var(--dm-space-4); /* panel and card padding */
+  --space-section: var(--dm-space-7); /* between page sections */
+
+  /* Shape and depth (A01: no large radii, no pills except status badges; R01.1: lines instead of shadows) */
+  --radius: 6px;
+  --radius-full: 9999px; /* status badges only */
+  --shadow-card: none;
+
+  /* Motion (gap "ruch", proposal accepted): hover and focus only, never entrance animations */
+  --motion-fast: 120ms;
+
+  /* Layout (PROPOSAL): content width matches the app's max-w-5xl; breakpoints documented at 320 / 768 / 1440 */
+  --layout-max: 64rem;
+  /* Field widths (agent test 1, PROPOSAL — przyjęte domyślnie, do weryfikacji): filters and short fields */
+  --field-width-sm: 14rem; /* select in a filter bar, short code/number field */
+  --field-width-md: 20rem; /* e-mail, name, search */
+
+  /* ---------- Layer 3: component tokens (K1: two densities) ---------- */
+  --density-list-row-height: 40px; /* "list" density — slots, questions, users */
+  --density-list-row-padding-y: var(--dm-space-2);
+  --density-list-row-padding-x: var(--dm-space-3);
+  --density-thread-gap: var(--dm-space-5); /* "thread" density — between session messages (R02.1) */
+  --density-thread-author-gap: var(--dm-space-3); /* between author line and message body */
+  /* Controls (POSTEP, stage 2 decisions approved 2026-10-24): one control height equals one list row */
+  --density-control-height: var(--density-list-row-height); /* decision (1): buttons and fields 40 px */
+  --density-control-height-sm: var(--dm-space-6); /* decision (2): small button 32 px */
+  /* Card header (stage 2 batch 2): title column takes the space, optional action keeps its width */
+  --card-header-columns: 1fr auto;
+}

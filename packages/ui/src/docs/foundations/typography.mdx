@@ -1,0 +1,45 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { TypeScale, TokenValue } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Typography" />
+
+# Typography
+
+Two families, both from the operating system, nothing downloaded (L1): a sans for the interface and a
+monospace for anything a developer would paste, read or copy (R01.2). The scale runs from 13 to 24 px and
+has five steps; nothing on screen is smaller than 13 px.
+
+<Unstyled>
+  <p><TokenValue token="--font-sans" /></p>
+  <p><TokenValue token="--font-mono" /></p>
+</Unstyled>
+
+## Roles
+
+Pick a role, not a size. Each role maps to one size token and one weight.
+
+<Unstyled>
+  <TypeScale
+    roles={[
+      { role: 'Page title', size: '--text-2xl', weight: 600, family: 'sans', sample: 'Your sessions', useFor: 'one per page, first heading', source: 'R01.5' },
+      { role: 'Panel title', size: '--text-xl', weight: 600, family: 'sans', sample: 'Question from Marek', useFor: 'card and dialog titles', source: 'R01.5' },
+      { role: 'Session text', size: '--text-lg', weight: 400, family: 'sans', sample: 'The ingress fails because the class name changed in 1.28.', useFor: 'messages in the text session, long explanations', source: 'K1 thread density, R02.2' },
+      { role: 'Default text', size: '--text-base', weight: 400, family: 'sans', sample: 'Tue 21 Oct · 14:00–14:25 · 25 min', useFor: 'lists, forms, descriptions', source: 'L1, K1 list density' },
+      { role: 'Label', size: '--text-base', weight: 500, family: 'sans', sample: 'Price for 25 minutes', useFor: 'field labels, table headers, button text', source: 'L1' },
+      { role: 'Metadata', size: '--text-sm', weight: 400, family: 'sans', sample: 'Sent 14:03 · read by mentor', useFor: 'timestamps, helper text, counts (colour --muted-foreground)', source: 'R02.1' },
+      { role: 'Numbers', size: '--text-base', weight: 500, family: 'sans', sample: '€120.00 · 25 min · 12 h', useFor: 'prices, durations, counts; use tabular figures in tables', source: 'R01.1' },
+      { role: 'Code', size: '--text-sm', weight: 400, family: 'mono', sample: 'kubectl get ingress -n staging', useFor: 'code, file names, commands, booking ids', source: 'R01.2' },
+    ]}
+  />
+</Unstyled>
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Running text is at most about 65 characters per line: `max-width: var(--measure)` on paragraphs and session messages. | prompt stage 1.5 (proposal token `--measure`) |
+| Author lines in the session: name in Label weight, time in Metadata colour and size, on one line. | R02.1 |
+| Code, file names, commands and identifiers are always monospace, also inline in a sentence. | R01.2 |
+| No gradient text, no letter-spaced uppercase eyebrows, no coloured word inside a heading. | A01 |
+| Headings are sentence case. Button labels are verb + object ("Book and pay", "Decline question"). | L3 |
+| Minimum size 13 px; metadata is the only role that uses it. | L1 |

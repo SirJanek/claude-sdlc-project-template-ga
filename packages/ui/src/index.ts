@@ -5,14 +5,43 @@ export * from './components/ui/button';
 export * from './components/ui/card';
 export * from './components/ui/badge';
 export * from './components/ui/table';
+export * from './components/ui/input';
+export * from './components/ui/textarea';
+export * from './components/ui/label';
+export * from './components/ui/checkbox';
+export * from './components/ui/select';
+export * from './components/ui/radio-group';
+export * from './components/ui/switch';
+export * from './components/ui/avatar';
+export * from './components/ui/alert';
+export * from './components/ui/dialog';
+export * from './components/ui/alert-dialog';
+export * from './components/ui/dropdown-menu';
+export * from './components/ui/popover';
+export * from './components/ui/tooltip';
+export * from './components/ui/tabs';
+export * from './components/ui/skeleton';
+export * from './components/ui/toast';
 
 // Reusable panel layer (engineering standards › Reusable API & UI layer)
 export { apiCall, apiCallOrThrow, ApiCallError, readJsonSafe } from './backend/api/apiCall';
 export { REQUEST_HEADER, type ApiResult, type ApiErrorBody, type FieldErrors } from './backend/api/types';
 export { CrudForm, type CrudField, type CrudFormProps } from './backend/forms/CrudForm';
 export { validateWithSchema } from './backend/forms/form-state';
+export { FormField, type FormFieldProps } from './backend/forms/FormField';
 export { DataTable, type DataTableColumn, type DataTableProps } from './backend/tables/DataTable';
 export { paginate } from './backend/tables/pagination';
 export { LoadingMessage } from './backend/feedback/LoadingMessage';
-export { ErrorMessage } from './backend/feedback/ErrorMessage';
+export { ErrorMessage, ErrorState } from './backend/feedback/ErrorMessage';
 export { EmptyState } from './backend/feedback/EmptyState';
+export { RowAction, type RowActionProps, type RowActionState } from './backend/feedback/RowAction';
+export { PageHeader, type PageHeaderProps } from './backend/layout/PageHeader';
+export { FilterBar, FilterChip, resultCount, type FilterBarProps, type ActiveFilter } from './backend/filters/FilterBar';
+
+// Product components (stage 3) — one folder per concept
+export { SlotList, groupSlotsByDay, type Slot, type SlotListProps } from './components/booking/SlotList';
+export { BookingRow, bookingStatusMeta, type BookingStatus, type BookingRowProps } from './components/booking/BookingRow';
+export { PriceSummary, type PriceSummaryProps } from './components/booking/PriceSummary';
+export { MentorCard, type Mentor, type MentorCardProps } from './components/mentors/MentorCard';
+export { SessionEntry, type SessionEntryProps } from './components/session/SessionEntry';
+export { SessionComposer, type SessionComposerProps } from './components/session/SessionComposer';

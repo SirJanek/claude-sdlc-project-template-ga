@@ -1,0 +1,43 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './product.stories';
+
+<Meta of={S} />
+
+# Product components
+
+Built only from primitives and tokens. Grouped by epic. Each story set shows data states: loading, empty, error, partial data, many items, long text. Imports from `@mentorhub/ui`.
+
+| Component | Epic | Import | Use when | Don't use when |
+|---|---|---|---|---|
+| `MentorCard` | E02 | `import { MentorCard } from '@mentorhub/ui'` | A mentor in a list or catalogue: name, headline, technologies, price, earliest start, public work link | Never add ratings, stars or review counts (N02, A03) |
+| `SlotList` | E02/E03 | `import { SlotList } from '@mentorhub/ui'` | Mentee picks a time; list grouped by day, one RadioGroup (stage 0 decision 4) | A calendar grid (rejected); fewer than 2 slots → still a list |
+| `BookingRow` | E03 | `import { BookingRow } from '@mentorhub/ui'` | A booking in "My sessions" / mentor "Sessions" with a status badge (R01.3) | Status shown by colour only |
+| `PriceSummary` | E03 | `import { PriceSummary } from '@mentorhub/ui'` | Right before paying (R04), states the 12 h rule (R10) | Showing commission to the mentee (PROPOSAL: commission is a payout rule, R11) |
+| `SessionEntry` | E04 | `import { SessionEntry } from '@mentorhub/ui'` | One message in a session: author bold, time small grey, full width (R02.1, R02.2) | Bubbles, reactions, read receipts (A05, R02.5) |
+| `SessionComposer` | E04 | `import { SessionComposer } from '@mentorhub/ui'` | Bottom of a live session; Enter sends, Shift+Enter new line (R02.2) | Outside a session (no DMs, A05) |
+
+## Mentor card
+
+<Canvas of={S.E02MentorCard} />
+<Canvas of={S.E02MentorCardPartial} />
+
+Accessibility: `article` named by the mentor; the name is the profile link (one tab stop); avatar decorative (`alt=""`) because the name is printed. Technologies in mono (R01.2).
+
+## Slot list
+
+<Canvas of={S.E03SlotList} />
+
+Keyboard: Tab into the group, arrows move between times across days (WAI-ARIA radio group). Each day is a labelled `group`. Taken slots are hidden (PROPOSAL). Times in the mentee's zone, 24 h (Content).
+
+## Booking row and price summary
+
+<Canvas of={S.E03BookingRows} />
+<Canvas of={S.E03PriceSummary} />
+
+## Session entry and composer
+
+<Canvas of={S.E04SessionThread} />
+
+Composer is `sticky` to the bottom of the scrolling conversation. While sending, the button is disabled with `aria-busy` (double send blocked). When the session is closed a sentence explains why (no disabled box without a reason).
+
+Sources: referencje R01.1–R01.3, R02.1–R02.5, A03, A05; brief R03–R12, N02; stage 0 decision 4. Untested on Jan's request (exercise speed).

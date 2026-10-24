@@ -1,5 +1,6 @@
 import { Button } from '../../components/ui/button';
 
+// Error state (stage 2 batch 4): reused as the design-system ErrorState — what happened + what to do, retry.
 export function ErrorMessage({
   title = 'Something went wrong',
   message,
@@ -10,14 +11,17 @@ export function ErrorMessage({
   onRetry?: () => void;
 }) {
   return (
-    <div role="alert" className="rounded-md border border-destructive/30 bg-destructive/5 p-4 text-sm">
-      <p className="font-medium text-destructive">{title}</p>
-      <p className="mt-1 text-muted-foreground">{message}</p>
+    <div role="alert" className="rounded-lg border border-border bg-status-danger-bg p-panel text-base">
+      <p className="font-semibold text-status-danger">{title}</p>
+      <p className="mt-1 text-foreground">{message}</p>
       {onRetry ? (
-        <Button variant="outline" size="sm" className="mt-3" onClick={onRetry}>
+        <Button variant="outline" className="mt-3" onClick={onRetry}>
           Try again
         </Button>
       ) : null}
     </div>
   );
 }
+
+
+export { ErrorMessage as ErrorState };
