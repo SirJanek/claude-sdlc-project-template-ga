@@ -1,0 +1,116 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './input.stories';
+
+<Meta of={Stories} />
+
+# Input
+
+## 1. Purpose
+
+A one-line field lets the user type a short value: an e-mail, a link to public work, a price.
+
+## 2. When to use
+
+- Sign-up: e-mail (E01-S01, E01-S02).
+- Mentor profile: headline, link to public work (E02-S01, R08 in the brief).
+- Prices for 25- and 50-minute sessions (E02-S02).
+- Always inside a Form field, so it has a visible label, hint and error (WCAG 3.3.2).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| More than one line: the session question, a message | Textarea | R02.2 |
+| Choosing one of a few known options (25 / 50 min, a slot) | RadioGroup (batch 2) | Etap 0 decision 4 |
+| Choosing from a long list | Select (batch 2) | WAI-ARIA APG |
+| Yes / no | Checkbox | WAI-ARIA APG |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Field box | yes | 40 px, 6 px radius, `--border-strong`, `--card` fill |
+| Value | — | 14 px `--foreground` (L1) |
+| Placeholder | optional | an example, never the name of the field |
+| Label, hint, error | via Form field | see Label and form field |
+
+## 5. Variants
+
+One visual variant. The HTML `type` (`email`, `url`, `password`, `search`) and `inputMode` choose the keyboard; numbers and identifiers may use `font-mono` (R01.2).
+
+<Canvas of={Stories.Types} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Default | `--border-strong` 1 px (5.53 : 1) | WCAG 1.4.11 |
+| Hover | border `--foreground` | PROPOSAL |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Filled | value in `--foreground` | — |
+| Disabled | `--muted` fill, `--border`, `--muted-foreground` text | PROPOSAL |
+| Error | `--destructive` border **and** an error message with an icon (Form field) | WCAG 1.4.1, 3.3.1 |
+| Pressed, selected, loading | not applicable to a text field | — |
+
+Why disabled: the Form field hint says why, e.g. "Prices lock while a session is booked." (PROPOSAL, WCAG 3.3.2). Prefer `readOnly` when the value must stay readable and copyable.
+
+## 7. Behaviour and accessibility
+
+- Tab focuses the field; clicking the label focuses it (`htmlFor`).
+- Role `textbox`; the name comes from the label; hint and error are read as its description (`aria-describedby`); `aria-invalid="true"` announces "invalid" (WCAG 4.1.2, 3.3.1).
+- Use `autoComplete` (`email`, `name`, `url`) so browsers can fill it (WCAG 1.3.5).
+- Target: 40 px tall, full width of its column (WCAG 2.5.8).
+
+<Canvas of={Stories.Typing} />
+
+## 8. Content
+
+- Label: a noun phrase, at most about 5 words: **Link to public work** (L3).
+- Placeholder: an example in the right format, `https://github.com/your-name` — it disappears on typing, so nothing essential goes there.
+- Units in the label, not in the value: **Price for a 25-minute session (USD)**.
+- Long values scroll inside the field; they are never cut in storage.
+- Translation: the label wraps to two lines rather than being shortened.
+
+## 9. Responsive behaviour
+
+The field fills its column at every width (`w-full`). At 320 px the form is one column; at 768 px and 1440 px form columns are at most about 24 rem wide (`max-w-sm`, PROPOSAL) so a field's width hints at the length of the answer.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `type` | `string` | `'text'` | HTML input type |
+| `disabled` | `boolean` | `false` | Explain why in the hint |
+| `aria-invalid` | `boolean` | — | Set by Form field when there is an error |
+| …`input` props | `ComponentProps<'input'>` | — | `value`, `onChange`, `autoComplete`, `inputMode` |
+
+## 11. Code
+
+```tsx
+<Input type="email" autoComplete="email" />
+```
+
+```tsx
+<FormField label="Link to public work" necessity="required" hint="A GitHub profile, a blog or a talk." error={errors.link}>
+  <Input type="url" placeholder="https://github.com/your-name" {...register('link')} />
+</FormField>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Visible label **E-mail** above the field (WCAG 3.3.2). | Placeholder "E-mail" as the only label — it vanishes on typing. |
+| Red border plus "Enter a full link starting with https://" (WCAG 1.4.1). | Red border only — colour is the only signal. |
+| `--border-strong` field border (WCAG 1.4.11). | Light `--border` — the field disappears on the page (1.29 : 1). |
+
+## 13. Related
+
+- Confused with: Textarea (multi-line), Select (fixed options).
+- Appears in: Label and form field, Form pattern, sign-up and profile screens (stage 3).

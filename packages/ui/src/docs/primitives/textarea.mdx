@@ -1,0 +1,97 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './textarea.stories';
+
+<Meta of={Stories} />
+
+# Textarea
+
+## 1. Purpose
+
+A multi-line field lets the user describe a problem in their own words, with pasted code or logs.
+
+## 2. When to use
+
+- The question written when booking a slot (E03-S01, R05 in the brief).
+- A short "about" text on the mentor profile (E02-S01).
+- The session composer is a product component built on Textarea (R02.2, stage 3).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| One short value | Input | — |
+| Sending a message in the session with Enter | Session composer (stage 3, Enter sends, Shift+Enter new line) | R02.2 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Field box | yes | at least 96 px (four lines), grows with content, vertical resize only |
+| Value | — | 14 px; pasted code keeps its line breaks |
+| Label, hint, error | via Form field | — |
+
+## 5. Variants
+
+One variant. It shares border, focus, disabled and error styles with Input (one source in `input.tsx`).
+
+<Canvas of={Stories.Playground} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+Same as Input: default `--border-strong` (WCAG 1.4.11), hover `--foreground` border (PROPOSAL), focus 2 px `--ring` (decision 3), disabled muted (PROPOSAL), error `--destructive` border plus message (WCAG 1.4.1). Pressed, selected and loading do not apply. Why disabled: explained in the Form field hint.
+
+## 7. Behaviour and accessibility
+
+- Tab focuses; Enter inserts a new line (it does not submit a form). Submitting a long form uses the button or Cmd/Ctrl+Enter (existing CrudForm behaviour).
+- Role `textbox` with `aria-multiline`; name from the label; hint and error through `aria-describedby` (WCAG 1.3.1).
+- Target: full column width, 96 px minimum height (WCAG 2.5.8).
+
+<Canvas of={Stories.Typing} />
+
+## 8. Content
+
+- Label: **Your question**. Hint says what helps the mentor: "What you are stuck on and what you have tried." (brief R05).
+- Placeholder: a question, not an instruction to fill in (L3).
+- No character counter by default; add a limit only when the spec sets one (PROPOSAL; specs E03 not written yet).
+
+## 9. Responsive behaviour
+
+Fills its column at 320, 768 and 1440 px. Long text wraps; the field grows with content (`field-sizing: content`) and the user can resize vertically.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `rows` | `number` | — | Not needed: minimum height is four lines |
+| `disabled` | `boolean` | `false` | Explain why in the hint |
+| …`textarea` props | `ComponentProps<'textarea'>` | — | `value`, `onChange`, `maxLength` |
+
+## 11. Code
+
+```tsx
+<Textarea aria-label="Your question" />
+```
+
+```tsx
+<FormField label="Your question" necessity="required" hint="What you are stuck on and what you have tried.">
+  <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} />
+</FormField>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Hint that asks for what was tried — the mentor reads it before the session (R02.3). | Placeholder with the instructions — it disappears when the user starts typing. |
+| Let the field grow with content. | A fixed two-line box with an inner scroll for a stack trace. |
+
+## 13. Related
+
+- Confused with: Input, the session composer (product component, stage 3).
+- Appears in: booking form (E03-S01), profile form (E02-S01), Form pattern.

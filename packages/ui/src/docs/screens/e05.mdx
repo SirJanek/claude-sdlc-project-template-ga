@@ -1,0 +1,23 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './e05.stories';
+
+<Meta of={S} />
+
+# E05 First-release measures
+
+Backlog: E05 (#24), S01 (#38). Measures from D10; thresholds not set (Q01). Builds on the admin shell (#17).
+
+## Flow
+Admin chooses a period → sees mentors with published slots, mentors with a first booking, paid sessions held.
+
+## Screens and state map
+
+| State | Story |
+|---|---|
+| Data for a period | Admin · measures for a period |
+| No data | Admin · measures — no data |
+
+<Canvas of={S.Default} />
+
+## Work left in the product
+- Loading and error states reuse Patterns/List (not drawn separately). Numbers in the story are layout placeholders, not facts.

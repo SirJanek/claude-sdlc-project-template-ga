@@ -11,7 +11,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             <span className="font-semibold">MentorHub Admin</span>
             <AdminNav />
           </div>
-          <Badge variant="destructive">Local only — dev access, no auth</Badge>
+          <Badge variant="warning">Local only — dev access, no auth</Badge>
         </div>
       </header>
       {children}

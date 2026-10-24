@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './dropdown-menu.stories';
+
+<Meta of={Stories} />
+
+# Menu
+
+## 1. Purpose
+
+Groups secondary actions for one object behind a button.
+
+## 2. When to use
+
+Row actions on a booking: reschedule, add to calendar, cancel.
+
+## 3. When not to use
+
+The primary action (Button), choosing a value (Select), navigation (links).
+
+## 4. Anatomy
+
+Trigger, list (`--popover`, `--border-strong`, no shadow), items 40 px, separator, destructive item in `--destructive` text.
+
+## 5. Variants
+
+Items `default` / `destructive`. No submenus, checkbox or radio items (outside the plan).
+
+<Canvas of={Stories.Open} />
+
+## 6. States
+
+Closed / open, item highlight `--accent`, disabled item says why in its text.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+`variant` on `DropdownMenuItem`; Radix props.
+
+## 11. Code
+
+```tsx
+<DropdownMenuItem variant="destructive">Cancel booking</DropdownMenuItem>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Select, Popover, Confirm dialog. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

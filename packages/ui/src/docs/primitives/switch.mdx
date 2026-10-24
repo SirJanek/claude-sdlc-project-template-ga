@@ -1,0 +1,114 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './switch.stories';
+
+<Meta of={Stories} />
+
+# Switch
+
+## 1. Purpose
+
+A switch turns one setting on or off and the change applies immediately, without a Save button.
+
+## 2. When to use
+
+- Mentor settings after the profile is published: **Listed in the catalogue** (E02-S04, R09; applies right away — PROPOSAL until the spec decides).
+- Any single setting where "on" and "off" are the only states and nothing else on the screen needs saving.
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| Inside a form with a submit button | Checkbox | WAI-ARIA APG Switch vs Checkbox |
+| One of several options | Radio group | WAI-ARIA APG |
+| A change with money or a person affected (decline, refund) | Button + confirmation dialog | R01.3, L3 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Track | yes | 32 × 18 px; off `--border-strong`, on `--primary` |
+| Thumb | yes | 14 px, `--card`, no shadow (R01.1) |
+| Hit area | yes | 32 × 24 px (`::before`) |
+| Label | yes | describes the setting, not the state |
+| Description | optional | 13 px muted, linked with `aria-describedby` |
+
+## 5. Variants
+
+One variant, one size. shadcn's `sm` (24 × 14 px) was removed: below the 24 px target (WCAG 2.5.8).
+
+<Canvas of={Stories.WithLabel} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Off | `--border-strong` track, white thumb (5.53 : 1) | WCAG 1.4.11 |
+| On (selected) | `--primary` track, thumb on the right (5.91 : 1) | K2 |
+| Hover | off → `--foreground`; on → `--primary-hover` | partia 1 decision 5, K2 |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Disabled | `--border` track | partia 1 decision 2 |
+| Loading | not shown: the setting flips at once; if saving fails, it flips back and an Alert says why (PROPOSAL; batch 3) | R02.2 "visible at once" |
+| Pressed, error | not applicable | — |
+
+Thumb movement takes `--motion-fast` (PROPOSAL; position is the second cue besides colour, WCAG 1.4.1) and is instant under reduced motion. Why disabled: a description says it, e.g. "Publish your profile first." (WCAG 3.3.2).
+
+## 7. Behaviour and accessibility
+
+- Tab focuses; Space toggles; clicking the label toggles (WAI-ARIA APG Switch).
+- Role `switch`, `aria-checked`; the screen reader reads "Listed in the catalogue, switch, on". The label never says "on/off".
+- Hit area 32 × 24 px (WCAG 2.5.8) — tested below.
+
+<Canvas of={Stories.ClickAndKeyboard} />
+<Canvas of={Stories.HitArea} />
+
+## 8. Content
+
+- Label = the setting in positive form: **Listed in the catalogue**, not "Hide me from the catalogue" (L3).
+- At most ~6 words; details go in the description.
+
+## 9. Responsive behaviour
+
+Label left, switch right in settings rows at every width; long labels wrap, switch stays top-aligned.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `checked` / `defaultChecked` | `boolean` | — | State |
+| `onCheckedChange` | `(checked: boolean) => void` | — | Save the setting here |
+| `disabled` | `boolean` | `false` | Explain why in the description |
+
+## 11. Code
+
+```tsx
+<Switch aria-label="Listed in the catalogue" />
+```
+
+```tsx
+<div className="flex items-start justify-between gap-stack">
+  <div className="grid gap-1">
+    <Label htmlFor="catalogue">Listed in the catalogue</Label>
+    <p id="catalogue-hint" className="text-sm text-muted-foreground">Applies right away. Your share link works either way.</p>
+  </div>
+  <Switch id="catalogue" aria-describedby="catalogue-hint" checked={listed} onCheckedChange={saveListed} />
+</div>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Switch for a setting saved at once. | Switch inside a form that also has "Save" — use Checkbox. |
+| Label names the setting. | Label "On" / "Off" next to the switch. |
+| Track and thumb without shadow (R01.1). | Glowing track or shadowed thumb (A01). |
+
+## 13. Related
+
+- Confused with: Checkbox (form value), Radio group.
+- Appears in: mentor settings (E02-S04), Form pattern notes (stage 3).

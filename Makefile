@@ -7,7 +7,7 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: setup install setup-browser test test-integration lint typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine
+.PHONY: setup install setup-browser test test-integration lint lint-tokens typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine storybook build-storybook test-storybook
 
 setup:     ## One-command, idempotent local setup: prerequisites, deps, browser, database, migrations (re-run any time; SETUP_ARGS=--skip-browser)
 	node tools/setup/bin/setup.mjs $(SETUP_ARGS)
@@ -26,6 +26,19 @@ test-integration: setup-browser ## Integration suite: ephemeral PostgreSQL (test
 
 lint:      ## ESLint + Prettier check
 	pnpm lint
+
+lint-tokens: ## Design system: values outside packages/ui/src/styles/tokens.css in the UI package and the app (hex, palette classes, arbitrary values, raw --dm-*, opacity on action colours) fail
+	node packages/ui/scripts/lint-tokens.mjs packages/ui/src packages/app/src
+	node --test packages/ui/scripts/lint-tokens.test.mjs
+
+storybook: ## Design system docs (packages/ui/.storybook) on :6006
+	pnpm storybook
+
+build-storybook: ## Static build of the design system docs
+	pnpm build-storybook
+
+test-storybook: ## Every story as a browser test with accessibility violations as errors (needs Google Chrome)
+	pnpm test:storybook
 
 typecheck: ## Static type check in every package
 	pnpm typecheck

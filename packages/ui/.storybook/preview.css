@@ -1,0 +1,18 @@
+/*
+ * Storybook-only stylesheet. Tailwind is compiled here the same way the app does it
+ * (packages/app/src/app/globals.css): `@import "tailwindcss"` first, then the design-system theme.
+ */
+@import 'tailwindcss';
+@import '../src/styles/globals.css';
+/* Documentation blocks (StateMatrix) use Tailwind classes too. */
+@source './';
+
+/*
+ * Frozen state preview (prompt, stage 2: "the same declarations as :hover and :focus-visible, bound to an attribute,
+ * documentation only"). Storybook redefines the hover, focus-visible and active variants so that every
+ * hover:/focus-visible:/active: class of a component also applies when the element carries
+ * data-preview-state="hover | focus | active". The package itself never sees this attribute.
+ */
+@custom-variant hover (&:hover, &[data-preview-state~='hover']);
+@custom-variant focus-visible (&:focus-visible, &[data-preview-state~='focus']);
+@custom-variant active (&:active, &[data-preview-state~='active']);

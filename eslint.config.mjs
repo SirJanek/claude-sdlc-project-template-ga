@@ -31,6 +31,9 @@ export default tseslint.config(
       // Agent worktrees (Open Mercato skills, Cezar) are full repo copies — lint them in place, not twice.
       '.ai/tmp/**',
       '.ai/cezar/worktrees/**',
+      // Design system: Storybook build output and the generated MSW worker are not source.
+      '**/storybook-static/**',
+      '**/public/mockServiceWorker.js',
     ],
   },
   js.configs.recommended,

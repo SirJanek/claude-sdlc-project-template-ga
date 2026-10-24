@@ -1,0 +1,136 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './select.stories';
+
+<Meta of={Stories} />
+
+# Select
+
+## 1. Purpose
+
+A select lets the user pick one value from a list that is too long to show as radio buttons, without taking screen space.
+
+## 2. When to use
+
+- Time zone for a mentor's slots (E02-S02) — dozens of options, one answer.
+- Reason for declining a question (E03-S02, PROPOSAL: the spec does not exist yet).
+- Period for the admin measures (E05-S01: "for a chosen period").
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| 2–5 options the user should compare (25 or 50 minutes, a slot) | Radio group | Etap 0 decision 4; WAI-ARIA APG |
+| Picking several values | Checkboxes | WAI-ARIA APG |
+| A long list the user needs to search (mentors, stacks) | Search field (combobox, not in plan) → "What is missing" | rule 6 |
+| An action ("Decline", "Copy link") | Menu (batch 3) or Button | WAI-ARIA APG Menu Button |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Label | yes | `Label` above the trigger (decision 7); `FormField` does not wrap `Select` yet (see Code) |
+| Trigger | yes | looks like a text field: 40 px, `--border-strong`, chevron 16 px in `--muted-foreground` |
+| Value or placeholder | yes | placeholder is an example, never the field name |
+| List | yes | `--popover`, 1 px `--border-strong`, 6 px radius, no shadow |
+| Option | yes | 40 px row, check mark on the selected one |
+| Group label, separator | optional | 13 px muted; 1 px `--border` |
+
+## 5. Variants
+
+One visual variant (same as Input). Grouped lists use `SelectGroup` + `SelectLabel`. No size variants: 40 px only (decision 1).
+
+<Canvas of={Stories.Grouped} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Default | `--card` fill, `--border-strong` (5.53 : 1) | WCAG 1.4.11 |
+| Hover | border `--foreground` | partia 1 decision 5 (default accepted 2026-10-24) |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Open | list under the trigger, no animation, no shadow | R01.1; motion: hover/focus only |
+| Highlighted option | `--accent` fill, `--accent-foreground` text | K2 |
+| Selected option | medium weight + check mark (not colour alone) | WCAG 1.4.1 |
+| Disabled | `--muted` fill, `--border`, muted text | partia 1 decision 2 |
+| Disabled option | muted text, skipped by arrow keys; say why in the option text ("— no slots yet") | WCAG 3.3.2, PROPOSAL |
+| Error | `--destructive` border + message from Form field | WCAG 3.3.1 |
+| Pressed, loading | not applicable | — |
+
+Why disabled: the reason is shown as a hint under the field through Form field (WCAG 3.3.2).
+
+## 7. Behaviour and accessibility
+
+- Trigger has role `combobox`, the list `listbox`, options `option` with `aria-selected` (WAI-ARIA APG Select-only combobox).
+- Enter, Space or ArrowDown opens; arrows move; typing a letter jumps; Enter selects and closes; Escape closes; focus returns to the trigger.
+- The list renders in a portal on `<body>`; the theme is set on `<html>` so it applies there too (rule 9).
+- Hit area: trigger and options are 40 px tall (WCAG 2.5.8).
+
+<Canvas of={Stories.Keyboard} />
+<Canvas of={Stories.OpenListHasNoShadow} />
+
+## 8. Content
+
+- Options are nouns or short phrases, sentence case: **Warsaw (UTC+1)**, **25 minutes · 45 USD** (L3).
+- Put the distinguishing word first; units always written out.
+- Long options truncate in the trigger and wrap in the list; keep under ~60 characters.
+- German or Polish run ~30 % longer: the trigger takes the column width, not the text width.
+
+## 9. Responsive behaviour
+
+Trigger fills its column (max `max-w-sm` in forms, decision 10). The list is at least as wide as the trigger and never wider than the viewport.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Component | Key props | Default | Description |
+|---|---|---|---|
+| `Select` | `value`, `defaultValue`, `onValueChange`, `disabled`, `name`, `required` | — | Radix Select root |
+| `SelectTrigger` | `id`, `aria-invalid` | — | Pair `id` with `Label htmlFor` |
+| `SelectValue` | `placeholder` | — | Example text, not the label |
+| `SelectContent` | `position` | `'popper'` | `popper` = under the trigger (shadcn default was `item-aligned`, PROPOSAL) |
+| `SelectItem` | `value`, `disabled` | — | One option |
+| `SelectGroup`, `SelectLabel`, `SelectSeparator` | — | — | Grouping |
+
+## 11. Code
+
+```tsx
+<Label htmlFor="len">Session length</Label>
+<Select onValueChange={setLength}>
+  <SelectTrigger id="len"><SelectValue placeholder="Choose a length" /></SelectTrigger>
+  <SelectContent>
+    <SelectItem value="25">25 minutes · 45 USD</SelectItem>
+    <SelectItem value="50">50 minutes · 80 USD</SelectItem>
+  </SelectContent>
+</Select>
+```
+
+```tsx
+// FormField clones its single child; Select's root is not the focusable element, so wire label, hint and error by hand
+// (gap: FormField support for Select → "What is missing").
+<div className="grid max-w-sm gap-1">
+  <Label htmlFor="tz">Time zone for your slots</Label>
+  <Select defaultValue="Europe/Warsaw">
+    <SelectTrigger id="tz" aria-describedby="tz-hint"><SelectValue /></SelectTrigger>
+    <SelectContent>{zones.map((z) => <SelectItem key={z.id} value={z.id}>{z.label}</SelectItem>)}</SelectContent>
+  </Select>
+  <p id="tz-hint" className="text-sm text-muted-foreground">Mentees see slots in their own time zone.</p>
+</div>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Radio group for 25 / 50 minutes — both prices visible at once (R01.5). | A select hiding the two prices behind a click. |
+| Label above, placeholder as example (WCAG 3.3.2). | Placeholder "Session length" as the only name. |
+| List outlined with `--border-strong`, no shadow (R01.1). | Floating list with a drop shadow and fade-in. |
+
+## 13. Related
+
+- Confused with: Radio group (few options), Menu (actions, batch 3), combobox with search (missing).
+- Appears in: mentor prices and slots (E02-S02), admin measures period (E05-S01), Form pattern (stage 3).
