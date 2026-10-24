@@ -1,30 +1,14 @@
+/* Light theme: every semantic value comes from tokens.css (three layers, sources in comments). */
+@import './tokens.css';
+
 /*
- * shadcn/ui theme tokens (Tailwind CSS 4). Imported by the app after `@import "tailwindcss"`.
- * Colours are original to MentorHub (indigo brand), not Preply's.
+ * DevMentor theme (Tailwind CSS 4, shadcn/ui variable names). Imported by the app after `@import "tailwindcss"`.
+ * Values live in tokens.css (source: lekcja-06/tokeny.md). The `.dark` block below is the pre-existing
+ * dark theme, deliberately untouched and unused until a dark theme is decided (referencje.md L2).
  */
 @source "../";
 
 @custom-variant dark (&:is(.dark *));
-
-:root {
-  --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0.03 270);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.03 270);
-  --primary: oklch(0.48 0.22 275);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.96 0.01 270);
-  --secondary-foreground: oklch(0.25 0.03 270);
-  --muted: oklch(0.96 0.01 270);
-  --muted-foreground: oklch(0.52 0.02 270);
-  --accent: oklch(0.95 0.03 275);
-  --accent-foreground: oklch(0.3 0.1 275);
-  --destructive: oklch(0.58 0.22 25);
-  --border: oklch(0.91 0.01 270);
-  --input: oklch(0.91 0.01 270);
-  --ring: oklch(0.6 0.15 275);
-}
 
 .dark {
   --background: oklch(0.16 0.02 270);
@@ -46,16 +30,22 @@
 }
 
 @theme inline {
+  /* Radius (A01): 6px base; sm/md/lg derive from it, full only for status badges */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-full: var(--radius-full);
+  /* Colours: semantic names only — never a palette name */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
@@ -63,9 +53,51 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-hover: var(--destructive-hover);
+  --color-overlay: var(--overlay);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-status-success: var(--status-success);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-danger: var(--status-danger);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-bg: var(--status-warning-bg);
+  /* Typography (L1): system stacks, 13–24 px scale replaces Tailwind's default sizes */
+  --font-sans: var(--dm-font-sans);
+  --font-mono: var(--dm-font-mono);
+  --text-sm: var(--dm-text-sm);
+  --text-sm--line-height: var(--dm-text-sm--line-height);
+  --text-base: var(--dm-text-base);
+  --text-base--line-height: var(--dm-text-base--line-height);
+  --text-lg: var(--dm-text-lg);
+  --text-lg--line-height: var(--dm-text-lg--line-height);
+  --text-xl: var(--dm-text-xl);
+  --text-xl--line-height: var(--dm-text-xl--line-height);
+  --text-2xl: var(--dm-text-2xl);
+  --text-2xl--line-height: var(--dm-text-2xl--line-height);
+  /* Spacing relations (K1): gap-inline, space-y-stack, p-panel, py-section; densities for list rows and threads */
+  --spacing-inline: var(--space-inline);
+  --spacing-stack: var(--space-stack);
+  --spacing-panel: var(--space-panel);
+  --spacing-section: var(--space-section);
+  --spacing-list-row-y: var(--density-list-row-padding-y);
+  --spacing-list-row-x: var(--density-list-row-padding-x);
+  --spacing-thread-gap: var(--density-thread-gap);
+  --spacing-thread-author-gap: var(--density-thread-author-gap);
+  /* Controls (stage 2 decisions 1–2): h-control = 40 px, h-control-sm = 32 px */
+  --spacing-control: var(--density-control-height);
+  --spacing-control-sm: var(--density-control-height-sm);
+  /* Depth (R01.1): cards have no shadow */
+  --shadow-card: var(--shadow-card);
+  /* Layout */
+  --container-content: var(--layout-max);
+  /* Field widths: w-field-sm, w-field-md (PROPOSAL) */
+  --container-field-sm: var(--field-width-sm);
+  --container-field-md: var(--field-width-md);
 }
 
 @layer base {
@@ -73,6 +105,23 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans text-base;
+  }
+  /* R01.2: code is always monospace */
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+  /* Motion: hover and focus transitions only; none for people who ask for less motion */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 }

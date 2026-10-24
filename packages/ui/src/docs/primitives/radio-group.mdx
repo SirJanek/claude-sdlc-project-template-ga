@@ -1,0 +1,130 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './radio-group.stories';
+
+<Meta of={Stories} />
+
+# Radio group
+
+## 1. Purpose
+
+A radio group lets the user pick exactly one option while seeing all of them side by side.
+
+## 2. When to use
+
+- Session length when booking: 25 or 50 minutes with both prices visible (E03-S01, R01.5).
+- Picking a start time for one day (E03-S01; stage 0 decision 4: slots as a list grouped by day, no calendar).
+- Choosing between two outcomes in a dialog, e.g. decline and refund vs keep (E03-S02, PROPOSAL).
+
+The full slot list grouped by day (rows 40 px, day headings, price) is a **product component** in stage 3; this page documents only the primitive (default accepted 2026-10-24, to be verified by Jan).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| More than ~7 options or a long list (time zones) | Select | WAI-ARIA APG |
+| Several answers allowed | Checkboxes | WAI-ARIA APG |
+| One on/off setting that applies immediately | Switch | WAI-ARIA APG Switch |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Group name | yes | `<fieldset><legend>` or `aria-label` on `RadioGroup` |
+| Circle | yes | 16 px, `--border-strong`; circle shape is the radio convention (PROPOSAL: exception to "full radius only for badges", R01.3) |
+| Dot | when selected | 8 px, `--primary` |
+| Hit area | yes | 24 × 24 px, invisible (`::before`) |
+| Label | yes | `Label` to the right, clickable |
+
+## 5. Variants
+
+One visual variant. Vertical (default) or `orientation="horizontal"` for two short options in one line.
+
+<Canvas of={Stories.SlotsForOneDay} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Not selected | `--card` fill, `--border-strong` | WCAG 1.4.11 |
+| Selected | `--primary` ring + dot | K2 |
+| Hover | border `--foreground`; selected → `--primary-hover` | partia 1 decision 5 |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Disabled | `--muted` fill, `--border`, dot muted | partia 1 decision 2 |
+| Error | `--destructive` border + message under the group | WCAG 3.3.1 |
+| Pressed, loading | not applicable | — |
+
+Why disabled: a taken slot is removed from the list instead of disabled (PROPOSAL); when an option must stay visible, its label says why ("50 minutes — not offered by this mentor", WCAG 3.3.2).
+
+## 7. Behaviour and accessibility
+
+- Tab enters the group on the selected option (or the first); arrow keys move **and select**; Tab leaves the group (WAI-ARIA APG Radio Group).
+- Roles `radiogroup` and `radio`, `aria-checked`; screen readers announce label, "radio button", position "2 of 4".
+- Visible circle 16 px; hit area 24 × 24 px (WCAG 2.5.8) — tested below.
+
+<Canvas of={Stories.Keyboard} />
+<Canvas of={Stories.HitArea} />
+
+## 8. Content
+
+- Times in 24-hour format and monospace when in a list of slots (R01.2): **09:30**.
+- Price next to length: **25 minutes · 45 USD**; never only "25".
+- Labels may wrap; keep each under ~80 characters.
+
+## 9. Responsive behaviour
+
+Same at 320, 768 and 1440 px; long labels wrap with the circle aligned to the first line.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Component | Prop | Type | Default | Description |
+|---|---|---|---|---|
+| `RadioGroup` | `value` / `defaultValue` | `string` | — | Selected value |
+| `RadioGroup` | `onValueChange` | `(value: string) => void` | — | Called on selection |
+| `RadioGroup` | `orientation` | `'vertical' \| 'horizontal'` | — | Arrow-key direction |
+| `RadioGroup` | `disabled`, `required`, `name` | `boolean`, `boolean`, `string` | — | Form integration |
+| `RadioGroupItem` | `value` | `string` | — | Option value |
+| `RadioGroupItem` | `disabled`, `aria-invalid` | `boolean` | — | Per-option state |
+
+## 11. Code
+
+```tsx
+<RadioGroup aria-label="Session length" defaultValue="25">
+  <div className="flex items-center gap-inline">
+    <RadioGroupItem value="25" id="len-25" />
+    <Label htmlFor="len-25">25 minutes · 45 USD</Label>
+  </div>
+</RadioGroup>
+```
+
+```tsx
+<fieldset>
+  <legend className="pb-inline text-base font-medium">Tuesday 3 November · 25 minutes</legend>
+  <RadioGroup aria-label="Start time, Tuesday 3 November" value={slot} onValueChange={setSlot}>
+    {slots.map((t) => (
+      <div key={t} className="flex items-center gap-inline">
+        <RadioGroupItem value={t} id={`slot-${t}`} />
+        <Label htmlFor={`slot-${t}`} className="font-mono">{t}</Label>
+      </div>
+    ))}
+  </RadioGroup>
+</fieldset>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Both lengths with prices visible (R01.5). | A select for two options. |
+| Slots as a list grouped by day (stage 0 decision 4). | A calendar grid for a handful of slots. |
+| Clickable label next to each circle (WCAG 2.5.8). | Bare circles with the time in a separate column. |
+
+## 13. Related
+
+- Confused with: Checkbox (many answers), Select (long lists), Switch (immediate setting).
+- Appears in: booking (E03-S01), decline dialog (E03-S02, batch 3), slot list product component (stage 3).

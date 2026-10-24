@@ -1,0 +1,32 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './e03.stories';
+
+<Meta of={S} />
+
+# E03 Booking and payment
+
+Backlog: E03 (#22), S01 (#32), T01 (#39), S02 (#34), S03 (#35), S04 (#36), S05 (#37), T01 (#40). **No spec yet** — screens are PROPOSALS.
+
+## Flow
+1. Mentee picks a slot (Slot list), writes the question (R05), sees the price summary and pays via Stripe (R04). Booking confirmed on payment.
+2. Mentor sees the question; may decline → full refund (R12), confirmation dialog names the person.
+3. Mentee may cancel/reschedule free until 12 h before (R10).
+4. No-shows: mentor no-show → same-day refund (R06); mentee no-show → payment to mentor (R10).
+5. After the first booking the mentor adds payout details (R07); weekly payouts (R14).
+
+## Screens and state map
+
+| State | Story |
+|---|---|
+| Question + pay | Mentee · question and pay |
+| Payment failed | Mentee · payment failed |
+| Bookings list / empty | Mentee · my sessions, … — empty |
+| Mentor list with decline | Mentor · sessions with decline |
+| Decline confirmation | Mentor · decline confirmation |
+| Payout details prompt | Mentor · payouts after first booking |
+
+<Canvas of={S.Checkout} />
+<Canvas of={S.MySessions} />
+
+## Work left in the product
+- Stripe checkout itself (T01) and refund states from webhooks; reschedule flow screen.

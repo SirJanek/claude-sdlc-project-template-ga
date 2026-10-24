@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './alert-dialog.stories';
+
+<Meta of={Stories} />
+
+# Confirm dialog
+
+## 1. Purpose
+
+Asks for confirmation before an action that cannot be undone.
+
+## 2. When to use
+
+Cancel booking, decline question, remove slot.
+
+## 3. When not to use
+
+Reversible actions (just do it, offer undo), information (Dialog).
+
+## 4. Anatomy
+
+Question naming the object, consequence, Cancel (`outline`, left, initial focus), action (`destructive`, verb).
+
+## 5. Variants
+
+One.
+
+<Canvas of={Stories.Open} />
+
+## 6. States
+
+Closed / open. Backdrop click does not close. Focus starts on Cancel.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+Radix AlertDialog props.
+
+## 11. Code
+
+```tsx
+<AlertDialogAction>Cancel booking</AlertDialogAction>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Dialog, Button. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

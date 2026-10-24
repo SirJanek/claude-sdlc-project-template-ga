@@ -1,0 +1,85 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { ColorRoles, ContrastTable } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Colour" />
+
+# Colour
+
+Colour in DevMentor does two jobs and nothing else: it marks **the one primary action on a screen** and it
+**names a state**. Everything else is a warm neutral. Source: referencje R01.3, R01.4, K2; tokens in
+`packages/ui/src/styles/tokens.css` (approved `lekcja-06/tokeny.md`).
+
+Three layers. Components use only the **semantic** layer below. The raw palette (`--dm-*`) exists only
+inside the tokens file; a palette name in a component is a lint error (`pnpm lint:tokens`).
+
+## Roles
+
+<Unstyled>
+  <ColorRoles
+    roles={[
+      { token: '--background', role: 'Page background', source: 'R01.4', useFor: 'the page behind panels', notFor: 'cards, inputs' },
+      { token: '--card', role: 'Surface', source: 'R01.1', useFor: 'panels, cards, popovers', notFor: 'the page itself' },
+      { token: '--foreground', role: 'Text', source: 'R01', useFor: 'body copy, headings, values', notFor: 'helper text' },
+      { token: '--muted', role: 'Muted surface', source: 'R01.1', useFor: 'table headers, inactive fields', notFor: 'large areas' },
+      { token: '--muted-foreground', role: 'Muted text', source: 'R02.1', useFor: 'timestamps, helper text, descriptions', notFor: 'anything the user must act on' },
+      { token: '--border', role: 'Line', source: 'R01.1', useFor: 'row dividers, card outlines', notFor: 'the only border of a button or field' },
+      { token: '--border-strong', role: 'Strong line', source: 'R01.1 + WCAG 1.4.11', useFor: 'outline buttons, field borders at rest', notFor: 'decorative dividers' },
+      { token: '--primary', role: 'Primary action', source: 'K2, R01.5', useFor: 'the single primary button per screen, links', notFor: 'a second button, backgrounds, headings' },
+      { token: '--primary-hover', role: 'Primary action, hover', source: 'K2', useFor: 'hover and active of the primary button', notFor: 'resting state' },
+      { token: '--accent', role: 'Highlight surface', source: 'K2', useFor: 'navigation hover, highlighted row', notFor: 'buttons' },
+      { token: '--secondary', role: 'Secondary action surface', source: 'R01.5', useFor: 'secondary buttons, neutral badges', notFor: 'the primary action' },
+      { token: '--destructive', role: 'Destructive action', source: 'R01.3', useFor: 'decline a question, cancel a booking', notFor: 'warnings without an action' },
+      { token: '--ring', role: 'Focus ring', source: 'L1, WCAG 2.4.7', useFor: 'keyboard focus on every interactive element', notFor: 'hover' },
+      { token: '--status-success', role: 'State: success', source: 'R01.3', useFor: 'paid, held, paid out (text on --status-success-bg)', notFor: 'buttons' },
+      { token: '--status-warning', role: 'State: warning', source: 'R01.3', useFor: 'awaiting payment, free cancellation ends in 12 h', notFor: 'body text' },
+      { token: '--status-danger', role: 'State: danger', source: 'R01.3', useFor: 'declined, refunded, no-show', notFor: 'buttons (use --destructive)' },
+    ]}
+  />
+</Unstyled>
+
+## Measured contrast
+
+Every pair the system uses, measured from the live values on this page (canvas-resolved sRGB, WCAG 2.x formula).
+Text needs 4.5 : 1 (WCAG 1.4.3), large text 3 : 1, interface parts 3 : 1 (WCAG 1.4.11). Light theme only (L2).
+
+<Unstyled>
+  <ContrastTable
+    pairs={[
+      { fg: '--foreground', bg: '--background', label: 'Body text on page', kind: 'text' },
+      { fg: '--foreground', bg: '--card', label: 'Body text on card', kind: 'text' },
+      { fg: '--foreground', bg: '--muted', label: 'Text on muted surface', kind: 'text' },
+      { fg: '--secondary-foreground', bg: '--secondary', label: 'Secondary button', kind: 'text' },
+      { fg: '--muted-foreground', bg: '--card', label: '10:42 · helper text', kind: 'text' },
+      { fg: '--muted-foreground', bg: '--background', label: 'Helper text on page', kind: 'text' },
+      { fg: '--muted-foreground', bg: '--muted', label: 'Helper on muted', kind: 'text' },
+      { fg: '--primary-foreground', bg: '--primary', label: 'Book and pay', kind: 'text' },
+      { fg: '--primary-foreground', bg: '--primary-hover', label: 'Book and pay (hover)', kind: 'text' },
+      { fg: '--primary', bg: '--card', label: 'Link on card', kind: 'text' },
+      { fg: '--primary', bg: '--background', label: 'Link on page', kind: 'text' },
+      { fg: '--accent-foreground', bg: '--accent', label: 'Highlighted row', kind: 'text' },
+      { fg: '--status-success', bg: '--status-success-bg', label: 'Paid', kind: 'text' },
+      { fg: '--status-warning', bg: '--status-warning-bg', label: 'Awaiting payment', kind: 'text' },
+      { fg: '--status-danger', bg: '--status-danger-bg', label: 'Declined', kind: 'text' },
+      { fg: '--destructive-foreground', bg: '--destructive', label: 'Decline question', kind: 'text' },
+      { fg: '--foreground', bg: '--card', label: 'Page title', kind: 'large' },
+      { fg: '--ring', bg: '--card', label: 'focus ring', kind: 'ui' },
+      { fg: '--ring', bg: '--background', label: 'focus ring on page', kind: 'ui' },
+      { fg: '--border-strong', bg: '--card', label: 'field border', kind: 'ui' },
+      { fg: '--muted-foreground', bg: '--card', label: 'icon', kind: 'ui' },
+      { fg: '--border', bg: '--card', label: 'row divider', kind: 'decorative' },
+    ]}
+  />
+</Unstyled>
+
+`--border` sits at about 1.3 : 1 and is allowed only as decoration (dividers, card outlines). Any element whose
+only boundary is a border (outline button, text field) uses `--border-strong`.
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Colour is never the only carrier of meaning: a status badge always has a text label, a required field has text, an error has a message. | R01.3, WCAG 1.4.1 |
+| One `--primary` surface per screen. A second call to action is an outline button or a link. | R01.5 |
+| No gradients in backgrounds, text or buttons. No translucent or blurred panels. | A01 |
+| State colours (`--status-*`) appear only on badges and inline notices, never on buttons. Buttons that destroy use `--destructive`. | R01.3 |
+| Raw palette tokens (`--dm-*`), hex, `rgb()`, `oklch()` and Tailwind palette classes (`bg-indigo-600`, `text-white`) do not appear in components. | prompt rule 3 |

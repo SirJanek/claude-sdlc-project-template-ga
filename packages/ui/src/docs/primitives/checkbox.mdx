@@ -1,0 +1,122 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './checkbox.stories';
+
+<Meta of={Stories} />
+
+# Checkbox
+
+## 1. Purpose
+
+A checkbox lets the user say yes to one independent option, or pick several options from a short list.
+
+## 2. When to use
+
+- Opting in to the catalogue (E02-S04, R09 in the brief; off by default).
+- Session lengths a mentor offers: 25 minutes, 50 minutes (E02-S02, R01).
+- Acknowledging the cancellation rule before paying, if the spec requires it (E03-S03, PROPOSAL).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| A setting that takes effect immediately | Switch (batch 2) | WAI-ARIA APG Switch |
+| Exactly one of several options (a slot, 25 or 50 min for a booking) | RadioGroup (batch 2) | Etap 0 decision 4 |
+| Starting an action | Button | WAI-ARIA APG |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Box | yes | 16 px, 4 px radius, `--border-strong` |
+| Check mark | when checked | lucide `Check`, 14 px, white on `--primary` |
+| Hit area | yes | 24 × 24 px, invisible (`::before`) |
+| Label | yes | `Label` to the right; or `aria-label` when a visible label is impossible |
+| Description | optional | 13 px muted text under the label, linked with `aria-describedby` |
+
+## 5. Variants
+
+One visual variant. Used alone or in a group inside `<fieldset>` with `<legend>`.
+
+<Canvas of={Stories.WithLabel} />
+<Canvas of={Stories.Group} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Unchecked | `--card` fill, `--border-strong` (5.53 : 1) | WCAG 1.4.11 |
+| Checked (selected) | `--primary` fill, white check | K2 |
+| Hover | border `--foreground`; checked → `--primary-hover` | PROPOSAL, K2 |
+| Focus | 2 px `--ring` outline, 2 px offset | WCAG 2.4.7, decision 3 |
+| Disabled | `--muted` fill, `--border`; label `--muted-foreground` | PROPOSAL |
+| Error | `--destructive` border + message (fieldset or form error) | WCAG 1.4.1, 3.3.1 |
+| Pressed, loading | not applicable | — |
+
+Why disabled: a description under the label says why, e.g. "Add a link to public work before joining the catalogue." (PROPOSAL, WCAG 3.3.2).
+
+## 7. Behaviour and accessibility
+
+- Tab focuses; Space toggles; clicking the label toggles (WAI-ARIA APG Checkbox).
+- Role `checkbox`, `aria-checked` true/false; screen readers announce label, state and description.
+- Visible box 16 px; hit area 24 × 24 px (WCAG 2.5.8, decision 5) — tested in "Interaction: 24 × 24 px hit area".
+
+<Canvas of={Stories.ClickAndKeyboard} />
+<Canvas of={Stories.HitArea} />
+
+## 8. Content
+
+- Label states the yes-case positively: **Show my profile in the catalogue**, not "Don't hide my profile" (L3).
+- At most one line in forms; a longer acknowledgement may wrap, with the box aligned to the first line.
+- Numbers with units: **25 minutes**, not "25".
+
+## 9. Responsive behaviour
+
+Same at 320, 768 and 1440 px; the label wraps and the box stays aligned to its first line (`items-start`).
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `checked` | `boolean \| 'indeterminate'` | — | Controlled state |
+| `defaultChecked` | `boolean` | — | Uncontrolled initial state |
+| `onCheckedChange` | `(checked) => void` | — | Called on toggle |
+| `disabled` | `boolean` | `false` | Explain why in the description |
+| `aria-invalid` | `boolean` | — | Error border |
+
+## 11. Code
+
+```tsx
+<div className="flex items-center gap-inline">
+  <Checkbox id="len-25" />
+  <Label htmlFor="len-25">25 minutes</Label>
+</div>
+```
+
+```tsx
+<div className="flex items-start gap-inline">
+  <Checkbox id="catalogue" className="mt-0.5" checked={inCatalogue} onCheckedChange={(v) => setInCatalogue(v === true)} aria-describedby="catalogue-hint" />
+  <div className="grid gap-1">
+    <Label htmlFor="catalogue">Show my profile in the catalogue</Label>
+    <p id="catalogue-hint" className="text-sm text-muted-foreground">Mentees can always book you through your share link.</p>
+  </div>
+</div>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Label to the right, clickable (WCAG 2.5.8). | Bare 16 px box without a label. |
+| Catalogue opt-in off by default (R09, A03). | Pre-checked opt-in — the mentor joins a marketplace without deciding. |
+| Two checkboxes for lengths a mentor offers. | Checkboxes for picking one slot — use RadioGroup. |
+
+## 13. Related
+
+- Confused with: Switch (immediate setting), RadioGroup (one of many) — batch 2.
+- Appears in: mentor profile and prices (E02), Form pattern (stage 3).
