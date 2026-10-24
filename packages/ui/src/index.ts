@@ -23,6 +23,9 @@ export * from './components/ui/tabs';
 export * from './components/ui/skeleton';
 export * from './components/ui/toast';
 
+// Concept components (one folder per concept, same names as in db/core)
+export { SessionMenu, type SessionUserView } from './components/auth/SessionMenu';
+
 // Reusable panel layer (engineering standards › Reusable API & UI layer)
 export { apiCall, apiCallOrThrow, ApiCallError, readJsonSafe } from './backend/api/apiCall';
 export { REQUEST_HEADER, type ApiResult, type ApiErrorBody, type FieldErrors } from './backend/api/types';

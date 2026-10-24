@@ -1,34 +1,149 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { parseEnv } from '../config/env';
-import { DEV_ADMIN_SESSION, requireRole, requireSession } from './auth';
+import { DEV_ADMIN_SESSION, requireRole, requireSession, type SessionUser } from './auth';
 import { ForbiddenError, UnauthorizedError } from './errors';
+import { SESSION_COOKIE, signSessionToken } from './session';
 
-const req = new Request('http://local/api/users');
-const env = (vars: Record<string, string>) => () => parseEnv(vars);
+const withScopeMock = vi.hoisted(() => vi.fn());
+vi.mock('../container/container', () => ({ withScope: withScopeMock }));
 
-describe('requireSession (fail closed)', () => {
-  it('admits the dev admin only with the flag in development', () => {
-    expect(requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' }) })).toEqual(
-      DEV_ADMIN_SESSION,
+const SECRET = 'x'.repeat(32);
+const req = (cookie?: string) =>
+  new Request('http://local/api/users', { headers: cookie === undefined ? {} : { cookie } });
+const env =
+  (vars: Record<string, string> = {}) =>
+  () =>
+    parseEnv({ AUTH_SECRET: SECRET, ...vars });
+const user: SessionUser = {
+  id: 'u1',
+  email: 'ann@example.com',
+  name: null,
+  role: 'mentee',
+  sessionVersion: 2,
+  emailVerifiedAt: new Date('2026-10-18T10:00:00Z'),
+};
+const cookieFor = async (claims = { sub: 'u1', sv: 2 }) =>
+  `${SESSION_COOKIE}=${await signSessionToken(claims, SECRET)}`;
+const lookupOf = (result: SessionUser | null) => vi.fn(async () => result);
+
+describe('requireSession — cookie session', () => {
+  it('returns the user behind a valid cookie, with emailVerified from the row', async () => {
+    const lookup = lookupOf(user);
+    await expect(requireSession(req(await cookieFor()), { env: env(), lookup })).resolves.toEqual({
+      userId: 'u1',
+      role: 'mentee',
+      isDevSession: false,
+      emailVerified: true,
+    });
+    expect(lookup).toHaveBeenCalledWith('u1');
+    const unverified = lookupOf({ ...user, emailVerifiedAt: null, role: 'admin' });
+    await expect(requireSession(req(await cookieFor()), { env: env(), lookup: unverified })).resolves.toMatchObject({
+      role: 'admin',
+      emailVerified: false,
+    });
+  });
+
+  it('denies without a cookie, with an invalid cookie, and never looks the user up then', async () => {
+    const lookup = lookupOf(user);
+    await expect(requireSession(req(), { env: env(), lookup })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`${SESSION_COOKIE}=garbage`), { env: env(), lookup })).rejects.toThrow(
+      UnauthorizedError,
+    );
+    const otherSecret = `${SESSION_COOKIE}=${await signSessionToken({ sub: 'u1', sv: 2 }, 'y'.repeat(32))}`;
+    await expect(requireSession(req(otherSecret), { env: env(), lookup })).rejects.toThrow(UnauthorizedError);
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('denies an expired token', async () => {
+    const cookie = await cookieFor();
+    const now = () => new Date(Date.now() + 8 * 86_400_000);
+    await expect(requireSession(req(cookie), { env: env(), lookup: lookupOf(user), now })).rejects.toThrow(
+      UnauthorizedError,
     );
   });
 
-  it('denies without the flag, with the flag outside development, and when the env cannot be read', () => {
-    expect(() => requireSession(req, { env: env({}) })).toThrow(UnauthorizedError);
-    expect(() => requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'production' }) })).toThrow(
+  it('denies when the session version differs (signed out everywhere / role changed)', async () => {
+    const stale = await cookieFor({ sub: 'u1', sv: 1 });
+    await expect(requireSession(req(stale), { env: env(), lookup: lookupOf(user) })).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('denies when the user no longer exists', async () => {
+    await expect(requireSession(req(await cookieFor()), { env: env(), lookup: lookupOf(null) })).rejects.toThrow(
       UnauthorizedError,
     );
+  });
+
+  it('denies (401, fail closed) when loading the user fails — never a 500, never an allow', async () => {
+    const lookup = vi.fn(async () => {
+      throw new Error('connection refused');
+    });
+    await expect(requireSession(req(await cookieFor()), { env: env(), lookup })).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('loads the user through the request scope by default', async () => {
+    const findForSession = vi.fn(async () => user);
+    withScopeMock.mockImplementation(async (fn: (cradle: unknown) => Promise<unknown>) =>
+      fn({ sessionUserLookup: { findForSession } }),
+    );
+    const session = await requireSession(req(await cookieFor()), { env: env() });
+    expect(session.userId).toBe('u1');
+    expect(findForSession).toHaveBeenCalledWith('u1');
+  });
+});
+
+describe('requireSession — dev admin (fail closed)', () => {
+  it('admits the dev admin only with the flag in development, and only without a session cookie', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    await expect(requireSession(req(), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
+    expect(DEV_ADMIN_SESSION.emailVerified).toBe(true);
+    // A real session on make dev is the real user, not the admin.
+    await expect(requireSession(req(await cookieFor()), { env: dev, lookup: lookupOf(user) })).resolves.toMatchObject({
+      userId: 'u1',
+      isDevSession: false,
+    });
+  });
+
+  it('with the flag on, a present cookie that cannot be trusted is 401 — never the dev admin (review finding 4)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const cookie = await cookieFor();
+    const failing = vi.fn(async () => {
+      throw new Error('connection refused');
+    });
+    await expect(requireSession(req(cookie), { env: dev, lookup: failing })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(cookie), { env: dev, lookup: lookupOf(null) })).rejects.toThrow(UnauthorizedError);
+    const stale = await cookieFor({ sub: 'u1', sv: 1 });
+    await expect(requireSession(req(stale), { env: dev, lookup: lookupOf(user) })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`${SESSION_COOKIE}=garbage`), { env: dev })).rejects.toThrow(UnauthorizedError);
+  });
+
+  it('with the flag on, an EMPTY present cookie is a present credential → 401, not the dev admin (review round 2, finding 1)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    const lookup = lookupOf(user);
+    await expect(requireSession(req(`${SESSION_COOKIE}=`), { env: dev, lookup })).rejects.toThrow(UnauthorizedError);
+    await expect(requireSession(req(`other=1; ${SESSION_COOKIE}=; x=2`), { env: dev, lookup })).rejects.toThrow(
+      UnauthorizedError,
+    );
+    expect(lookup).not.toHaveBeenCalled();
+    // Without the cookie at all the dev admin still works.
+    await expect(requireSession(req('other=1'), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
+  });
+
+  it('denies without the flag, with the flag outside development, and when the env cannot be read', async () => {
+    await expect(requireSession(req(), { env: env() })).rejects.toThrow(UnauthorizedError);
+    await expect(
+      requireSession(req(), { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'production', ALLOW_TEST_ADAPTERS: '1' }) }),
+    ).rejects.toThrow(UnauthorizedError);
     // Regression: a test or staging deploy must not open the flag (found by the integration suite).
-    expect(() => requireSession(req, { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'test' }) })).toThrow(
+    await expect(requireSession(req(), { env: env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'test' }) })).rejects.toThrow(
       UnauthorizedError,
     );
-    expect(() =>
-      requireSession(req, {
+    await expect(
+      requireSession(req(), {
         env: () => {
           throw new Error('Invalid environment');
         },
       }),
-    ).toThrow(UnauthorizedError);
+    ).rejects.toThrow(UnauthorizedError);
   });
 });
 
@@ -40,8 +155,8 @@ describe('requireRole', () => {
 });
 
 describe('requireSession — default environment', () => {
-  it('reads the process environment and denies without the flag', () => {
+  it('reads the process environment and denies without the flag', async () => {
     delete process.env.ALLOW_DEV_ADMIN;
-    expect(() => requireSession(req)).toThrow(UnauthorizedError);
+    await expect(requireSession(req())).rejects.toThrow(UnauthorizedError);
   });
 });

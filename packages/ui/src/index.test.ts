@@ -34,6 +34,7 @@ describe('@mentorhub/ui public API', () => {
       'LoadingMessage',
       'ErrorMessage',
       'EmptyState',
+      'SessionMenu',
     ]) {
       expect(ui, name).toHaveProperty(name);
     }

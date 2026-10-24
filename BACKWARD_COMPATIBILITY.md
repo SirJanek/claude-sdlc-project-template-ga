@@ -14,15 +14,21 @@ stricter (deprecation windows) when the first external consumer or production da
 |---|---|
 | Response envelope | `{ ok: true, data }` or `{ ok: false, error: { code, message, fieldErrors? } }` from `apiHandler`; validation errors → 422 `validation_failed` with `fieldErrors` |
 | CSRF header | state-changing methods require `x-mentorhub-request: 1` (`REQUEST_HEADER`) |
-| Error codes and statuses | `AppError` subclasses map to fixed status + `code` (401, 403, 404, 405, 409, 422) |
+| Error codes and statuses | `AppError` subclasses map to fixed status + `code` (401, 403, 404, 405, 409, 410 `link_invalid`, 422, 429 `rate_limited`, 503 `mail_not_sent`) |
 | `GET /api/health` | **non-envelope** monitor contract: `200 { status: "ok", db: "up" }` / `503 { status: "degraded", db: "down" }` |
 | `/api/users` | `makeCrudRoute` — `GET` list and `POST` create, both **admin only** (`requireSession` + `requireRole('admin')`); `POST` body `{ email, name, role? }` → `200` with the created user (`email` lower-cased), `422` invalid, `409` duplicate email; unsupported methods → 405 |
 | `GET /api/admin/health` | admin only, envelope: `{ ok: true, data: { status, db: "up" \| "down" } }` — a down database is a `200` report, not an error |
+| `POST /api/auth/email/start` | public; body `{ email, intentRole?: 'mentor', next? }` (`next` a same-origin relative path) → **always** `200 { sent: true }` for a valid body, also for unknown or existing e-mails (no enumeration); `422` invalid (incl. `intentRole: 'admin'`); `429 rate_limited`; `503 mail_not_sent` |
+| `POST /api/auth/email/consume` | public; body `{ token }` → `200 { next }` + `Set-Cookie: mh_session=…`; `410 link_invalid` for an unknown, used or expired token; a token is consumed **only** here, never by `GET /auth/confirm` |
+| `POST /api/auth/sign-out` | body `{ everywhere?: boolean }` → `200 { signedOut: true }` + cookie cleared (`Max-Age=0`); `everywhere: true` needs a session (`401` otherwise) and bumps `sessionVersion` |
+| `GET /api/auth/me` | `200 { id, email, name, role, emailVerified }` for the session (the dev admin answers a fixed record with `id: 'dev-admin'`); `401` without one |
+| Pages `/sign-in`, `/check-email`, `/auth/confirm?token=` | `(auth)` route group; `/sign-in?next=` carries the return path, `?error=` renders an alert; `/auth/confirm` GET renders "Sign in as <e-mail>?" and consumes nothing |
 
 **Breaking:** removing or renaming a route, field or error `code`; changing a status code;
 making an optional request field required; loosening or dropping the CSRF or session check
 (that is a security change, not just a compatibility one); changing `/api/health` shape or
-status codes (monitors depend on them).
+status codes (monitors depend on them); making `email/start` reveal whether an e-mail is
+registered; letting a GET consume a token.
 **Required path:** update `ui/src/backend` callers and integration tests in the same PR; note
 the change in the PR body under 💥. Once an external consumer exists: add the new shape next to
 the old one and keep both for one release.
@@ -34,13 +40,14 @@ without a data-preserving migration; tightening a constraint (`NOT NULL`, unique
 data without a backfill.
 **Required path:** new migration only, created with `make db-migration NAME=…` and
 hand-reviewed (renames are hand-written, never drop + create — see migration
-`Migration20261017233958_rename_user_to_users`); a migration test in
+`Migration20261017233958_rename_user_to_users`; `Migration20261018191125_auth_tokens` is the
+additive reference: nullable columns, a default, a new table, reversible `down`); a migration test in
 `tests/integration/migrations.test.ts` covering up and data survival; `risk-high` label and a
 rollback note in the PR body.
 
 ## 3. Workspace package APIs
 
-`@mentorhub/core` (`src/index.ts` — incl. `EventBus`, `EventMap`, `userCreateSchema`; event IDs `concept.entity.action` and their payloads, today `auth.user.created { userId, email }`, are part of the contract), `@mentorhub/db` (`src/index.ts` — incl. `isUniqueViolation`), `@mentorhub/ui` (exports
+`@mentorhub/core` (`src/index.ts` — incl. `EventBus`, `EventMap`, `userCreateSchema`, the auth schemas, `AuthService`, `MailSender`, the `http/session.ts` helpers, `AUTH_LIMITS`; event IDs `concept.entity.action` and their payloads, today `auth.user.created { userId, email, method: 'email' | 'github' | 'admin' }`, are part of the contract — `method` was added in E01 Phase 1, every emitter sets it), `@mentorhub/db` (`src/index.ts` — incl. `isUniqueViolation`, `AuthToken`), `@mentorhub/ui` (exports
 map: `.`, `./styles.css`, `./components/*`, `./lib/*`, `./backend/*`). These are internal to the
 monorepo and not published.
 
@@ -60,18 +67,24 @@ carries unit tests for the boundary values.
 
 ## 5. Configuration and environment (`packages/core/src/config/env.ts`, `.env.example`)
 
-`NODE_ENV`, `DATABASE_URL`, `DB_POOL_MAX`, `LOG_LEVEL`, `ALLOW_DEV_ADMIN` and their defaults.
+`NODE_ENV`, `DATABASE_URL`, `DB_POOL_MAX`, `LOG_LEVEL`, `ALLOW_DEV_ADMIN`, `AUTH_SECRET` (≥ 32
+characters, **required** except under `NODE_ENV=test`, which uses a fixed test-only value — there is
+deliberately no development default; `make setup` writes one to `packages/app/.env.local`), `APP_URL`
+(default `http://localhost:3000`), `MAIL_ADAPTER` (`mock`; refused in production unless
+`ALLOW_TEST_ADAPTERS=1`), `MAIL_OUTBOX_FILE` (optional), `ALLOW_TEST_ADAPTERS` and their defaults.
 **Breaking:** renaming or removing a variable, adding a required variable without a default,
 changing a default that alters behaviour. `ALLOW_DEV_ADMIN` must stay honoured only in
-`NODE_ENV=development` — widening it is a security defect, not a compatibility change.
+`NODE_ENV=development` — widening it, adding a development default for `AUTH_SECRET`, or letting a
+test adapter run in production without `ALLOW_TEST_ADAPTERS=1` is a security defect, not a
+compatibility change.
 **Required path:** update `.env.example`, `docker-compose.yml`, the CI workflow and the README in
 the same PR.
 
 ## 6. Developer and pipeline commands
 
 The `Makefile` targets (`setup`, `install`, `setup-browser`, `test`, `test-integration`, `lint`,
-`typecheck`, `build`, `audit`, `check`, `dev`, `db-*`), root `package.json` scripts (incl. `setup`
-→ `tools/setup`, flag `--skip-browser`), the CI job names
+`typecheck`, `build`, `audit`, `check`, `dev`, `db-*`, `set-role EMAIL= ROLE=`), root `package.json`
+scripts (incl. `setup` → `tools/setup`, flag `--skip-browser`, `db:set-role`), the CI job names
 (five required checks in branch protection, plus the on-demand **Integration** workflow and its
 `run-integration` label), `.ai/agentic.config.json` and the integration
 evidence layout (`tests/integration/.evidence/`, uploaded by CI).
@@ -84,16 +97,26 @@ ask first.
 
 ## 7. Session, roles and CSRF (`packages/core/src/http/auth.ts`, `packages/core/src/http/apiHandler.ts`, `packages/ui/src/backend/api/types.ts`)
 
-The `Session` shape (`userId`, `role`, `isDevSession`), the roles `mentee` / `mentor` / `admin`
+The `Session` shape (`userId`, `role`, `isDevSession`, `emailVerified` — added in E01 Phase 1,
+additive; `DEV_ADMIN_SESSION` has `true`), the roles `mentee` / `mentor` / `admin`
 (`USER_ROLES` in `packages/db/src/entities/auth/user.entity.ts`, enforced by the `users_role_check`
 constraint) and the CSRF header `x-mentorhub-request: 1`. The header name exists **twice on
 purpose** (`ui` must not import `core`): `REQUEST_HEADER` in `packages/core/src/http/apiHandler.ts`
 (checked on state-changing methods) and in `packages/ui/src/backend/api/types.ts` (sent by
-`apiCall`); `tests/integration/app.test.ts` hard-codes it too. Real authentication is not implemented yet: the only session is the
-local dev admin (`ALLOW_DEV_ADMIN=1` **and** `NODE_ENV=development`), every other caller is denied.
-**Breaking:** renaming or removing a role, the header or a `Session` field; loosening the
-dev-admin allowlist (that is a security defect, not a compatibility change); once auth ships,
-renaming the session cookie.
+`apiCall`); `tests/integration/app.test.ts` hard-codes it too. **Session cookie `mh_session`**
+(`SESSION_COOKIE` in `packages/core/src/http/session.ts`): httpOnly, `SameSite=Lax`, `Path=/`,
+`Secure` in production, `Max-Age` 7 days fixed (no refresh, no sliding window — grill-me Q6/Q13);
+value = HS256 JWT with claims `sub` (user id) and `sv` (`users.session_version`); `requireSession`
+is **async** and must be awaited by every caller; a present cookie decides on its own (valid → that
+user; empty, malformed, stale, unknown user or a DB error → 401, never the dev admin), and only a
+request without any `mh_session` cookie may fall back to the dev admin, still only with `ALLOW_DEV_ADMIN=1` **and**
+`NODE_ENV=development`. `sessionVersion` is bumped atomically in the database
+(`session_version + 1`, `revokeSessions` / `make set-role`); a return path (`next`) must pass
+`nextPathSchema` (printable, same-origin, no `//` or `\`).
+**Breaking:** renaming or removing a role, the header, the cookie or a `Session` field; loosening the
+dev-admin allowlist, skipping the `sv` comparison or the DB lookup, or making a session check fail
+open (security defects, not compatibility changes); changing the JWT algorithm or claim names
+(every existing cookie stops verifying — a forced sign-out of everyone).
 **Required path:** change the server constant, the client constant and the integration test in the
 same PR (unit tests stay green if one copy is missed — only the integration run catches it); a role
 rename also needs a migration for `users_role_check` (§2). Add an integration test for the denied
@@ -125,5 +148,5 @@ contradicts an active entry needs a superseding entry approved by its owner in t
 Internal, unexported helpers; Tailwind classes and page markup beyond anything
 `tests/integration/app.test.ts` asserts on (today: the landing `h1`, the `/admin` Dashboard text and the
 admin navigation, the users table rows, their order and the email column, the empty state and the error
-alert); the output wording of `make setup` other than its exit codes; and anything under `docs/discovery/mockups/` (prototypes, not product). These
+alert); the output wording of `make setup` other than its exit codes; the sign-in, check-email and confirm page markup beyond what `tests/integration/auth.test.ts` asserts on (the confirm heading "Sign in as <e-mail>?", its button, the expired-link alert, the `SessionMenu` name/e-mail and "Sign out"); and anything under `docs/discovery/mockups/` (prototypes, not product). These
 still change through tests and migrations, just without the breaking-change paperwork.

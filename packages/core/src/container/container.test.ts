@@ -3,6 +3,8 @@ import type { Orm } from '@mentorhub/db';
 import { parseEnv } from '../config/env';
 import { createLogger } from '../logger';
 import { EventBus } from '../events/event-bus';
+import { AuthService } from '../services/auth/auth.service';
+import { MockMailSender } from '../services/mail/adapters/mock-mail-sender';
 import { buildContainer, createRequestScope, withScope } from './container';
 
 const silent = createLogger({ level: 'silent' });
@@ -21,7 +23,8 @@ function fakeOrm(ok: boolean): Orm {
   } as unknown as Orm;
 }
 
-const build = (getOrm: () => Promise<Orm>) => buildContainer({ getOrm, env: parseEnv({}), logger: silent });
+const env = parseEnv({ NODE_ENV: 'test' });
+const build = (getOrm: () => Promise<Orm>) => buildContainer({ getOrm, env, logger: silent });
 
 describe('composition root', () => {
   it('reports db up when the ORM answers a real query', async () => {
@@ -55,17 +58,27 @@ describe('composition root', () => {
     expect(first).not.toBe(second);
   });
 
+  it('registers the mail sender by MAIL_ADAPTER as a singleton, the auth service per scope, and the session lookup as the user service', async () => {
+    const c = build(async () => fakeOrm(true));
+    expect(c.cradle.mailSender).toBeInstanceOf(MockMailSender);
+    const scope = await createRequestScope(c);
+    expect(scope.cradle.mailSender).toBe(c.cradle.mailSender);
+    expect(scope.cradle.authService).toBeInstanceOf(AuthService);
+    expect(scope.cradle.authService).not.toBe((await createRequestScope(c)).cradle.authService);
+    expect(scope.cradle.sessionUserLookup).toBe(scope.cradle.userService);
+  });
+
   it('registers the event bus as a singleton and wires the subscribers once per container', async () => {
     const lines: string[] = [];
     const logger = createLogger({ destination: { write: (line: string) => void lines.push(line) } });
-    const c = buildContainer({ getOrm: async () => fakeOrm(true), env: parseEnv({}), logger });
+    const c = buildContainer({ getOrm: async () => fakeOrm(true), env, logger });
     expect(c.cradle.eventBus).toBeInstanceOf(EventBus);
     const scope = await createRequestScope(c);
     expect(scope.cradle.eventBus).toBe(c.cradle.eventBus);
     expect(scope.cradle.userService).not.toBe((await createRequestScope(c)).cradle.userService);
-    await c.cradle.eventBus.emit('auth.user.created', { userId: 'u1', email: 'a@b.io' });
+    await c.cradle.eventBus.emit('auth.user.created', { userId: 'u1', email: 'a@b.io', method: 'admin' });
     expect(lines.filter((l) => l.includes('domain event'))).toHaveLength(1);
-    const other = buildContainer({ getOrm: async () => fakeOrm(true), env: parseEnv({}), logger });
+    const other = buildContainer({ getOrm: async () => fakeOrm(true), env, logger });
     expect(other.cradle.eventBus).not.toBe(c.cradle.eventBus);
   });
 });

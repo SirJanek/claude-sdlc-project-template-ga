@@ -1,4 +1,6 @@
 # Local PostgreSQL for development. Port 5433 avoids clashing with a native Postgres on 5432.
+# The app itself runs on the host (make dev); its environment (AUTH_SECRET, APP_URL, MAIL_*) is
+# documented in .env.example and read from packages/app/.env.local — no app service lives here.
 services:
   db:
     image: postgres:17-alpine

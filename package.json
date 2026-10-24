@@ -16,6 +16,7 @@
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter @mentorhub/db migrate",
     "db:migration": "pnpm --filter @mentorhub/db migration:create",
+    "db:set-role": "pnpm --filter @mentorhub/db set-role",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "browser:install": "agent-browser install",
     "storybook": "pnpm --filter @mentorhub/ui storybook",

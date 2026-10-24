@@ -23,7 +23,7 @@ const context = { params: Promise.resolve({}) };
 
 beforeEach(() => {
   core.check.mockReset();
-  core.requireSession.mockReset().mockReturnValue({ role: 'admin' });
+  core.requireSession.mockReset().mockResolvedValue({ role: 'admin' });
   core.requireRole.mockReset();
 });
 
@@ -49,9 +49,7 @@ describe('/api/admin/health', () => {
 
   it('answers 401 without a session and never touches the database', async () => {
     const { UnauthorizedError } = await vi.importActual<typeof import('@mentorhub/core')>('@mentorhub/core');
-    core.requireSession.mockImplementation(() => {
-      throw new UnauthorizedError();
-    });
+    core.requireSession.mockRejectedValue(new UnauthorizedError());
     const res = await GET(request, context);
     expect(res.status).toBe(401);
     expect(core.check).not.toHaveBeenCalled();

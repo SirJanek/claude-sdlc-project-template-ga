@@ -3,7 +3,7 @@ import { createLogger } from '../logger';
 import { EventBus } from './event-bus';
 import { registerEventSubscribers } from './subscribers';
 
-const payload = { userId: 'u1', email: 'ann@example.com' };
+const payload = { userId: 'u1', email: 'ann@example.com', method: 'admin' as const };
 
 function captureLogger() {
   const lines: Record<string, unknown>[] = [];

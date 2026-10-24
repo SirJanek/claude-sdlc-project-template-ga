@@ -33,6 +33,30 @@ function fakeTable() {
 }
 
 describe('UserService', () => {
+  it('findForSession returns the session fields of a user, or null for an unknown id', async () => {
+    const row = {
+      id: 'u1',
+      email: 'a@x.io',
+      name: null,
+      role: 'mentee',
+      sessionVersion: 4,
+      emailVerifiedAt: null,
+      createdAt: new Date(),
+      extra: 'never exposed',
+    };
+    const em = { findOne: async (_e: unknown, where: { id: string }) => (where.id === 'u1' ? row : null) };
+    const service = new UserService({ em: em as unknown as EntityManager, eventBus: bus() as never });
+    await expect(service.findForSession('u1')).resolves.toEqual({
+      id: 'u1',
+      email: 'a@x.io',
+      name: null,
+      role: 'mentee',
+      sessionVersion: 4,
+      emailVerifiedAt: null,
+    });
+    await expect(service.findForSession('nope')).resolves.toBeNull();
+  });
+
   it('lists users newest first as plain DTOs with ISO dates', async () => {
     const calls: unknown[] = [];
     const em = {
@@ -68,7 +92,11 @@ describe('UserService', () => {
         createdAt: '2026-10-18T10:00:00.000Z',
       });
       expect(eventBus.emit).toHaveBeenCalledTimes(1);
-      expect(eventBus.emit).toHaveBeenCalledWith('auth.user.created', { userId: 'id-1', email: 'ann@example.com' });
+      expect(eventBus.emit).toHaveBeenCalledWith('auth.user.created', {
+        userId: 'id-1',
+        email: 'ann@example.com',
+        method: 'admin',
+      });
     });
 
     it('maps a unique violation to ConflictError and emits nothing', async () => {

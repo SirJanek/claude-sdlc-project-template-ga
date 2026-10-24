@@ -18,6 +18,6 @@ export function evidencePath(name: string): string {
 export function resetEvidence(): void {
   mkdirSync(EVIDENCE_DIR, { recursive: true });
   for (const file of readdirSync(EVIDENCE_DIR)) {
-    if (/\.(png|log)$/.test(file)) rmSync(join(EVIDENCE_DIR, file), { force: true });
+    if (/\.(png|log|jsonl)$/.test(file)) rmSync(join(EVIDENCE_DIR, file), { force: true });
   }
 }

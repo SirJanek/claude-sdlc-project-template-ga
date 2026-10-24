@@ -1,11 +1,13 @@
 import { execFileSync, spawn, type ChildProcess } from 'node:child_process';
-import { openSync } from 'node:fs';
+import { openSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import type { TestProject } from 'vitest/node';
 import { evidencePath, resetEvidence } from './evidence';
 
 const DIST_DIR = '.next-integration';
+/** Test-only secret (≥ 32 chars): both servers sign the same cookies; never a real value. */
+const TEST_AUTH_SECRET = 'integration-suite-auth-secret-not-for-real-use-0123456789';
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -76,6 +78,10 @@ export default async function setup(project: TestProject) {
     NEXT_TELEMETRY_DISABLED: '1',
     NEXT_DIST_DIR: DIST_DIR,
     LOG_LEVEL: 'silent',
+    AUTH_SECRET: TEST_AUTH_SECRET,
+    MAIL_ADAPTER: 'mock',
+    // The mock adapter is refused under NODE_ENV=production (next start) unless the suite says so.
+    ALLOW_TEST_ADAPTERS: '1',
   };
 
   execFileSync('pnpm', ['--filter', '@mentorhub/db', 'migrate'], {
@@ -88,20 +94,45 @@ export default async function setup(project: TestProject) {
   });
 
   const [devPort, prodPort] = [await freePort(), await freePort()];
-  const servers = [
-    startNext(['dev', '--port', String(devPort)], env, 'server-dev'),
-    startNext(['start', '--port', String(prodPort)], env, 'server-prod'),
-  ];
   const devUrl = `http://localhost:${devPort}`;
   const prodUrl = `http://localhost:${prodPort}`;
+  // Each server gets its own public origin (sign-in links point back at it) and its own mail outbox.
+  const devOutbox = evidencePath('outbox-dev.jsonl');
+  const prodOutbox = evidencePath('outbox-prod.jsonl');
+  for (const file of [devOutbox, prodOutbox]) writeFileSync(file, '');
+  const servers = [
+    startNext(
+      ['dev', '--port', String(devPort)],
+      { ...env, APP_URL: devUrl, MAIL_OUTBOX_FILE: devOutbox },
+      'server-dev',
+    ),
+    startNext(
+      ['start', '--port', String(prodPort)],
+      { ...env, APP_URL: prodUrl, MAIL_OUTBOX_FILE: prodOutbox },
+      'server-prod',
+    ),
+  ];
   await Promise.all([waitUntilUp(`${devUrl}/api/health`), waitUntilUp(`${prodUrl}/api/health`)]);
   // Warm up dev-mode compilation so browser waits measure the app, not the compiler.
-  for (const path of ['/', '/admin', '/admin/users', '/api/users', '/api/admin/health'])
+  for (const path of [
+    '/',
+    '/admin',
+    '/admin/users',
+    '/api/users',
+    '/api/admin/health',
+    '/sign-in',
+    '/check-email',
+    '/auth/confirm',
+    '/api/auth/me',
+  ])
     await fetch(`${devUrl}${path}`);
 
   project.provide('devUrl', devUrl);
   project.provide('prodUrl', prodUrl);
+  project.provide('devOutbox', devOutbox);
+  project.provide('prodOutbox', prodOutbox);
   project.provide('containerId', container.getId());
+  project.provide('databaseUrl', container.getConnectionUri());
 
   return async () => {
     servers.forEach(stop);

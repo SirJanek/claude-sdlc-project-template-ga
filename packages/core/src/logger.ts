@@ -12,10 +12,15 @@ export const REDACTED_PATHS = [
   '*.authorization',
   'cookie',
   '*.cookie',
+  'set-cookie',
+  '*.set-cookie',
+  'mh_session',
+  '*.mh_session',
   'email',
   '*.email',
   'req.headers.authorization',
   'req.headers.cookie',
+  'res.headers.set-cookie',
 ];
 
 export function createLogger(options: { level?: string; destination?: pino.DestinationStream } = {}): Logger {

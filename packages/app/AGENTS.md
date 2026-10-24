@@ -18,7 +18,10 @@ for this package only.
 - Reference example: `src/app/api/users/route.ts` + `src/app/admin/users/page.tsx`.
 - Public pages use Tailwind directly; admin pages use components from `@mentorhub/ui`.
 - Admin pages share `src/app/admin/layout.tsx` (+ colocated `AdminNav`); every `/admin/**` page fetches through `apiCall` — a server component awaiting the DB crashes `next dev` when the database is down.
-- `/admin/**`, `/api/users` and `/api/admin/*` have **no real auth** — dev flag only; do not deploy them.
+- `/admin/**`, `/api/users` and `/api/admin/*` are admin-only through `await requireSession(request)` +
+  `requireRole(session, 'admin')`; `(auth)` pages are server components that read `searchParams` and hand
+  values to colocated client parts (`SignInForm`, `ResendButton`, `ConfirmSignIn`) — client components never
+  import `@mentorhub/core` (it pulls the ORM into the bundle); `src/instrumentation.ts` validates the env at boot.
 - After moving routes run `make dev` once (stale `.next/dev/types` break `tsc`).
 - **Tests (100% coverage, see root AGENTS.md › Testing):** pages and components with Testing
   Library next to the file (`page.test.tsx`), mocking `apiCall` from `@mentorhub/ui`; route files

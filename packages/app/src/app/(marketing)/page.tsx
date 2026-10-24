@@ -1,12 +1,16 @@
 import { RULES } from '@mentorhub/core';
+import { SessionMenu } from '@mentorhub/ui';
 
-// Public (frontend) page — plain Tailwind, no admin components.
+// Public (frontend) page — plain Tailwind, no admin components (SessionMenu is a concept component).
 export default function HomePage() {
   return (
     <main className="mx-auto max-w-5xl px-4 py-16">
-      <header className="mb-12 flex items-center gap-2 text-lg font-extrabold">
-        <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">M</span>
-        MentorHub
+      <header className="mb-12 flex items-center justify-between gap-4">
+        <span className="flex items-center gap-2 text-lg font-extrabold">
+          <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground">M</span>
+          MentorHub
+        </span>
+        <SessionMenu />
       </header>
       <section className="rounded-lg border border-border bg-card px-8 py-14 text-foreground">
         <h1 className="max-w-2xl text-4xl font-bold tracking-tight sm:text-5xl">

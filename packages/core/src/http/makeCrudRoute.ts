@@ -2,8 +2,9 @@ import type { ZodType } from 'zod';
 import type { Cradle } from '../container/cradle';
 import { withScope } from '../container/container';
 import { apiHandler, type RouteContext, type RouteHandler } from './apiHandler';
-import { requireSession } from './auth';
-import { MethodNotAllowedError, NotFoundError, ValidationError } from './errors';
+import { requireSession, type Session } from './auth';
+import { readJsonBody } from './body';
+import { MethodNotAllowedError, NotFoundError } from './errors';
 
 type ScopeRunner = <R>(fn: (cradle: Cradle) => Promise<R>) => Promise<R>;
 
@@ -14,20 +15,13 @@ export interface CrudRouteConfig<S, C, U> {
   create?: { schema: ZodType<C>; run: (service: S, input: C) => Promise<unknown> };
   update?: { schema: ZodType<U>; run: (service: S, id: string, input: U) => Promise<unknown> };
   remove?: (service: S, id: string) => Promise<unknown>;
-  /** Defaults to requireSession. Pass `'public'` only for routes that are public by spec. */
-  authorize?: ((request: Request) => unknown) | 'public';
+  /**
+   * Defaults to requireSession. Pass `'public'` only for routes that are public by spec. Always
+   * awaited: a guard that rejects must deny the request, not run beside it.
+   */
+  authorize?: ((request: Request) => Promise<Session | void>) | 'public';
   /** Injection point for tests; defaults to withScope. */
   scope?: ScopeRunner;
-}
-
-async function readJsonBody(request: Request): Promise<unknown> {
-  const text = await request.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text) as unknown;
-  } catch {
-    throw new ValidationError('The request body is not valid JSON.');
-  }
 }
 
 async function readId(request: Request, context: RouteContext): Promise<string> {
@@ -47,9 +41,9 @@ export function makeCrudRoute<S, C = never, U = never>(
   config: CrudRouteConfig<S, C, U>,
 ): Record<'GET' | 'POST' | 'PUT' | 'DELETE', RouteHandler> {
   const scope: ScopeRunner = config.scope ?? ((fn) => withScope(fn));
-  const authorize = (request: Request) => {
+  const authorize = async (request: Request): Promise<void> => {
     if (config.authorize === 'public') return;
-    (config.authorize ?? requireSession)(request);
+    await (config.authorize ?? requireSession)(request);
   };
   const notAllowed = apiHandler(async () => {
     throw new MethodNotAllowedError();
@@ -59,20 +53,20 @@ export function makeCrudRoute<S, C = never, U = never>(
   return {
     GET: list
       ? apiHandler(async (request) => {
-          authorize(request);
+          await authorize(request);
           return scope((cradle) => list(config.service(cradle)));
         })
       : notAllowed,
     POST: create
       ? apiHandler(async (request) => {
-          authorize(request);
+          await authorize(request);
           const input = create.schema.parse(await readJsonBody(request));
           return scope((cradle) => create.run(config.service(cradle), input));
         })
       : notAllowed,
     PUT: update
       ? apiHandler(async (request, context) => {
-          authorize(request);
+          await authorize(request);
           const id = await readId(request, context);
           const input = update.schema.parse(await readJsonBody(request));
           return scope((cradle) => update.run(config.service(cradle), id, input));
@@ -80,7 +74,7 @@ export function makeCrudRoute<S, C = never, U = never>(
       : notAllowed,
     DELETE: remove
       ? apiHandler(async (request, context) => {
-          authorize(request);
+          await authorize(request);
           const id = await readId(request, context);
           return scope((cradle) => remove(config.service(cradle), id));
         })

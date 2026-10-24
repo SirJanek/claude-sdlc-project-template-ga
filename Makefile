@@ -7,7 +7,7 @@
 # Builds never phone home.
 export NEXT_TELEMETRY_DISABLED := 1
 
-.PHONY: setup install setup-browser test test-integration lint lint-tokens typecheck build audit check dev db-up db-down db-migrate db-migration rollback quarantine storybook build-storybook test-storybook
+.PHONY: setup install setup-browser test test-integration lint lint-tokens typecheck build audit check dev db-up db-down db-migrate db-migration set-role rollback quarantine storybook build-storybook test-storybook
 
 setup:     ## One-command, idempotent local setup: prerequisites, deps, browser, database, migrations (re-run any time; SETUP_ARGS=--skip-browser)
 	node tools/setup/bin/setup.mjs $(SETUP_ARGS)
@@ -65,6 +65,9 @@ db-migrate: ## Apply pending migrations
 
 db-migration: ## Generate a migration from entity changes: make db-migration NAME=add-x
 	pnpm db:migration $(NAME)
+
+set-role:  ## Set an account's role (ends its sessions): make set-role EMAIL=a@b.io ROLE=admin|mentor|mentee
+	pnpm db:set-role $(EMAIL) $(ROLE)
 
 # --- Stage 6 runbooks, referenced from docs/sdlc/bands.yaml ---------------------------
 # Rehearse both in staging before listing them as pre-approved. A runbook that has never

@@ -2,14 +2,16 @@
  * Composition root (Awilix). The only place that touches the ORM singleton. Every binding is an
  * explicit line — no loadModules globbing — so each dependency is greppable.
  */
-import { asClass, asValue, createContainer, InjectionMode, type AwilixContainer } from 'awilix';
+import { aliasTo, asClass, asFunction, asValue, createContainer, InjectionMode, type AwilixContainer } from 'awilix';
 import { createOrmConfig, getOrm, type EntityManager } from '@mentorhub/db';
 import { getEnv } from '../config/env';
 import { getLogger } from '../logger';
 import { EventBus } from '../events/event-bus';
 import { registerEventSubscribers } from '../events/subscribers';
+import { AuthService } from '../services/auth/auth.service';
 import { UserService } from '../services/auth/user.service';
 import { HealthService } from '../services/health/health.service';
+import { createMailSender } from '../services/mail/create-mail-sender';
 import type { Cradle } from './cradle';
 
 export type AppContainer = AwilixContainer<Cradle>;
@@ -34,6 +36,9 @@ export function buildContainer(overrides: Partial<Pick<Cradle, 'getOrm' | 'env' 
     eventBus: asClass(EventBus).singleton(),
     healthService: asClass(HealthService).singleton(),
     userService: asClass(UserService).scoped(),
+    sessionUserLookup: aliasTo('userService'),
+    mailSender: asFunction(createMailSender).singleton(),
+    authService: asClass(AuthService).scoped(),
   });
   registerEventSubscribers(container.cradle);
   return container;

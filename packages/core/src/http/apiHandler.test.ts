@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { createLogger } from '../logger';
-import { apiHandler, REQUEST_HEADER } from './apiHandler';
+import { apiHandler, envelope, REQUEST_HEADER } from './apiHandler';
 import { ConflictError } from './errors';
 
 const ctx = { params: Promise.resolve({}) };
@@ -90,5 +90,17 @@ describe('apiHandler — defaults', () => {
       throw new Error('boom');
     })(get(), ctx);
     expect(res.status).toBe(500);
+  });
+});
+
+describe('envelope', () => {
+  it('builds the success envelope with extra headers, keeping 200 unless told otherwise', async () => {
+    const res = envelope({ next: '/' }, { headers: { 'set-cookie': 'mh_session=x; Path=/' } });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('set-cookie')).toBe('mh_session=x; Path=/');
+    expect(await res.json()).toEqual({ ok: true, data: { next: '/' } });
+    expect(envelope(null, { status: 201 }).status).toBe(201);
+    const passed = await apiHandler(async () => envelope('ok'), { logger })(get(), ctx);
+    expect(await passed.json()).toEqual({ ok: true, data: 'ok' });
   });
 });

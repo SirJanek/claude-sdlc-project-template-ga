@@ -14,12 +14,15 @@ packages** (not a module runtime), **keep `awilix` DI**.
 - Package scope `@mentorhub/*`; persona groups use **mentee** (not "student"); screen IDs refer
   to `docs/discovery/03-Mapa-ekranow-i-nawigacja.md` (P*, M*, C*, T*, A*).
 - Commands go through `make` (`make check` = lint, typecheck, test, build, `pnpm audit`).
-- **No auth exists yet.** Until the auth spec lands, `requireSession` in `core/src/http/auth.ts`
-  admits a fixed dev-admin session **only** when `ALLOW_DEV_ADMIN=1` **and**
-  `NODE_ENV === "development"` (an allowlist; test, staging and production are denied); otherwise
-  it throws `UnauthorizedError` (fail closed). The auth
-  spec replaces this flag with JWT sessions per the Security section — the flag never ships to
-  production.
+- **Auth (spec `2026-10-18-accounts-and-roles.md`, Phase 1).** `requireSession` in
+  `core/src/http/auth.ts` is async: it verifies the `mh_session` JWT (HS256, `jose`, 7 days fixed —
+  an explicit deviation from the 24 h example below, grill-me Q6/Q13: no refresh, no sliding window),
+  loads the user through the scope's `sessionUserLookup` and compares the session version; anything
+  doubtful is `UnauthorizedError` (fail closed). Without a valid cookie a fixed dev-admin session is
+  admitted **only** when `ALLOW_DEV_ADMIN=1` **and** `NODE_ENV === "development"` (an allowlist; test,
+  staging and production are denied) — the flag never ships to production. Sign-in is passwordless
+  (one-time e-mail link, GitHub in Phase 2), so the password-hashing rule below applies only if a
+  password flow is ever added.
 - `apiHandler` may return a plain `Response` as an explicit escape hatch for operational
   endpoints whose contract is not the JSON envelope (`/api/health`: 200/503 with
   `{status, db}` for monitors). Feature routes always use the envelope.

@@ -7,7 +7,7 @@ const core = vi.hoisted(() => ({
     | {
         service: (c: unknown) => unknown;
         list: (s: unknown) => unknown;
-        authorize: (request: Request) => void;
+        authorize: (request: Request) => Promise<void>;
         create: { schema: { parse: (v: unknown) => unknown }; run: (s: unknown, i: unknown) => unknown };
       },
   requireSession: vi.fn(),
@@ -63,12 +63,12 @@ describe('/api/users route', () => {
     expect(parsed).toEqual({ email: 'a@b.io', name: 'A', role: 'admin' });
   });
 
-  it('authorizes every method as an admin session', async () => {
+  it('authorizes every method as an admin session, awaiting the (async) session', async () => {
     const config = await loadConfig();
     const request = new Request('http://x/api/users');
     const session = { role: 'admin' };
-    core.requireSession.mockReturnValue(session);
-    config.authorize(request);
+    core.requireSession.mockResolvedValue(session);
+    await config.authorize(request);
     expect(core.requireSession).toHaveBeenCalledWith(request);
     expect(core.requireRole).toHaveBeenCalledWith(session, 'admin');
   });
@@ -76,14 +76,13 @@ describe('/api/users route', () => {
   it('lets a denial from the session or the role guard propagate', async () => {
     const config = await loadConfig();
     const request = new Request('http://x/api/users');
-    core.requireSession.mockImplementation(() => {
-      throw new Error('401');
-    });
-    expect(() => config.authorize(request)).toThrow('401');
-    core.requireSession.mockReturnValue({ role: 'mentee' });
+    core.requireSession.mockRejectedValue(new Error('401'));
+    await expect(config.authorize(request)).rejects.toThrow('401');
+    core.requireSession.mockResolvedValue({ role: 'mentee' });
     core.requireRole.mockImplementation(() => {
       throw new Error('403');
     });
-    expect(() => config.authorize(request)).toThrow('403');
+    await expect(config.authorize(request)).rejects.toThrow('403');
+    expect(core.requireRole).toHaveBeenCalledWith({ role: 'mentee' }, 'admin');
   });
 });
