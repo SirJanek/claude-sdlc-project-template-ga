@@ -14,3 +14,7 @@ evals/
 packages/db/src/migrations/
 .next-integration
 tests/integration/.evidence
+
+# Course exercise files (lesson 06) and the generated MSW worker are not formatted
+lekcja-06/
+**/public/mockServiceWorker.js

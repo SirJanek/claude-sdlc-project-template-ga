@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './tooltip.stories';
+
+<Meta of={Stories} />
+
+# Tooltip
+
+## 1. Purpose
+
+Names an icon-only button on hover and focus.
+
+## 2. When to use
+
+Icon buttons: "Add to calendar", "Copy link".
+
+## 3. When not to use
+
+Any information the user needs (put it on the page), long text (Popover).
+
+## 4. Anatomy
+
+Trigger with `aria-label`, bubble `--foreground` / `--background` (16.25 : 1), 13 px, no arrow.
+
+## 5. Variants
+
+One.
+
+<Canvas of={Stories.Open} />
+
+## 6. States
+
+Hidden / shown after 500 ms, on focus too, Esc hides. Own provider inside `Tooltip`.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+Radix Tooltip props; `TooltipProvider delayDuration` 500.
+
+## 11. Code
+
+```tsx
+<Tooltip><TooltipTrigger asChild>…</TooltipTrigger><TooltipContent>Add to calendar</TooltipContent></Tooltip>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Popover, Button (icon). Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

@@ -87,6 +87,10 @@ New reusable components have one designated home each — never scattered ad hoc
 Reference example to copy: `app/src/app/api/users/route.ts` (`makeCrudRoute`) +
 `app/src/app/admin/users/page.tsx` (`apiCall` + `DataTable`).
 
+## Design system (read first for any UI work)
+
+Before building or changing a screen, read [`docs/design-system.md`](docs/design-system.md): components with when/when-not, semantic tokens, "if… then use…" guides and what to avoid. Storybook: `pnpm --filter @mentorhub/ui storybook`.
+
 ## Commands
 
 | Task | Command |
@@ -270,6 +274,10 @@ Installed with `npx skills add open-mercato/skills --skill '*' -a claude-code -a
 pinned in `skills-lock.json`. Treat them as vendored: do not edit or reformat them; update with
 `npx skills update -p`, restore on a fresh clone with `npx skills experimental_install`;
 project overrides go to `.ai/skills/<skill-name>/SKILL.md`.
+`grill-me` and `grilling` come from `mattpocock/skills` (MIT, plain Markdown, reviewed 2026-10-18), installed
+with `-a claude-code -a codex` as copies in `.claude/skills/` and `.agents/skills/`, pinned in
+`skills-lock.json`; also vendored. `/grill-me` is user-invoked only and hands over to `grilling`
+(the "grill me" step after a spec review in lesson 05).
 
 ## Things agents get wrong
 

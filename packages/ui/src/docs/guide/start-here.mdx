@@ -1,0 +1,54 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Start here" />
+
+# Start here: how to build a DevMentor screen
+
+DevMentor connects developers who are stuck with senior engineers for paid 25- or 50-minute **text** sessions. The interface reads like a tool developers already use every day: a dense, quiet list with one obvious next action, where colour only says what state something is in. It earns trust with public work and clear prices, not with stars, badges or AI gloss.
+
+**Character words:** dense, calm, concrete, warm-neutral, one action. **Not:** marketplace, course, community, chat app, generic AI startup (A01–A05).
+
+## Five steps
+
+1. **Find the pattern** — Patterns (form, list with filters, detail, destructive confirmation, book and pay) or the epic page for your screen.
+2. **Pick components** with [How to choose](?path=/docs/design-system-how-to-choose--docs).
+3. **Use semantic tokens only** — `bg-primary`, `text-muted-foreground`, `gap-inline`, `p-panel`, `py-section`; never raw `--dm-*`, hex, palette classes or `[13px]` (Foundations, `pnpm lint:tokens`).
+4. **Design the data states** — loading (Skeleton), empty (EmptyState: why + next step), error (ErrorState: what happened + what to do), partial, many, long text.
+5. **Check [What to avoid](?path=/docs/design-system-what-to-avoid--docs)** before you open a PR.
+
+## All components
+
+| Component | Import | Use when | Don't use when |
+|---|---|---|---|
+| Button | `Button` | An action; one `default` (primary) per screen (R01.5) | Navigation to a page → link |
+| Link and text action | `Button variant="link"` / `<a>` | Navigation, secondary text actions | A destructive or main action |
+| Input | `Input` inside `FormField` | One-line text, numbers, e-mail | Long text → Textarea |
+| Textarea | `Textarea` inside `FormField` | The question (R05), about text | One-line values |
+| Label and form field | `FormField`, `Label` | Every form control | Placeholder as the label |
+| Checkbox | `Checkbox` | Independent yes/no saved on submit | Instant setting → Switch |
+| Radio group | `RadioGroup` | 2–7 exclusive options visible at once | Long lists → Select |
+| Select | `Select` | One of many (8+) options, filters | ≤ 5 options that fit → Radio |
+| Switch | `Switch` | Setting that applies immediately | Inside a form saved later |
+| Card and panel | `Card` | A bordered group of related content | Card in a card; lists (use rows) |
+| Badge | `Badge` | Status with text (R01.3) | Decoration, counts, "new" pills |
+| Avatar | `Avatar` | Photo next to a printed name | Initials or coloured letters (A01) |
+| Alert | `Alert` | Message in the page that needs reading/acting | After-save confirmation → Toast |
+| Dialog | `Dialog` | Short focused task without leaving the page | Long forms → page |
+| Confirm dialog | `AlertDialog` | Destructive or irreversible action | Simple "are you sure" for reversible actions |
+| Menu | `DropdownMenu` | 3+ secondary actions on a row | One action → button |
+| Popover | `Popover` | Extra, non-essential detail | Forms, required info |
+| Tooltip | `Tooltip` | Name of an icon-only button | Anything the user needs to act |
+| Tabs | `Tabs` | Switching views of the same object | Main navigation (R02.6) |
+| Skeleton | `Skeleton` | First load of a list or page | Action in progress → button state |
+| Empty state | `EmptyState` | No data: why + next step | Errors |
+| Error state | `ErrorState` | Load failed: what happened + retry | Field errors → FormField |
+| Toast | `useSavedToast` | "Saved" confirmations only (decision 3) | Any error |
+| Table | `Table` | Admin data with columns (E05) | Mentor lists → rows |
+| MentorCard | `MentorCard` | Mentor in list/catalogue | Ratings (N02) |
+| SlotList | `SlotList` | Choosing a session time | Calendar grid |
+| BookingRow | `BookingRow` | Booking with status | Colour-only status |
+| PriceSummary | `PriceSummary` | Before paying | Showing commission |
+| SessionEntry | `SessionEntry` | One message in a session | Bubbles, reactions |
+| SessionComposer | `SessionComposer` | Writing in a live session | DMs outside sessions |
+
+All imports come from `@mentorhub/ui`. Agents: read `docs/design-system.md` first.

@@ -1,0 +1,81 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/How to choose" />
+
+# How to choose
+
+## Button, link, icon button, menu
+
+| If… | Use | DevMentor example |
+|---|---|---|
+| It is the one main step on the screen | `Button` (default) — one per screen (R01.5) | **Pay $45** |
+| It is another action | `Button variant="outline"` or `ghost` | **Reschedule** |
+| It goes to another page | link (`<a>`) | mentor name → profile |
+| Space is tight and the icon is universal | `Button size="icon"` + `aria-label` + Tooltip | close dialog |
+| A row has 3+ secondary actions | `DropdownMenu` | booking row: Reschedule, Cancel, Copy link (PROPOSAL) |
+
+## Radio, select, search field
+
+| If… | Use | Example |
+|---|---|---|
+| 2–7 options, all worth seeing | `RadioGroup` | 25 / 50 min, session times (SlotList) |
+| 8+ options or a filter | `Select` | technology filter in the catalogue |
+| Very long list where typing helps | combobox — **missing** (What is missing) | — |
+
+## Switch vs checkbox
+
+| If… | Use | Example |
+|---|---|---|
+| Takes effect immediately | `Switch` | "List me in the catalogue" in settings (PROPOSAL) |
+| Saved with the form | `Checkbox` | agree to terms at sign-up |
+
+## Dialog, confirm, side panel, page, popover, tooltip
+
+| If… | Use | Example |
+|---|---|---|
+| Short task, page stays relevant | `Dialog` | edit a slot (PROPOSAL) |
+| Destructive or irreversible | `AlertDialog` | **Decline question** (R12) |
+| Content that must stay next to work | side panel in layout (not an overlay) | question next to session (R02.3) |
+| Long task or shareable state | separate page | profile editing |
+| Optional detail | `Popover` | what "earliest start" means |
+| Name of an icon-only button | `Tooltip` | — never required information |
+
+## Field error, alert, toast
+
+| If… | Use | Example |
+|---|---|---|
+| One field is wrong | `FormField error` | "Use a whole number between 20 and 300." |
+| The whole action failed, user must act | `Alert variant="danger"` / `ErrorState` | payment declined |
+| Something was saved | Toast (`useSavedToast`) | "Prices saved" |
+| An error that needs action | **never a toast** (decision 3) | — |
+
+## Skeleton vs loading indicator
+
+| If… | Use |
+|---|---|
+| First load of a list/page (> 300 ms) | `Skeleton` in the content's shape |
+| An action is running | button disabled + `aria-busy` + "Paying…" (no spinner) |
+
+## Table, list, cards
+
+| If… | Use | Example |
+|---|---|---|
+| Comparable columns, admin | `Table` | E05 measures |
+| People or bookings | rows separated by lines (R01.1) | MentorCard, BookingRow |
+| Grid of identical cards | **avoid** (A01, A03) | — |
+
+## Tabs vs pages
+
+| If… | Use |
+|---|---|
+| Views of the same object | `Tabs` |
+| Main navigation | flat links in the header (R02.6): Sessions, Profile, Payouts |
+
+## Screens and rows (agent test 1 — PROPOSAL, przyjęte domyślnie, do weryfikacji)
+
+- Page title → `PageHeader`; zero `default` buttons is fine when the next step lives elsewhere (R01.5 caps at one).
+- One row action → `RowAction` ghost `sm`, stays right on phones; 3+ → `DropdownMenu`.
+- EmptyState action leaving the page → `Button variant="outline" asChild` + `<a>`; acting on the page → `Button variant="outline"`.
+- Filters: enabled while loading, hidden on error and when empty; active filter → `FilterChip`; count → `role=status`.
+- Saved item gone from catalogue → `MentorCard unavailable`. List without price/slots → `MentorCard variant="compact"`.
+- Loading indicator: `Skeleton`; `LoadingMessage` is deprecated (spinner + opacity).

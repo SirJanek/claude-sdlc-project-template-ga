@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './popover.stories';
+
+<Meta of={Stories} />
+
+# Popover
+
+## 1. Purpose
+
+Shows supplementary content anchored to a control.
+
+## 2. When to use
+
+Price breakdown, what "held" means.
+
+## 3. When not to use
+
+Forms (Dialog or page), essential information (put it on the page), icon names (Tooltip).
+
+## 4. Anatomy
+
+Trigger, surface like Menu, padding `p-panel`, no arrow.
+
+## 5. Variants
+
+One, `w-72`.
+
+<Canvas of={Stories.Open} />
+
+## 6. States
+
+Closed / open, Esc closes, focus returns.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+Radix Popover props; `align="start"` default.
+
+## 11. Code
+
+```tsx
+<Popover><PopoverTrigger asChild><Button variant="ghost">Price breakdown</Button></PopoverTrigger><PopoverContent>…</PopoverContent></Popover>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Tooltip, Dialog, Menu. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

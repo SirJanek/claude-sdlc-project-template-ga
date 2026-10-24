@@ -1,0 +1,141 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './button.stories';
+
+<Meta of={Stories} />
+
+# Button
+
+## 1. Purpose
+
+A button lets the user start one action on the current screen, such as booking a slot, paying or declining a question.
+
+## 2. When to use
+
+- The one primary action of a screen: **Book 50-minute session** on the mentor page, **Pay 45 USD** at checkout, **Publish slots** in availability (R01.5).
+- Secondary actions next to it: **Change slot**, **Copy share link**, **Back to sessions** (R01.5).
+- A destructive action that the user confirms: **Decline question** (mentor, R12 in the brief), **Cancel booking** (R06).
+- An icon-only action in a dense list row, with an accessible name: **Remove slot Tue 14:00** (R01.1, K1).
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| Going to another page or profile | Button `variant="link"` with `asChild` and `<a href>` (see Link and text action) | WAI-ARIA APG: link vs button |
+| A second filled primary button on the same screen | `outline` or `secondary` | R01.5 |
+| Turning a setting on and off | Checkbox (Switch comes in batch 2) | WAI-ARIA APG |
+| A clickable `div` or `span` | Button; never a div with `onClick` | WCAG 2.1.1, 4.1.2 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Container (`<button>`) | yes | 6 px radius, no shadow (A01, R01.1) |
+| Label | yes, except `icon` sizes | verb + object, see Content |
+| Leading icon | optional | lucide, 16 px, `aria-hidden` by default (Foundations/Icons) |
+| Accessible name for icon-only | required for `icon`, `icon-sm` | `aria-label` (WCAG 4.1.2) |
+
+## 5. Variants
+
+<Canvas of={Stories.Variants} />
+
+| Variant | When to choose | Source |
+|---|---|---|
+| `default` (primary) | The one main action per screen. Filled with `--primary`. | R01.5, K2 |
+| `secondary` | A useful second action that is not destructive, e.g. Copy share link. Neutral fill. | R01.5 |
+| `outline` | Other actions next to the primary one; border `--border-strong` (5.53 : 1). | R01.5, WCAG 1.4.11 |
+| `ghost` | Low-weight actions in toolbars and list rows, e.g. Back to sessions. | R01.1 |
+| `destructive` | Declining, cancelling, refunding. Always with a confirmation (Patterns, stage 3). | R01.3 |
+| `link` | A text action inside text or a row. Always underlined. | WCAG 1.4.1, stage 2 decision 4 |
+
+Sizes: `default` 40 px (one list row, decision 1), `sm` 32 px for pagination and dense toolbars, `icon` 40 × 40, `icon-sm` 32 × 32 (decision 2). Shadcn's `xs`, `lg`, `icon-xs`, `icon-lg` were removed (decision 2, rule 6).
+
+<Canvas of={Stories.Sizes} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Default | as variant | — |
+| Hover | primary → `--primary-hover`; neutral variants → `--accent` tint; link → `--primary-hover` text; destructive → `--destructive-hover` (danger one step darker, 9.18 : 1 with white) | K2; destructive by analogy (default accepted 2026-10-24, to be verified) |
+| Focus | 2 px `--ring` outline, 2 px offset, no opacity | WCAG 2.4.7, 2.4.13, decision 3 |
+| Pressed | same declarations as hover (no separate pressed token) | PROPOSAL |
+| Disabled | `--muted` fill, `--muted-foreground` text, not clickable, skipped by Tab | PROPOSAL (shadcn used 50 % opacity) |
+| Loading | disabled + `aria-busy="true"` + label in progress form: **Paying…** | PROPOSAL; R02.4 (no spinner) |
+| Selected, error | not applicable: a button has no selected or invalid state; use Checkbox or Form field | — |
+
+**Why is it disabled?** The reason is always visible next to the button as text and linked with `aria-describedby` (prompt "What to avoid", WCAG 3.3.2). A tooltip is not enough because it is not reachable for a disabled control.
+
+<Canvas of={Stories.DisabledWithReason} />
+
+## 7. Behaviour and accessibility
+
+- Keyboard: Tab focuses, Enter and Space activate (WAI-ARIA APG Button). Disabled buttons are skipped by Tab.
+- Focus order follows reading order; never use positive `tabindex` (WCAG 2.4.3).
+- Role `button`; with `asChild` and `<a href>` the role is `link` (WAI-ARIA).
+- Screen readers announce the label, for icon-only the `aria-label`; loading announces "busy" through `aria-busy`.
+- Target: 40 × 40 px default, 32 × 32 px small — both above the 24 × 24 px minimum (WCAG 2.5.8).
+
+<Canvas of={Stories.ClickAndKeyboard} />
+
+## 8. Content
+
+- Verb + object: **Book session**, **Decline question**, **Copy share link**. Never **OK**, **Submit**, **Click here** (L3).
+- At most about 4 words / 32 characters; the button does not wrap (PROPOSAL).
+- Price in the label only on the payment action: **Pay 45 USD** (R04 in the brief: upfront payment).
+- No exclamation marks or emoji (L3, R02.5).
+- Translation: allow 30 % more length; on narrow screens make the primary button full width rather than shortening the verb (PROPOSAL).
+
+## 9. Responsive behaviour
+
+- 320 px: primary and secondary actions stack full width (`w-full`), primary first.
+- 768 px and 1440 px: buttons keep their content width, aligned at the start of the form or panel (R01.5: no centring).
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `variant` | `'default' \| 'secondary' \| 'outline' \| 'ghost' \| 'destructive' \| 'link'` | `'default'` | Visual weight, see Variants |
+| `size` | `'default' \| 'sm' \| 'icon' \| 'icon-sm'` | `'default'` | Ignored for `link` |
+| `asChild` | `boolean` | `false` | Render the child element (e.g. `<a>`) with button styles |
+| `disabled` | `boolean` | `false` | Pair with a visible reason |
+| …`button` props | `ComponentProps<'button'>` | — | `type`, `onClick`, `aria-*` |
+
+## 11. Code
+
+```tsx
+import { Button } from '@mentorhub/ui';
+
+<Button>Book session</Button>
+```
+
+```tsx
+// Checkout footer: one primary action, one way back (R01.5)
+<div className="flex gap-inline">
+  <Button type="submit" disabled={isPaying} aria-busy={isPaying || undefined}>
+    {isPaying ? 'Paying…' : 'Pay 45 USD'}
+  </Button>
+  <Button type="button" variant="outline" onClick={onChangeSlot}>
+    Change slot
+  </Button>
+</div>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| One filled **Pay 45 USD** and an outline **Change slot** — the next step is obvious (R01.5). | Two filled buttons side by side — the user cannot tell which one matters (R01.5). |
+| **Decline question** in `destructive`, followed by a confirmation naming the session (R01.3). | **OK** in `destructive` — the label does not say what happens (L3). |
+| A disabled **Pay** with "Choose a slot first." under it (WCAG 3.3.2). | A disabled **Pay** with no reason — the user is stuck. |
+| `<Button>` for actions. | `<div onClick>` — no keyboard, no role (WCAG 2.1.1). |
+
+## 13. Related
+
+- Confused with: Link and text action (navigation vs action), Checkbox/Switch (state vs action), Menu (several actions behind one trigger, batch 3).
+- Appears in: Form pattern (submit, cancel), Delete confirmation (destructive), List with filters (Clear filters), Mentor page (Book session) — stage 3.

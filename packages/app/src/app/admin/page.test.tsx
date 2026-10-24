@@ -23,14 +23,14 @@ describe('/admin dashboard', () => {
     await renderPage();
     expect(apiCall).toHaveBeenCalledWith('/api/admin/health');
     expect(screen.getByRole('heading', { name: 'Admin · Dashboard' })).toBeTruthy();
-    expect(screen.getByText('Connected').dataset.variant).toBe('default');
+    expect(screen.getByText('Connected').dataset.variant).toBe('success');
     expect(screen.queryByText('Database unreachable')).toBeNull();
   });
 
   it('shows a clear unreachable state, not a crash, when the database is down', async () => {
     apiCall.mockResolvedValue({ ok: true, data: { status: 'degraded', db: 'down' }, status: 200 });
     await renderPage();
-    expect(screen.getByText('Database unreachable').dataset.variant).toBe('destructive');
+    expect(screen.getByText('Database unreachable').dataset.variant).toBe('danger');
     expect(screen.queryByText('Connected')).toBeNull();
   });
 
