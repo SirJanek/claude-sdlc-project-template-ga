@@ -16,8 +16,23 @@ export function errorMessage(code: string | undefined): string | null {
   return ERROR_MESSAGES[code] ?? GENERIC_ERROR;
 }
 
-// Colocated with the sign-in page (its only consumer).
-export function SignInForm({ next, errorCode }: { next?: string; errorCode?: string }) {
+/**
+ * The e-mail-link form shared by `/sign-in` and `/sign-up/mentor` (the `(auth)` group's client part; it
+ * needs `next/navigation`, so it lives in `app`, not `ui`). `intentRole` is sent with the request and
+ * carried to `/check-email` so a resend keeps it. The response is the same for known and unknown
+ * e-mails, so the form never learns whether an account exists.
+ */
+export function EmailLinkForm({
+  next,
+  errorCode,
+  intentRole,
+  submitLabel = 'Send me a sign-in link',
+}: {
+  next?: string;
+  errorCode?: string;
+  intentRole?: 'mentor';
+  submitLabel?: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(errorMessage(errorCode));
@@ -34,14 +49,18 @@ export function SignInForm({ next, errorCode }: { next?: string; errorCode?: str
     setError(null);
     const result = await apiCall<{ sent: true }>('/api/auth/email/start', {
       method: 'POST',
-      body: JSON.stringify({ email, ...(next ? { next } : {}) }),
+      body: JSON.stringify({ email, ...(intentRole ? { intentRole } : {}), ...(next ? { next } : {}) }),
     });
     setBusy(false);
     if (!result.ok) {
       setError(result.error.fieldErrors?.email?.[0] ?? result.error.message);
       return;
     }
-    const params = new URLSearchParams({ email, ...(next ? { next } : {}) });
+    const params = new URLSearchParams({
+      email,
+      ...(intentRole ? { role: intentRole } : {}),
+      ...(next ? { next } : {}),
+    });
     router.push(`/check-email?${params.toString()}`);
   }
 
@@ -77,7 +96,7 @@ export function SignInForm({ next, errorCode }: { next?: string; errorCode?: str
         disabled={busy}
         className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
       >
-        Send me a sign-in link
+        {submitLabel}
       </button>
       <p className="text-sm text-slate-600">No password. We&apos;ll e-mail you a link that signs you in.</p>
     </form>

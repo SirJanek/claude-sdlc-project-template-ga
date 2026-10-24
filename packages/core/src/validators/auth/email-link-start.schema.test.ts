@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emailLinkStartSchema } from './email-link-start.schema';
+import { emailLinkStartSchema, intentRoleSchema } from './email-link-start.schema';
 
 describe('emailLinkStartSchema', () => {
   it('normalises the e-mail and keeps the optional intent role and return path', () => {
@@ -12,8 +12,11 @@ describe('emailLinkStartSchema', () => {
   });
 
   it('never accepts admin (or any role but mentor) as an intent — an admin is only promoted by the CLI', () => {
-    for (const intentRole of ['admin', 'mentee', 'owner', ''])
+    for (const intentRole of ['admin', 'mentee', 'owner', '']) {
       expect(emailLinkStartSchema.safeParse({ email: 'a@b.io', intentRole }).success, intentRole).toBe(false);
+      expect(intentRoleSchema.safeParse(intentRole).success, intentRole).toBe(false);
+    }
+    expect(intentRoleSchema.parse('mentor')).toBe('mentor'); // the same literal guards `/check-email?role=`
   });
 
   it('rejects an invalid e-mail, an off-site return path, and strips unknown keys', () => {

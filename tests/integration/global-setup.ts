@@ -121,8 +121,10 @@ export default async function setup(project: TestProject) {
     '/api/users',
     '/api/admin/health',
     '/sign-in',
+    '/sign-up/mentor',
     '/check-email',
     '/auth/confirm',
+    '/mentor/profile',
     '/api/auth/me',
   ])
     await fetch(`${devUrl}${path}`);

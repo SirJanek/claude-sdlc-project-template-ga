@@ -7,7 +7,7 @@ vi.mock('@mentorhub/ui', async (original) => ({ ...(await original<typeof import
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push }) }));
 
 import SignInPage from './page';
-import { errorMessage } from './SignInForm';
+import { errorMessage } from '../EmailLinkForm';
 
 afterEach(cleanup);
 beforeEach(() => {
@@ -33,6 +33,7 @@ describe('/sign-in', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Sign in');
     expect(screen.getByLabelText('E-mail').getAttribute('type')).toBe('email');
     expect(screen.getByText("No password. We'll e-mail you a link that signs you in.")).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Sign up as a mentor' }).getAttribute('href')).toBe('/sign-up/mentor');
     expect(screen.queryByRole('alert')).toBeNull();
   });
 

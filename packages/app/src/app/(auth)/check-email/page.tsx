@@ -1,4 +1,4 @@
-import { AUTH_LIMITS, nextPathSchema } from '@mentorhub/core';
+import { AUTH_LIMITS, intentRoleSchema, nextPathSchema } from '@mentorhub/core';
 import { ResendButton } from './ResendButton';
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -10,6 +10,8 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: S
   const params = await searchParams;
   const email = first(params.email) ?? '';
   const next = nextPathSchema.safeParse(first(params.next));
+  // `role=mentor` from /sign-up/mentor: a resend keeps the intended role (anything else is ignored).
+  const intentRole = intentRoleSchema.safeParse(first(params.role));
   return (
     <main className="mx-auto max-w-md px-4 py-16">
       <h1 className="text-3xl font-bold tracking-tight">Check your inbox</h1>
@@ -27,6 +29,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: S
         <ResendButton
           email={email}
           next={next.success ? next.data : undefined}
+          intentRole={intentRole.success ? intentRole.data : undefined}
           waitSeconds={AUTH_LIMITS.resendAfterSeconds}
         />
       ) : null}

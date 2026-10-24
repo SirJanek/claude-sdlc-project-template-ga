@@ -66,6 +66,31 @@ describe('/check-email', () => {
     expect(button().disabled).toBe(true);
   });
 
+  it('resends with the intended role from /sign-up/mentor, and ignores any other role value', async () => {
+    vi.useFakeTimers();
+    apiCall.mockResolvedValue({ ok: true, data: { sent: true }, status: 200 });
+    await renderPage({ email: 'm@example.com', role: 'mentor' });
+    await tick(AUTH_LIMITS.resendAfterSeconds);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button'));
+    });
+    expect(apiCall).toHaveBeenCalledWith('/api/auth/email/start', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'm@example.com', intentRole: 'mentor' }),
+    });
+    cleanup();
+    apiCall.mockClear();
+    await renderPage({ email: 'm@example.com', role: 'admin' });
+    await tick(AUTH_LIMITS.resendAfterSeconds);
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button'));
+    });
+    expect(apiCall).toHaveBeenCalledWith('/api/auth/email/start', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'm@example.com' }),
+    });
+  });
+
   it('shows a failed resend as an alert', async () => {
     vi.useFakeTimers();
     apiCall.mockResolvedValueOnce({

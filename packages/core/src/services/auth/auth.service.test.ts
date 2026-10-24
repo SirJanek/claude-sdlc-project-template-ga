@@ -12,6 +12,7 @@ import {
   UnauthorizedError,
 } from '../../http/errors';
 import { verifySessionToken } from '../../http/session';
+import { nextPathSchema } from '../../validators/auth/next-path.schema';
 import { createLogger } from '../../logger';
 import type { MailMessage } from '../mail/mail-sender.port';
 import { AuthService, DEV_ADMIN_USER } from './auth.service';
@@ -349,7 +350,7 @@ describe('consumeEmailLink', () => {
       emailVerifiedAt: h.db.clock,
       sessionVersion: 0,
     });
-    expect(result).toEqual({ userId: 'id-2', sessionVersion: 0, next: '/mentors/7?slot=1' });
+    expect(result).toEqual({ userId: 'id-2', sessionVersion: 0, next: '/mentors/7?slot=1', existingAccount: false });
     expect(h.eventBus.emit).toHaveBeenCalledTimes(1);
     expect(h.eventBus.emit).toHaveBeenCalledWith('auth.user.created', {
       userId: 'id-2',
@@ -359,16 +360,75 @@ describe('consumeEmailLink', () => {
     expect(h.db.tokens[0]!.usedAt).toEqual(h.db.clock);
   });
 
-  it('creates the intended role for a new account but never changes an existing account', async () => {
+  it('AC1 (#26): a mentor sign-up link creates a mentor account that lands on /mentor/profile', async () => {
     const h = harness();
     await h.request('m@example.com', { intentRole: 'mentor' });
-    expect((await h.service().consumeEmailLink(h.lastToken())).userId).toBe('id-2');
-    expect(h.db.users[0]!.role).toBe('mentor');
+    await expect(h.service().consumeEmailLink(h.lastToken(), h.db.clock)).resolves.toEqual({
+      userId: 'id-2',
+      sessionVersion: 0,
+      next: '/mentor/profile',
+      existingAccount: false,
+    });
+    expect(h.db.users[0]).toMatchObject({ email: 'm@example.com', role: 'mentor', emailVerifiedAt: h.db.clock });
+    expect(h.eventBus.emit).toHaveBeenCalledWith('auth.user.created', expect.objectContaining({ userId: 'id-2' }));
+  });
+
+  it('AC3 (#26): a mentor sign-up link for an e-mail in use signs in to that account, changes no role, creates nothing, and flags the notice', async () => {
+    // Mutation check (Phase 3 step 3): let consume apply `token.intentRole` to an existing user → this test is red.
+    const h = harness();
+    await h.request('taken@example.com');
+    const mentee = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    expect(h.db.users[0]).toMatchObject({ id: mentee.userId, role: 'mentee' });
+    h.eventBus.emit.mockClear();
+    await h.request('taken@example.com', { intentRole: 'mentor' });
+    await expect(h.service().consumeEmailLink(h.lastToken(), h.db.clock)).resolves.toEqual({
+      userId: mentee.userId, // the same account
+      sessionVersion: 0,
+      next: '/?notice=existing_account', // a mentee's landing page, with the one-time notice
+      existingAccount: true,
+    });
+    expect(h.db.users).toHaveLength(1); // no second account
+    expect(h.db.users[0]!.role).toBe('mentee'); // role unchanged
+    expect(h.eventBus.emit).not.toHaveBeenCalled(); // nothing was created
+  });
+
+  it('an existing mentor using a mentor sign-up link lands on profile setup with the notice; a validated next still wins', async () => {
+    const h = harness();
     await h.request('m@example.com', { intentRole: 'mentor' });
-    h.db.users[0]!.role = 'mentee';
-    await h.service().consumeEmailLink(h.lastToken());
+    await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    const profile = (await h.service().consumeEmailLink(h.lastToken(), h.db.clock)).next;
+    expect(profile).toBe('/mentor/profile?notice=existing_account');
+    await h.request('m@example.com', { intentRole: 'mentor', next: '/mentors/7?slot=1' });
+    const slot = (await h.service().consumeEmailLink(h.lastToken(), h.db.clock)).next;
+    expect(slot).toBe('/mentors/7?slot=1&notice=existing_account');
+    for (const next of [profile, slot]) expect(nextPathSchema.safeParse(next).success, next).toBe(true);
+    const later = new Date(h.db.clock.getTime() + AUTH_LIMITS.linksPerEmail.windowMinutes * 60_000 + 1); // past the per-e-mail limit
+    await h.request('m@example.com', { next: '/mentors/7?slot=1' }, later); // a plain sign-in link: no notice
+    expect((await h.service().consumeEmailLink(h.lastToken(), later)).next).toBe('/mentors/7?slot=1');
     expect(h.db.users).toHaveLength(1);
-    expect(h.db.users[0]!.role).toBe('mentee');
+    expect(h.db.users[0]!.role).toBe('mentor');
+  });
+
+  it('an existing account with a dot-segment next keeps that exact path: the final next never becomes protocol-relative (PR #47 review)', async () => {
+    const h = harness();
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    await h.request('m@example.com', { intentRole: 'mentor', next: '/a/..//evil.example' });
+    const { next } = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    expect(next).toBe('/a/..//evil.example?notice=existing_account');
+    expect(next.startsWith('//')).toBe(false);
+    expect(nextPathSchema.safeParse(next).success).toBe(true);
+  });
+
+  it('an existing account with a next that already carries a notice key gets the authoritative one, first (PR #47 pass 2)', async () => {
+    const h = harness();
+    await h.request('m@example.com', { intentRole: 'mentor' });
+    await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    await h.request('m@example.com', { intentRole: 'mentor', next: '/mentor/profile?notice=bad' });
+    const { next } = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
+    expect(next).toBe('/mentor/profile?notice=existing_account');
+    expect(new URLSearchParams(next.split('?')[1]).getAll('notice')).toEqual(['existing_account']);
   });
 
   it('signs an existing (admin-created, unverified) user in, verifying the account, without an event', async () => {
@@ -383,7 +443,13 @@ describe('consumeEmailLink', () => {
     });
     await h.request();
     const result = await h.service().consumeEmailLink(h.lastToken(), h.db.clock);
-    expect(result).toEqual({ userId: 'u-admin-made', sessionVersion: 5, next: '/' });
+    // A plain sign-in link: the mentor's default landing page, no notice (no intended role on the link).
+    expect(result).toEqual({
+      userId: 'u-admin-made',
+      sessionVersion: 5,
+      next: '/mentor/profile',
+      existingAccount: false,
+    });
     expect(h.db.users[0]!.emailVerifiedAt).toEqual(h.db.clock);
     expect(h.eventBus.emit).not.toHaveBeenCalled();
     const verifiedAt = new Date('2026-01-01T00:00:00Z');
