@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './empty-state.stories';
+
+<Meta of={Stories} />
+
+# Empty state
+
+## 1. Purpose
+
+Explains why a list is empty and offers one next step. Reuses the existing backend `EmptyState` (no duplicate).
+
+## 2. When to use
+
+No bookings yet, no search results.
+
+## 3. When not to use
+
+Errors (Error state), loading (Skeleton).
+
+## 4. Anatomy
+
+Title, description (why), one action.
+
+## 5. Variants
+
+With / without action.
+
+<Canvas of={Stories.WithAction} />
+
+## 6. States
+
+Static.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+`title`, `description`, `action`.
+
+## 11. Code
+
+```tsx
+<EmptyState title="No sessions booked yet" action={<Button>Find a mentor</Button>} />
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Error state, Skeleton. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

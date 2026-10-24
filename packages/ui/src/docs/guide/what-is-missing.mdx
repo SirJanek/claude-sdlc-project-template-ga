@@ -1,0 +1,74 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/What is missing" />
+
+# What is missing
+
+## Gaps in the system (collected from POSTEP.md, stages 0–5)
+
+| Item | Why it is missing | Source |
+|---|---|---|
+| Profile photo field | Avatar is photo-only; backlog has no photo field | stage 0 decision 2 |
+| `TextLink` for links in prose | today `Button variant="link"` on `<a>` (inline-flex) | batch 1 #9 |
+| `FormField` cannot wrap `Select` | label/description wired by hand | batch 2 #10 |
+| Combobox (searchable select) | long lists, e.g. technologies | batch 2 #10 |
+| Chips / tags input (removable filter chips done: `FilterChip`) | technologies on the profile | batch 2 #10 |
+| Slot publishing editor (mentor) | no spec for E02-S02 | stage 3 |
+| Session: send failure, reconnect, time remaining | no spec for E04 | stage 3 |
+| Reschedule flow screen | no spec for E03-S03 | stage 3 |
+| Sign-in, password reset | not in backlog | stage 3 |
+| Tabs vs flat mentor navigation (R02.6) | open decision; screens use flat links | open questions |
+| Home page `(marketing)/page.tsx` outside the system (12 hard-coded colours) | rule 11: app code not changed | stage 0 |
+| `CrudForm` not migrated to `FormField` | admin panel layer | batch 1 #11 |
+| `table.tsx` 2 arbitrary values `translate-y-[2px]` | shadcn leftovers | lint:tokens |
+| Badge aliases in the app (`default`, `destructive`…) | app migration needs approval | batch 2 #5 |
+| Tests for batches 3–4, product, patterns and screens (play functions, a11y runs) | skipped on Jan's request (exercise speed) | stages 2–5 |
+| Live previews for portal components on the Components page | shown as names | stage 4 |
+| API mocks with MSW for the form pattern | fake async call used instead | stage 3 |
+| Dark theme | only light in release 1 (L2) | stage 0 decision 5 |
+| **Undo after removing a favourite** — product decision for Jan: Toast with "Undo" (breaks "Toast = saved only") or no undo for reversible removals | alert-dialog.mdx says "offer undo"; no pattern | agent test 1 |
+| `LoadingMessage` deprecated (spinner + opacity) — still used in the admin panel | replace with Skeleton when the admin panel migrates | agent test 1 |
+
+## Backlog coverage
+
+| Backlog item | Component / screen | State | Priority |
+|---|---|---|---|
+| E01-S01 mentor sign-up | Epics/E01 · Mentor sign-up | drawn from spec | medium |
+| E01-S02 mentee sign-up + verify | Epics/E01 · Mentee sign-up, Check your e-mail | drawn | medium |
+| E02-S01 profile with public work | Epics/E02 · edit profile; MentorCard | PROPOSAL | medium |
+| E02-S02 prices and slots | Patterns · Form (prices); slot editor missing | partial | medium |
+| E02-S03 mentor page from link | Patterns · Detail view; Epics/E02 | PROPOSAL | medium |
+| E02-S04 catalogue opt-in + search | Patterns · List with filters; Switch | PROPOSAL | medium |
+| E03-S01 book, question, pay | SlotList, PriceSummary, Book and pay | PROPOSAL | medium |
+| E03-S01-T01 Stripe | — (backend) | n/a | medium |
+| E03-S02 mentor declines | Confirm dialog · decline | PROPOSAL | medium |
+| E03-S03 cancel/reschedule 12 h | PriceSummary text; reschedule screen missing | partial | medium |
+| E03-S04 no-shows | BookingRow statuses | PROPOSAL | medium |
+| E03-S05 payout details | Epics/E03 · payouts | PROPOSAL | medium |
+| E03-S05-T01 payout job | — (backend) | n/a | medium |
+| E04-S01 text session | SessionEntry, SessionComposer, Epics/E04 | PROPOSAL | medium |
+| E05-S01 measures | Epics/E05 · measures | PROPOSAL | medium |
+| E06 later | none (parked) | — | low |
+| Agent test screen "Favourite mentors" | built twice: run 1 guessed 14/42, run 2 guessed 5/42 (`lekcja-06/test-agentem-wynik-2.md`) | done | — |
+
+
+## Deferred after agent test run 2 (2026-10-24, deliberately left for later)
+
+Source: `lekcja-06/test-agentem-wynik-2.md`. Each item names what the next agent would otherwise guess.
+
+| Gap | What an agent guesses today | Fix later |
+|---|---|---|
+| Undo after removing a favourite | no undo | product decision (Jan): Toast with "Undo" breaks "Toast only for saved" |
+| Filter bar on load error | Patterns shows it, the rule says hide it | align the Patterns example with the rule (hide) |
+| Filter chip in Patterns drawn by hand | copy the hand-made chip | use `FilterChip` in the Patterns example |
+| "Verb + object" vs `RowAction` label "Remove" | short visible label, full accessible name | write the exception into Content |
+| Skeleton shape and row count | `h-16 w-full`, 3 rows | add a mentor-row skeleton and one rule |
+| `FormField` with `Select` | label wired by hand | extend `FormField` |
+| Focus after removing a row | next row, else the heading | write the rule (WAI-ARIA) |
+| Removing the last matching item | show "no results" | write the rule |
+| Filter options source and "All technologies" | built from saved items | write the rule |
+| Unavailable mentor in the result count | counted | write the rule |
+| Border above the first list row | none | write the rule |
+| Copy templates for empty and error states | taken from examples | add to Content |
+| Filter bar at 320 px | wraps | document the layout |
+| Status of PROPOSAL rules | treated as binding | Jan reviews "przyjęte domyślnie, do weryfikacji" in POSTEP.md |

@@ -17,7 +17,11 @@
     "db:migrate": "pnpm --filter @mentorhub/db migrate",
     "db:migration": "pnpm --filter @mentorhub/db migration:create",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "browser:install": "agent-browser install"
+    "browser:install": "agent-browser install",
+    "storybook": "pnpm --filter @mentorhub/ui storybook",
+    "build-storybook": "pnpm --filter @mentorhub/ui build-storybook",
+    "test:storybook": "pnpm --filter @mentorhub/ui test:storybook",
+    "lint:tokens": "pnpm --filter @mentorhub/ui lint:tokens"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

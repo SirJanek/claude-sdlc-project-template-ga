@@ -49,7 +49,7 @@ export default function AdminDashboardPage() {
           {error ? (
             <ErrorMessage message={error.message} onRetry={load} />
           ) : report ? (
-            <Badge variant={up ? 'default' : 'destructive'}>{up ? 'Connected' : 'Database unreachable'}</Badge>
+            <Badge variant={up ? 'success' : 'danger'}>{up ? 'Connected' : 'Database unreachable'}</Badge>
           ) : (
             <LoadingMessage label="Checking database…" />
           )}

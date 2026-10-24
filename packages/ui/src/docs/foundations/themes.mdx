@@ -1,0 +1,32 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { TokenValue } from '../../../.storybook/blocks/Foundations';
+
+<Meta title="Foundations/Themes" />
+
+# Themes
+
+The first release ships **one theme, light** (referencje.md L2, confirmed at stage 0). The theme switcher in the
+toolbar exists so that a dark theme can be added without touching stories; today its only entry is "Light".
+
+How the theme is applied: the Storybook decorator sets `data-theme` on `<html>` and toggles the `dark` class
+there, so dialogs, menus and popovers rendered in portals receive the same theme (prompt rule 9). The app will
+do the same on its root layout when a dark theme exists.
+
+<Unstyled>
+  <p><TokenValue token="--background" /> · <TokenValue token="--primary" /></p>
+</Unstyled>
+
+## The existing `.dark` block
+
+`globals.css` contains a `.dark` block from the original template (indigo on cool grey). It is **untouched and
+unused**: no element gets the `dark` class. It does not follow the warm palette and its pairs have not been
+measured. Decision L2 says a dark theme is a separate decision; when it is taken, the block is replaced with
+warm neutrals derived from `--dm-*` and every pair in Foundations / Colour is measured again in both themes.
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Components never read the theme; they use semantic tokens and get the right value from the root. | tokens.css layers |
+| Adding a theme means redefining semantic tokens under a selector, never changing a component. | prompt stage 1.2 |
+| Every contrast pair is measured in every theme before the theme ships. | WCAG 1.4.3, 1.4.11 |

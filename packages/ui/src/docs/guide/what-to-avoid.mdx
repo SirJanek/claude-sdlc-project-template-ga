@@ -1,0 +1,41 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/What to avoid" />
+
+# What to avoid
+
+## 1. Product anti-patterns (referencje A01–A05)
+
+| Signature | Recognise it (screen / code) | Why it is a problem | Instead |
+|---|---|---|---|
+| A01 Generic AI startup | gradients, glass, sparkles, "new" pill, three icon cards, initials avatars; `bg-gradient-to-*`, `from-indigo-*`, `backdrop-blur`, `rounded-2xl` | "Looks like everything else" (audit 2026-10-19) | warm neutrals, one accent, rows, photo-only Avatar |
+| A02 Course / learning path | progress bars, modules, certificates, "your journey" | Users want an answer, not a course (interviews) | one question → one session |
+| A03 Marketplace with ratings | stars, "4.9", "top rated", review counts, tile grid, sort by rating | Ratings carry no information; mentors refuse them (N02) | public work link (R08), list rows |
+| A04 Community / subscription | activity feed, member counts, streaks, monthly plan | Users pay for one answer | per-session price |
+| A05 Messenger | online dot, "typing…", bubbles, reactions, unread counters, DMs | A session has a start and an end | SessionEntry full width, composer only in a session |
+
+## 2. Generic AI look
+
+| Pattern | Recognise in code | Instead |
+|---|---|---|
+| Gradients in background, text, buttons | `bg-gradient-*`, `bg-clip-text` | flat token colours |
+| Glass and blur, glow | `backdrop-blur`, `shadow-*` with colour | border `--border` (R01.1) |
+| Emoji instead of icons; sparkles for AI | emoji in JSX, `Sparkles` icon | lucide icons with text |
+| Three identical icon cards | `grid-cols-3` of Cards with icons | rows or prose |
+| Everything in pills | `rounded-full` outside Badge | `--radius` 6 px |
+| Card in a card | `Card` inside `Card` | one panel, spacing |
+| Shadow as the only separator | `shadow-*` | line `border-border` |
+| Everything centred | `text-center` on lists | left-aligned (R01) |
+
+## 3. Implementation errors
+
+| Error | Recognise | Instead |
+|---|---|---|
+| Value outside tokens | hex/rgb, `bg-zinc-*`, `p-[13px]` — `pnpm lint:tokens` fails | semantic token |
+| Variant added "on the way" | new key in `cva` without the plan | ask, add to What is missing |
+| `div` as a button | `<div onClick>` | `Button` |
+| Placeholder instead of label | `<Input placeholder="Email">` alone | `FormField label` |
+| Status by colour only | coloured dot | `Badge` with text |
+| Disabled button without reason | `disabled` with no text | sentence next to it ("Choose a time to continue.") |
+| Toast for an error needing action | `toast.error(...)` | `Alert` / field error |
+| Tooltip with required info | key info in `Tooltip` | visible text |

@@ -1,0 +1,35 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Contributing" />
+
+# Contributing
+
+## Component, variant or nothing
+- **New component:** the same need in at least two places (two screens or two epics). Before that, compose on the page (AGENTS.md: colocate until a second consumer).
+- **New variant:** an existing component with a different meaning, not a different look. Otherwise use `className` with tokens.
+- **Nothing:** if a pattern already covers it — use the pattern.
+- Homes: primitive → `src/components/ui/`; panel pattern → `src/backend/<category>/`; domain component → `src/components/<concept>/`.
+
+## A new component's documentation must have
+13 sections (purpose, when, when not, anatomy, variants, states, behaviour/a11y, content, responsive, API, code, do/don't, related), stories: playground, every variant, state matrix (`data-preview-state`), long text + narrow screen, a play function for the main behaviour.
+
+## Changing a token
+Change the semantic layer in `src/styles/tokens.css` with its source comment; recompute contrast (Foundations/Colour) in both themes; run `pnpm --filter @mentorhub/ui lint:tokens`; check every component that uses it.
+
+## Who approves
+Jan approves new components, variants, tokens and rules without a source (marked PROPOSAL until then).
+
+## Commands
+
+| Task | Command |
+|---|---|
+| Storybook | `pnpm --filter @mentorhub/ui storybook` (:6006) |
+| Build Storybook | `pnpm --filter @mentorhub/ui build-storybook` |
+| Story tests (a11y error) | `pnpm --filter @mentorhub/ui test:storybook` |
+| Token lint | `pnpm --filter @mentorhub/ui lint:tokens` |
+| Typecheck | `pnpm --filter @mentorhub/ui typecheck` |
+
+## Where code and stories live (clarified after agent test 1)
+- In the app: used by one page → colocate with `page.tsx` (AGENTS.md rule 4).
+- In `packages/ui`: no `page.tsx` exists, so a domain screen built for the system goes to `src/components/<concept>/` (code name, e.g. `favorites`), its story next to it under `Screens/<Name>`; epic screens stay in `src/docs/screens/`.
+- Second use of a hand-built pattern → component (done: `FilterBar`, `PageHeader`, `RowAction`).

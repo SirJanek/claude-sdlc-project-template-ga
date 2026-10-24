@@ -23,7 +23,7 @@ const columns: DataTableColumn<UserListItem>[] = [
   {
     key: 'role',
     header: 'Role',
-    cell: (user) => <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>{user.role}</Badge>,
+    cell: (user) => <Badge variant="neutral">{user.role}</Badge>,
   },
   { key: 'created', header: 'Created', cell: (user) => new Date(user.createdAt).toLocaleDateString('en-GB') },
 ];

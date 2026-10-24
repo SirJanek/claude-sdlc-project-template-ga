@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './dialog.stories';
+
+<Meta of={Stories} />
+
+# Dialog
+
+## 1. Purpose
+
+Shows details or a short task on top of the page without leaving it.
+
+## 2. When to use
+
+Session details, a short note to the mentor.
+
+## 3. When not to use
+
+Confirming destructive actions (Confirm dialog), long forms (own page), extra info (Popover).
+
+## 4. Anatomy
+
+Overlay `--overlay` (PROPOSAL token), surface 6 px, `--border-strong`, no shadow, title, description, close 40 px with `aria-label`, footer.
+
+## 5. Variants
+
+One size: `max-w-md`, padding `p-panel`.
+
+<Canvas of={Stories.Open} />
+
+## 6. States
+
+Closed / open. No entrance animation. Focus trapped, Esc and close button close it, focus returns to the trigger.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+Radix Dialog props; `showCloseButton`.
+
+## 11. Code
+
+```tsx
+<Dialog><DialogTrigger asChild><Button>View details</Button></DialogTrigger><DialogContent>…</DialogContent></Dialog>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Confirm dialog, Popover. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).
