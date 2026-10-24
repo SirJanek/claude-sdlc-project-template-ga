@@ -1,0 +1,113 @@
+import { ArgTypes, Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './avatar.stories';
+
+<Meta of={Stories} />
+
+# Avatar
+
+## 1. Purpose
+
+An avatar shows a person's photo next to their name so a mentee recognises the mentor, and the other way round, at a glance.
+
+## 2. When to use
+
+- Message author line in the session (R02.1: "avatar, bold name, time").
+- Mentor header on the mentor page (E02-S03), if the mentor added a photo.
+
+**Photo only** (stage 0 decision 2, A01). The profile has no photo field yet (no backlog item) → "What is missing".
+
+## 3. When not to use
+
+| Situation | Use instead | Source |
+|---|---|---|
+| No photo | Nothing — the name stands alone (PROPOSAL, default accepted 2026-10-24) | A01 (no initials avatars) |
+| Online status, "typing" | nothing | A05, R02.4 |
+| Stacks of faces ("+12 mentors") | nothing | A03, A04 |
+| A logo | not an avatar; no letter-in-a-square logos | A01 |
+
+## 4. Anatomy
+
+| Part | Required | Notes |
+|---|---|---|
+| Photo | yes | circle (PROPOSAL), `object-fit: cover` |
+| Name | yes, outside the component | bold, next to the photo (R02.1) |
+
+shadcn's `AvatarFallback` (initials), `AvatarBadge` (online dot) and `AvatarGroup` were removed: not in the plan, and against A01/A05.
+
+## 5. Variants
+
+| Size | px | Where |
+|---|---|---|
+| `sm` | 24 | lists, table rows |
+| `default` | 32 | session message author |
+| `lg` | 40 | mentor header (= one list row, K1) |
+
+<Canvas of={Stories.Sizes} />
+
+## 6. States
+
+<Canvas of={Stories.StateMatrixStory} />
+
+| State | Look | Source |
+|---|---|---|
+| Photo loaded | circle with the photo | stage 0 decision 2 |
+| No photo | nothing rendered; layout closes the gap | A01, PROPOSAL |
+| Photo failed | same as no photo | PROPOSAL |
+| Loading | hidden until loaded (no placeholder shape) | PROPOSAL |
+| Hover, focus, pressed, disabled, error | not applicable: not interactive | — |
+
+## 7. Behaviour and accessibility
+
+- Next to a visible name, the photo is decorative: `alt=""` so the name is not read twice (WCAG 1.1.1).
+- Alone (rare), `alt` is the person's name.
+- Not focusable; no target size.
+
+<Canvas of={Stories.PhotoOnly} />
+
+## 8. Content
+
+- `alt` = full name when needed, never "avatar" or "photo of".
+- Long names wrap next to the photo; the photo stays top-aligned.
+
+## 9. Responsive behaviour
+
+Fixed sizes at every width; the name wraps.
+
+<Canvas of={Stories.LongTextNarrowScreen} />
+
+## 10. API
+
+<ArgTypes of={Stories} />
+
+| Prop | Type | Default | Description |
+|---|---|---|---|
+| `src` | `string \| null` | — | Photo URL; empty → renders nothing |
+| `alt` | `string` | required | `""` when the name is printed next to it |
+| `size` | `'sm' \| 'default' \| 'lg'` | `'default'` | 24 / 32 / 40 px |
+
+## 11. Code
+
+```tsx
+<Avatar src={mentor.photoUrl} alt="" />
+```
+
+```tsx
+<p className="flex items-center gap-inline">
+  <Avatar src={author.photoUrl} alt="" />
+  <span className="font-semibold">{author.name}</span>
+  <span className="text-sm text-muted-foreground">18:32</span>
+</p>
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Name alone when there is no photo (A01). | Coloured circle with initials (A01). |
+| `alt=""` next to a printed name (WCAG 1.1.1). | `alt="Avatar"`. |
+| Photo next to the author line (R02.1). | Green online dot (A05). |
+
+## 13. Related
+
+- Confused with: logo, icon.
+- Appears in: session thread (E04-S01), mentor page header (E02-S03).

@@ -1,0 +1,85 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './layout.stories';
+
+<Meta of={Stories} />
+
+# Screen building blocks: PageHeader, FilterBar, RowAction, MentorCard variants
+
+Added after agent test 1 (`lekcja-06/test-agentem-wynik-1.md`). Choices marked PROPOSAL are przyjęte domyślnie, do weryfikacji.
+
+## 1. Purpose
+
+Give every list screen the same title, filter bar and row-action behaviour so agents stop guessing.
+
+## 2. When to use
+
+- `PageHeader`: top of every screen (one `h1`).
+- `FilterBar`: a list with at least one filter; chips show active filters.
+- `RowAction`: one action per row in `MentorCard` / `BookingRow` (`action` slot).
+- `MentorCard variant="compact"`: lists where price and slots do not matter (saved mentors); `unavailable` for saved items removed from the catalogue.
+
+## 3. When not to use
+
+- Section titles inside a page → `h2 text-lg`, not `PageHeader`.
+- 3+ row actions → `DropdownMenu`.
+- Destructive, irreversible row action → `AlertDialog` first.
+
+## 4. Anatomy
+
+PageHeader: title (`h1 text-xl semibold`), optional description (≤ 65 ch), optional actions. FilterBar: controls → chips → `role=status` count (right). RowAction: ghost sm button + optional inline error.
+
+## 5. Variants
+
+MentorCard: `full` (default) / `compact`; `hideNoSlotsBadge`; `unavailable`.
+
+<Canvas of={Stories.CompactCard} />
+<Canvas of={Stories.Unavailable} />
+
+## 6. States
+
+RowAction: idle, in progress ("Removing…", disabled, `aria-busy`, row `aria-busy`), failed (inline `role=alert` text, button becomes "Try again").
+
+<Canvas of={Stories.RowPending} />
+<Canvas of={Stories.RowError} />
+
+FilterBar: loading = controls enabled, count empty (PROPOSAL); error and empty = bar hidden.
+
+<Canvas of={Stories.FilterBarActive} />
+
+## 7. Behaviour and accessibility
+
+Row action accessible name includes the object: "Remove Anna Kowalska from favourites" (WCAG 2.4.6, PROPOSAL). Chip name "Remove filter Python". Count in `role=status` so changes are announced (WCAG 4.1.3). Row action stays on the right on phones, size `sm` (32 px ≥ 24 px target, WCAG 2.5.8).
+
+## 8. Content
+
+Count: "3 saved mentors", "2 of 3 saved mentors" (`resultCount`). Pending: verb + "…". Error: what happened + what to do. British spelling in UI copy ("Favourite").
+
+## 9. Responsiveness
+
+320: header actions wrap under the title; filter bar wraps; row action stays right. 768 / 1440: one row.
+
+<Canvas of={Stories.RowMobile} />
+
+## 10. API
+
+`PageHeader { title, description?, actions?, id? }` · `FilterBar { children?, active?, onRemove?, count? }` · `FilterChip { label, onRemove }` · `resultCount(shown, total, noun, loading?)` · `RowAction { label, pendingLabel, accessibleName, state?, errorMessage?, onAction }` · `MentorCard { variant?, hideNoSlotsBadge?, unavailable?, busy? }`.
+
+## 11. Code
+
+```tsx
+<PageHeader title="Favourite mentors" description="Mentors you saved." />
+<MentorCard mentor={m} href={`/mentors/${m.id}`} variant="compact"
+  action={<RowAction label="Remove" pendingLabel="Removing…" accessibleName={`Remove ${m.name} from favourites`} state={state} onAction={remove} />} />
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Name the object in the row action label. | Five identical "Remove" buttons. |
+| Keep filters enabled while loading. | Disable filters without a reason. |
+| Show a failed row action inline with retry. | Toast for an error. |
+
+## 13. Related
+
+Patterns › List with filters, Empty state, Error state, Skeleton. Sources: agent test 1, DS "If… then use…", WCAG references above.

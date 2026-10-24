@@ -1,0 +1,65 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Checkbox } from '../../components/ui/checkbox';
+import { Switch } from '../../components/ui/switch';
+import { Badge } from '../../components/ui/badge';
+import { Skeleton } from '../../components/ui/skeleton';
+import { Alert, AlertTitle } from '../../components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
+import { Textarea } from '../../components/ui/textarea';
+import { MentorCard } from '../../components/mentors/MentorCard';
+import { BookingRow } from '../../components/booking/BookingRow';
+import { SessionEntry } from '../../components/session/SessionEntry';
+import { mentors } from '../fixtures';
+
+<Meta title="Design system/Components" />
+
+export const Item = ({ name, group, desc, id, children }) => (
+  <div className="grid content-start gap-inline rounded-lg border border-border p-panel">
+    <div className="min-h-control">{children}</div>
+    <a href={`?path=/docs/${id}--docs`} target="_top" className="font-semibold underline underline-offset-2">{name}</a>
+    <span className="text-sm text-muted-foreground">{group}</span>
+    <span>{desc}</span>
+  </div>
+);
+
+# Components
+
+Every component with a small live preview, its group, one sentence and a link to its page.
+
+<Unstyled>
+<div className="grid gap-stack sm:grid-cols-2 lg:grid-cols-3">
+  <Item name="Button" group="Primitives" id="primitives-button" desc="Runs an action; one primary per screen."><Button>Book this time</Button></Item>
+  <Item name="Link and text action" group="Primitives" id="primitives-link-and-text-action" desc="Navigation and quiet actions."><Button variant="link">View public work</Button></Item>
+  <Item name="Input" group="Primitives" id="primitives-input" desc="One-line value inside a form field."><Input aria-label="Price" defaultValue="45" /></Item>
+  <Item name="Textarea" group="Primitives" id="primitives-textarea" desc="The mentee's question and longer text."><Textarea aria-label="Question" rows={2} defaultValue="TS2742 after upgrade" /></Item>
+  <Item name="Label and form field" group="Primitives" id="primitives-label-and-form-field" desc="Label, hint, error and Required/Optional wired together.">FormField</Item>
+  <Item name="Checkbox" group="Primitives" id="primitives-checkbox" desc="Independent yes/no saved with the form."><Checkbox aria-label="Agree" defaultChecked /></Item>
+  <Item name="Radio group" group="Primitives" id="primitives-radio-group" desc="One of a few visible options."><RadioGroup aria-label="Length" defaultValue="25"><RadioGroupItem value="25" aria-label="25 min" /></RadioGroup></Item>
+  <Item name="Select" group="Primitives" id="primitives-select" desc="One of many options, filters.">Select</Item>
+  <Item name="Switch" group="Primitives" id="primitives-switch" desc="Setting applied immediately."><Switch aria-label="Listed in catalogue" defaultChecked /></Item>
+  <Item name="Card and panel" group="Primitives" id="primitives-card-and-panel" desc="Bordered group of related content, no shadow.">Card</Item>
+  <Item name="Badge" group="Primitives" id="primitives-badge" desc="Status with text; the only pill."><Badge variant="success">Paid</Badge></Item>
+  <Item name="Avatar" group="Primitives" id="primitives-avatar" desc="Photo only, next to a printed name.">Avatar</Item>
+  <Item name="Alert" group="Primitives" id="primitives-alert" desc="In-page message that needs reading."><Alert variant="warning"><AlertTitle>Add payout details</AlertTitle></Alert></Item>
+  <Item name="Dialog" group="Primitives" id="primitives-dialog" desc="Short focused task over the page.">Dialog</Item>
+  <Item name="Confirm dialog" group="Primitives" id="primitives-confirm-dialog" desc="Destructive action, named by its verb.">AlertDialog</Item>
+  <Item name="Menu" group="Primitives" id="primitives-menu" desc="Several secondary actions on a row.">DropdownMenu</Item>
+  <Item name="Popover" group="Primitives" id="primitives-popover" desc="Optional extra detail.">Popover</Item>
+  <Item name="Tooltip" group="Primitives" id="primitives-tooltip" desc="Name of an icon-only button.">Tooltip</Item>
+  <Item name="Tabs" group="Primitives" id="primitives-tabs" desc="Views of the same object.">Tabs</Item>
+  <Item name="Skeleton" group="Primitives" id="primitives-skeleton" desc="Shape of content while it loads."><Skeleton className="h-4 w-1/2" /></Item>
+  <Item name="Empty state" group="Primitives" id="primitives-empty-state" desc="Why it is empty and the next step.">EmptyState</Item>
+  <Item name="Error state" group="Primitives" id="primitives-error-state" desc="What failed and how to retry.">ErrorState</Item>
+  <Item name="Toast" group="Primitives" id="primitives-toast" desc="Only for 'saved' confirmations.">Toast</Item>
+  <Item name="MentorCard" group="Product · E02" id="product-all-product-components" desc="Mentor row without ratings."><MentorCard mentor={mentors[1]} /></Item>
+  <Item name="SlotList" group="Product · E03" id="product-all-product-components" desc="Times grouped by day.">SlotList</Item>
+  <Item name="BookingRow" group="Product · E03" id="product-all-product-components" desc="Booking with status badge."><ul><BookingRow counterpart="Marta" question="TS2742" when="Tue 18:00" price="$45" status="confirmed" /></ul></Item>
+  <Item name="PriceSummary" group="Product · E03" id="product-all-product-components" desc="Total and 12 h rule before paying.">PriceSummary</Item>
+  <Item name="SessionEntry" group="Product · E04" id="product-all-product-components" desc="One full-width message."><SessionEntry author="Marta" time="18:03">Paste the tsconfig.</SessionEntry></Item>
+  <Item name="SessionComposer" group="Product · E04" id="product-all-product-components" desc="Enter sends, stuck to the bottom.">SessionComposer</Item>
+</div>
+</Unstyled>
+
+Some previews show the name only where the component needs a portal or state (open on its page). PROPOSAL: render all as live previews later.

@@ -1,0 +1,64 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Stories from './error-state.stories';
+
+<Meta of={Stories} />
+
+# Error state
+
+## 1. Purpose
+
+Shows a failure in place with what happened and how to recover. Reuses backend `ErrorMessage`, exported also as `ErrorState`; moved onto `--status-danger*` tokens.
+
+## 2. When to use
+
+Failed load, declined payment.
+
+## 3. When not to use
+
+Field errors (FormField), save confirmations (Toast — never errors).
+
+## 4. Anatomy
+
+Box `--status-danger-bg`, title in `--status-danger`, message, optional "Try again" (40 px).
+
+## 5. Variants
+
+With / without retry.
+
+<Canvas of={Stories.WithRetry} />
+
+## 6. States
+
+`role="alert"`.
+
+## 7. Behaviour and accessibility
+
+Keyboard and screen reader behaviour from Radix / native HTML; focus 2 px `--ring`, offset 2 px; targets ≥ 24 px, controls 40 px. Portals take the theme from `<html>`.
+
+## 8. Content
+
+English UI, sentence case, concrete DevMentor data (dates, zł, names). Actions name the verb.
+
+## 9. Responsive behaviour
+
+Full width up to its max width; no horizontal scroll at 320 px.
+
+## 10. API
+
+`title`, `message`, `onRetry`.
+
+## 11. Code
+
+```tsx
+<ErrorState title="Could not load your bookings" message="…" onRetry={reload} />
+```
+
+## 12. Do and don't
+
+| Do | Don't |
+|---|---|
+| Use tokens only, no shadow (R01.1). | Hardcoded colours, `dark:` classes, entrance animations. |
+
+## 13. Related
+
+Alert, Empty state. Sources: POSTEP.md batch 3–4 differences (accepted by default, to be verified); untested on Jan's request (exercise speed).

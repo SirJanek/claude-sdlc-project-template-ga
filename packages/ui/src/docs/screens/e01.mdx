@@ -1,0 +1,31 @@
+import { Meta, Canvas } from '@storybook/addon-docs/blocks';
+import * as S from './e01.stories';
+
+<Meta of={S} />
+
+# E01 Accounts and roles
+
+Backlog: E01 (#20), E01-S01 (#26), E01-S02 (#27). Spec: `.ai/specs/2026-10-18-accounts-and-roles.md` (branch `spec/accounts-and-roles`, PR #43).
+
+## Flow
+1. Mentor opens the invitation link → mentor sign-up (R15) → profile setup, no payout details (R07).
+2. Mentee picks a time → sign-up → verify e-mail → back to the chosen time (R13).
+
+## Screens and state map
+
+| State | Story |
+|---|---|
+| Mentor sign-up, empty | Mentor sign-up |
+| Mentee sign-up, empty | Mentee sign-up |
+| Field error from the server | Sign-up — e-mail taken |
+| Waiting for verification | Check your e-mail |
+
+<Canvas of={S.MentorSignUp} />
+<Canvas of={S.SignUpError} />
+<Canvas of={S.VerifyEmail} />
+
+## Work left in the product
+- Hold time for the chosen slot while verifying (15 min) — PROPOSAL, not in the spec.
+- Sign-in and password reset screens — not in the backlog (see What is missing).
+
+Sources: brief R07, R13, R15; patterns: Form.

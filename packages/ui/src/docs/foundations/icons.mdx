@@ -1,0 +1,39 @@
+import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
+import { IconSizes } from '../../../.storybook/blocks/Foundations';
+import { AlertCircle, Calendar, Check, ChevronDown, Clock, ExternalLink, GitBranch, Mail, Search, X } from 'lucide-react';
+
+<Meta title="Foundations/Icons" />
+
+# Icons
+
+Library: **lucide-react** (stage 0 decision 1; matches `components.json`). Stroke icons, 1.5–2 px, current colour.
+No emoji in the interface (R02.5, A01) and no sparkles as a symbol of anything (A01). lucide ships no brand
+marks: the "Continue with GitHub" button uses GitHub's own mark from the product assets, not an icon from this set.
+
+<Unstyled>
+  <IconSizes
+    icons={[
+      { name: 'Check', Icon: Check },
+      { name: 'X', Icon: X },
+      { name: 'ChevronDown', Icon: ChevronDown },
+      { name: 'Search', Icon: Search },
+      { name: 'AlertCircle', Icon: AlertCircle },
+      { name: 'Calendar', Icon: Calendar },
+      { name: 'Clock', Icon: Clock },
+      { name: 'Mail', Icon: Mail },
+      { name: 'GitBranch', Icon: GitBranch },
+      { name: 'ExternalLink', Icon: ExternalLink },
+    ]}
+  />
+</Unstyled>
+
+## Rules
+
+| Rule | Source |
+|---|---|
+| Three sizes: 16 px inline with text and in badges, 20 px in buttons and fields, 24 px in empty states and headers. | proposal |
+| An icon next to a text label is decorative: `aria-hidden="true"`. | WAI-ARIA, WCAG 1.1.1 |
+| An icon without visible text needs an accessible name (`aria-label` on the button) and a tooltip is not enough. | WCAG 1.1.1, 4.1.2 |
+| Icons never carry state on their own; a status badge has text, an error has a message. | R01.3, WCAG 1.4.1 |
+| No icon on a coloured square beside headings; no emoji; no sparkles. | A01 |
+| Icon colour is `currentColor`; it inherits from the text it accompanies. | R01.3 |
