@@ -223,6 +223,25 @@ Before building or changing a screen, read [`docs/design-system.md`](docs/design
 - Never read `.env*`, `secrets/`, `*.pem` or `id_rsa*`. Never force-push.
 - Nothing reaches production without a named human release approval.
 
+## Agent configuration and MCP (defaults, from lesson 09 review)
+
+Configuration files in a repository are code: a `SessionStart` hook or an MCP server
+definition runs on the machine of whoever opens the repo, before any model call.
+
+- Before opening any repository you did not write, read `.claude/settings.json`,
+  `.claude/settings.local.json`, `.mcp.json` and `.claude/hooks/`. If one contains a command
+  you do not understand, do not open it with an agent on your machine; use a container
+  without network and without `~/.claude` mounted.
+- Never set `enableAllProjectMcpServers: true` in this repository. Each project MCP server
+  is approved by a human once, by name.
+- A new MCP server, hook or skill that runs commands is a dependency: name its owner and
+  its command in the PR description. Changes to `.mcp.json` and `.claude/` are reviewed
+  by a code owner (`.github/CODEOWNERS`).
+- Skills under `.agents/` and `.claude/skills/` are installed by `npx skills add`. Read a
+  skill's `SKILL.md` before using it, and treat any `!\`command\`` line in it as code.
+- Agents never write to `~/.zshrc`, `~/.ssh`, `~/.aws` or `~/.config`, and never copy a
+  `.claude/` folder from a foreign repository into this one.
+
 ## Agent workspace: `.ai/` (mandatory)
 
 | Path | What goes there | Name format |
