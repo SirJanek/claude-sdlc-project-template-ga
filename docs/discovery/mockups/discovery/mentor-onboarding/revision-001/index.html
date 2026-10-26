@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevMentor - mentor onboarding (prototype)</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; color: #1a1a1a; background: #f4f4f4; }
+  header, footer { background: #fff; border-bottom: 1px solid #bbb; padding: 8px 16px; }
+  footer { border-top: 1px solid #bbb; border-bottom: 0; margin-top: 24px; font-size: 14px; }
+  .banner { font-size: 13px; color: #444; }
+  main { max-width: 560px; margin: 16px auto; padding: 0 16px; }
+  section { background: #fff; border: 1px solid #999; padding: 16px; }
+  section[hidden] { display: none; }
+  h1 { font-size: 22px; margin-top: 0; }
+  h1:focus { outline: 3px solid #000; outline-offset: 2px; }
+  label { display: block; font-weight: 600; margin-top: 12px; }
+  .hint { font-size: 14px; color: #444; font-weight: 400; }
+  input[type=text], input[type=email], input[type=url], textarea { width: 100%; padding: 8px; border: 1px solid #555; font: inherit; }
+  button, a.btn { display: inline-block; margin-top: 12px; padding: 8px 14px; border: 1px solid #222; background: #fff; color: #111; font: inherit; text-decoration: none; cursor: pointer; }
+  button.primary, a.btn.primary { background: #222; color: #fff; font-weight: 600; }
+  :focus-visible { outline: 3px solid #000; outline-offset: 2px; }
+  .error { color: #8b0000; font-weight: 600; margin: 4px 0 0; }
+  [aria-invalid=true] { border: 2px solid #8b0000; }
+  .note { border-left: 4px solid #666; background: #eee; padding: 8px 12px; margin-top: 12px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  code.link { word-break: break-all; background: #eee; padding: 2px 4px; }
+  fieldset { border: 1px dashed #777; margin-top: 16px; }
+  .check { display: flex; gap: 8px; align-items: flex-start; font-weight: 400; }
+</style>
+</head>
+<body>
+<header>
+  <strong>DevMentor</strong>
+  <div class="banner">Discovery prototype. Simulated data. Nothing is sent anywhere.</div>
+</header>
+<p id="live" class="visually-hidden" role="status" aria-live="polite" style="position:absolute;left:-9999px"></p>
+<main>
+
+<section id="invite" data-screen>
+  <h1 tabindex="-1">You're invited to mentor on DevMentor</h1>
+  <p id="invite-from">Ola Nowak shared this sign-up link with you.</p>
+  <p>Hold paid 25- or 50-minute text sessions with developers who are stuck. You set your own price later, when you publish times.</p>
+  <a class="btn primary" href="#sign-up">Create a mentor account</a>
+  <p class="hint">Anyone can create a mentor account. This invitation is just a link to the sign-up page.</p>
+</section>
+
+<section id="sign-up" data-screen hidden>
+  <h1 tabindex="-1">Create your mentor account</h1>
+  <p class="hint">Page: /sign-up/mentor</p>
+  <button type="button" class="primary" id="btn-github">Continue with GitHub</button>
+  <p>or</p>
+  <form id="form-email" novalidate>
+    <label for="email">Work or personal e-mail</label>
+    <input id="email" type="email" autocomplete="email" aria-describedby="email-error">
+    <p id="email-error" class="error" hidden></p>
+    <button type="submit">Email me a sign-in link</button>
+  </form>
+  <p><a href="#invite">Back</a></p>
+</section>
+
+<section id="github-wait" data-screen hidden>
+  <h1 tabindex="-1">Connecting to GitHub...</h1>
+  <p role="status">Simulated GitHub sign-in. Please wait.</p>
+</section>
+
+<section id="check-email" data-screen hidden>
+  <h1 tabindex="-1">Check your e-mail</h1>
+  <p>We sent a sign-in link to <strong id="sent-to"></strong>. The link signs you in; no password needed.</p>
+  <p id="resent" role="status"></p>
+  <div class="row">
+    <button type="button" class="primary" id="btn-open-link">Open the link (simulated)</button>
+    <button type="button" id="btn-open-expired">Open an expired link (simulated)</button>
+    <button type="button" id="btn-resend">Resend link</button>
+  </div>
+  <p><a href="#sign-up">Use a different e-mail</a></p>
+</section>
+
+<section id="link-expired" data-screen hidden>
+  <h1 tabindex="-1">This sign-in link has expired</h1>
+  <p>Links work once and for a limited time. Request a new one.</p>
+  <button type="button" class="primary" id="btn-new-link">Send a new link</button>
+  <p><a href="#sign-up">Back to sign-up</a></p>
+</section>
+
+<section id="profile" data-screen hidden>
+  <h1 tabindex="-1">Set up your mentor profile</h1>
+  <p class="hint" id="signed-in-as"></p>
+  <form id="form-profile" novalidate>
+    <label for="name">Display name</label>
+    <input id="name" type="text" autocomplete="name" aria-describedby="name-error">
+    <p id="name-error" class="error" hidden></p>
+
+    <label for="work">Link to your public work <span class="hint">(repo, blog post or talk)</span></label>
+    <input id="work" type="url" aria-describedby="work-hint work-error">
+    <p id="work-hint" class="hint"></p>
+    <p id="work-error" class="error" hidden></p>
+
+    <label for="about">What you help with <span class="hint">(plain description, optional)</span></label>
+    <textarea id="about" rows="3"></textarea>
+
+    <label class="check"><input id="catalogue" type="checkbox"> <span>List me in the public catalogue <span class="hint">(optional; you can always share your own link)</span></span></label>
+
+    <p class="note">No payout details needed now. We ask for them only after your first booking.</p>
+    <button type="submit" class="primary">Save profile</button>
+  </form>
+</section>
+
+<section id="ready" data-screen hidden>
+  <h1 tabindex="-1">Your profile is ready</h1>
+  <p>Your share link:</p>
+  <p class="row"><code class="link" id="share-link"></code> <button type="button" id="btn-copy">Copy link</button></p>
+  <p id="copied" role="status"></p>
+  <p>Catalogue: <strong id="catalogue-state"></strong></p>
+  <div class="note">
+    <strong>Next step: publish times.</strong> Set your 25- and 50-minute prices and open slots. Until then your page shows "No times available yet".
+  </div>
+  <div class="row">
+    <a class="btn primary" href="#publish">Publish times</a>
+    <a class="btn" href="#public">View my public page</a>
+    <a class="btn" href="#profile">Edit profile</a>
+  </div>
+</section>
+
+<section id="public" data-screen hidden>
+  <h1 tabindex="-1" id="public-name"></h1>
+  <p class="hint">Public page, as anyone with your share link sees it</p>
+  <p>Public work: <a id="public-work" href="#public" rel="nofollow"></a></p>
+  <p id="public-about"></p>
+  <p class="note" id="no-times"><strong>No times available yet.</strong></p>
+  <p><a href="#ready">Back to my profile</a></p>
+</section>
+
+<section id="publish" data-screen hidden>
+  <h1 tabindex="-1">Publish times (outside this prototype)</h1>
+  <p>Prices and slots belong to the next part of the product (E02) and are not simulated here.</p>
+  <a class="btn" href="#ready">Back</a>
+</section>
+
+<section id="not-found" data-screen hidden>
+  <h1 tabindex="-1">Page not found in this prototype</h1>
+  <a class="btn primary" href="#invite">Go to the start</a>
+</section>
+
+<fieldset>
+  <legend>Test state (prototype only)</legend>
+  <label class="check"><input type="checkbox" id="ts-plain"> <span>Invitation is a plain link (no sender name)</span></label>
+  <button type="button" id="btn-reset">Reset simulation</button>
+</fieldset>
+</main>
+<footer>All names and links are fictitious.</footer>
+
+<script>
+(function () {
+  'use strict';
+  var initial = function () { return { method: null, email: '', name: '', work: '', about: '', catalogue: false, saved: false }; };
+  var state = initial();
+  var $ = function (id) { return document.getElementById(id); };
+  var screens = Array.prototype.slice.call(document.querySelectorAll('[data-screen]'));
+  var guarded = { profile: 'signedIn', ready: 'saved', public: 'saved', publish: 'saved' };
+  function announce(msg) { $('live').textContent = ''; setTimeout(function () { $('live').textContent = msg; }, 30); }
+
+  function render(id) {
+    if (!$(id) || !$(id).hasAttribute('data-screen')) id = 'not-found';
+    if (guarded[id] === 'signedIn' && !state.method) id = 'sign-up';
+    if (guarded[id] === 'saved' && !state.saved) id = state.method ? 'profile' : 'sign-up';
+    screens.forEach(function (s) { s.hidden = s.id !== id; });
+    if (id === 'profile') fillProfile();
+    if (id === 'ready' || id === 'public') fillReady();
+    var h = $(id).querySelector('h1');
+    if (h) h.focus();
+    return id;
+  }
+  function go(id) { if (location.hash === '#' + id) render(id); else location.hash = id; }
+  window.addEventListener('hashchange', function () { render(location.hash.slice(1) || 'invite'); });
+
+  function slug(s) { return (s || 'mentor').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'mentor'; }
+  function fillProfile() {
+    $('signed-in-as').textContent = state.method === 'github' ? 'Signed in with GitHub as kasia-dev.' : 'Signed in as ' + state.email + '.';
+    $('name').value = state.name; $('about').value = state.about; $('catalogue').checked = state.catalogue;
+    $('work').value = state.work;
+    $('work-hint').textContent = state.method === 'github' && !state.saved
+      ? 'Suggested from your GitHub profile. You can change it.' : '';
+  }
+  function fillReady() {
+    var link = 'devmentor.example/m/' + slug(state.name);
+    $('share-link').textContent = link;
+    $('catalogue-state').textContent = state.catalogue ? 'listed' : 'not listed (only people with your link find you)';
+    $('public-name').textContent = state.name;
+    $('public-work').textContent = state.work;
+    $('public-about').textContent = state.about;
+  }
+  function setError(input, errEl, msg) {
+    $(errEl).textContent = msg || ''; $(errEl).hidden = !msg;
+    $(input).setAttribute('aria-invalid', msg ? 'true' : 'false');
+  }
+
+  $('btn-github').addEventListener('click', function () {
+    go('github-wait');
+    setTimeout(function () {
+      state.method = 'github'; state.name = 'Kasia Kowalska';
+      if (!state.work) state.work = 'https://github.com/kasia-dev';
+      announce('Signed in with GitHub'); go('profile');
+    }, 800);
+  });
+  $('form-email').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var v = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) { setError('email', 'email-error', 'Enter a valid e-mail address, for example name@example.com.'); $('email').focus(); return; }
+    setError('email', 'email-error', '');
+    state.email = v; $('sent-to').textContent = v; $('resent').textContent = '';
+    go('check-email');
+  });
+  $('btn-resend').addEventListener('click', function () { $('resent').textContent = 'A new link was sent to ' + state.email + '.'; });
+  $('btn-open-expired').addEventListener('click', function () { go('link-expired'); });
+  $('btn-new-link').addEventListener('click', function () { $('resent').textContent = 'A new link was sent to ' + state.email + '.'; go('check-email'); });
+  $('btn-open-link').addEventListener('click', function () { state.method = 'email'; announce('Signed in'); go('profile'); });
+
+  $('form-profile').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var name = $('name').value.trim(), work = $('work').value.trim(), firstBad = null;
+    setError('name', 'name-error', name ? '' : 'Enter the name mentees will see.');
+    if (!name) firstBad = firstBad || 'name';
+    var okUrl = /^https?:\/\/[^\s.]+\.[^\s]+$/.test(work);
+    setError('work', 'work-error', okUrl ? '' : (work ? 'Enter a full link starting with https://.' : 'Add a link to your public work. Mentees judge you by it; there are no ratings.'));
+    if (!okUrl) firstBad = firstBad || 'work';
+    if (firstBad) { $(firstBad).focus(); announce('Please fix the highlighted fields'); return; }
+    state.name = name; state.work = work; state.about = $('about').value.trim(); state.catalogue = $('catalogue').checked; state.saved = true;
+    announce('Profile saved'); go('ready');
+  });
+  $('btn-copy').addEventListener('click', function () { $('copied').textContent = 'Link copied (simulated).'; });
+
+  $('ts-plain').addEventListener('change', function () {
+    $('invite-from').textContent = this.checked ? 'Someone shared this sign-up link with you.' : 'Ola Nowak shared this sign-up link with you.';
+  });
+  $('btn-reset').addEventListener('click', function () {
+    state = initial();
+    ['email', 'name', 'work', 'about'].forEach(function (id) { $(id).value = ''; });
+    $('catalogue').checked = false; $('ts-plain').checked = false;
+    $('invite-from').textContent = 'Ola Nowak shared this sign-up link with you.';
+    setError('email', 'email-error', ''); setError('name', 'name-error', ''); setError('work', 'work-error', '');
+    $('resent').textContent = ''; $('copied').textContent = '';
+    go('invite'); announce('Simulation reset');
+  });
+
+  render(location.hash.slice(1) || 'invite');
+})();
+</script>
+</body>
+</html>

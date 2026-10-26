@@ -42,3 +42,6 @@ tests/integration/.evidence/
 
 # Storybook build output
 storybook-static/
+
+# Lesson 07: prototype copies served by Storybook (build output, not committed)
+packages/ui/public/prototypes/

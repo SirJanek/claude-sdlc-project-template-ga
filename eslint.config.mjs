@@ -34,6 +34,9 @@ export default tseslint.config(
       // Design system: Storybook build output and the generated MSW worker are not source.
       '**/storybook-static/**',
       '**/public/mockServiceWorker.js',
+      // Lesson 07: prototype sources and Storybook build copies are not product code.
+      'packages/ui/public/prototypes/**',
+      'prototypes/**',
     ],
   },
   js.configs.recommended,
