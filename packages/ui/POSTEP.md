@@ -4,7 +4,7 @@ Prowadzony przez agenta. Przy nowej sesji: przeczytaj ten plik i kontynuuj od �
 
 ## Materiały (wszystkie przeczytane 2026-10-20)
 - Brief `.ai/specs/product-brief.md`, wywiady `.ai/specs/research/*.md`, backlog `.ai/specs/backlog.md` (E01–E06, #20–#40).
-- Spec E01 `.ai/specs/2026-10-18-accounts-and-roles.md` tylko na gałęzi `origin/spec/accounts-and-roles` (PR #43). Specyfikacji E02–E05 jeszcze nie ma: ekrany tych epików wyprowadzone z briefu i tytułów historii, oznaczone jako propozycje.
+- Spec E01 `.ai/specs/implemented/2026-10-18-accounts-and-roles.md` tylko na gałęzi `origin/spec/accounts-and-roles` (PR #43). Specyfikacji E02–E05 jeszcze nie ma: ekrany tych epików wyprowadzone z briefu i tytułów historii, oznaczone jako propozycje.
 - Referencje `lekcja-06/referencje.md`, tokeny `lekcja-06/tokeny.md`, audyt `lekcja-06/audyt-devmentor.md` (prompt mówi „brak”, ale plik istnieje; użyty).
 
 ## Stan repo (inwentaryzacja)

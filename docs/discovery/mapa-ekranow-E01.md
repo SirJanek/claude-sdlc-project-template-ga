@@ -3,7 +3,7 @@
 > **Pytanie prototypu (Houde & Hill, rola):** czy osoba, która pierwszy raz wchodzi do DevMentora, założy konto, zaloguje się GitHubem albo mailem i trafi na swoją stronę — i co zobaczy, gdy coś pójdzie nie tak?
 
 - Utworzono: 2026-10-24 (mapa, nic nie zbudowane)
-- Źródła: `.ai/specs/backlog.md`, issues #20/#26/#27 (kryteria akceptacji), `.ai/specs/2026-10-18-accounts-and-roles.md` (Flows, UI/UX, Edge Cases, Grill-me Q1–Q15), `.ai/specs/product-brief.md` (R07, R13, R15, D12, D14, A07, N01), `docs/design-system.md`, `packages/ui/src/docs/screens/e01.*`, `packages/ui/src/docs/guide/what-is-missing.mdx`, kod na gałęzi: `packages/app/src/app/(auth)`, `(mentor)`, `(marketing)`, `admin`, `packages/ui/src/components/auth`.
+- Źródła: `.ai/specs/backlog.md`, issues #20/#26/#27 (kryteria akceptacji), `.ai/specs/implemented/2026-10-18-accounts-and-roles.md` (Flows, UI/UX, Edge Cases, Grill-me Q1–Q15), `.ai/specs/product-brief.md` (R07, R13, R15, D12, D14, A07, N01), `docs/design-system.md`, `packages/ui/src/docs/screens/e01.*`, `packages/ui/src/docs/guide/what-is-missing.mdx`, kod na gałęzi: `packages/app/src/app/(auth)`, `(mentor)`, `(marketing)`, `admin`, `packages/ui/src/components/auth`.
 - Identyfikatory ekranów (s01…) i luk (L01…, DS01…) są stałe — przypinamy do nich komentarze.
 - Nazwy ekranów i teksty UI po angielsku (UI aplikacji jest po angielsku), reszta po polsku.
 

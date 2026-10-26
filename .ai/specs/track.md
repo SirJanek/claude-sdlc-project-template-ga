@@ -1,6 +1,6 @@
 # Track — E01 Phase 4: mentee return-to-slot (#27)
 
-Spec: `.ai/specs/2026-10-18-accounts-and-roles.md` § Phase 4
+Spec: `.ai/specs/implemented/2026-10-18-accounts-and-roles.md` § Phase 4
 Branch: `feat/e01-phase4-mentee-return` (od `develop` `09c7e43`)
 PR label: `risk-high` (drugi recenzent w Codexie przed scaleniem)
 

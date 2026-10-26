@@ -50,3 +50,9 @@ bookings) moved to E03-S01.
 
 Merge PR #54 after the CI gates are green on the head commit (Design tokens, Integration, Build, Audit) and the Codex
 second review is approved. Then move the spec to `.ai/specs/implemented/` (done in the merge step, not here).
+
+## Zamknięcie (2026-10-26)
+
+- PR #54 scalony przez właściciela (merge commit `8cd9b9d`) po akceptacji wyglądu.
+- **Wyjątek od procesu:** werdykt Codexa (`request changes`) dotyczy commita `833a217`. Commity `9cc078d` (tokeny) i `ae3bb72` (domknięcie specu) nie dostały ponownej recenzji drugiego recenzenta. Akceptacja właściciela przy zielonych checkach jest tu zapisana jako świadomy wyjątek.
+- Spec przeniesiony do `.ai/specs/implemented/` w osobnym PR (docs).
