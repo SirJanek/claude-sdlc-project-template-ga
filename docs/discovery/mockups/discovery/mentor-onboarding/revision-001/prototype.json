@@ -1,0 +1,82 @@
+{
+  "format": "discovery-prototype-v1",
+  "skill": "om-mockup-prototype",
+  "slug": "mentor-onboarding",
+  "revision": 1,
+  "revisionPath": "docs/discovery/mockups/discovery/mentor-onboarding/revision-001",
+  "previousRevision": null,
+  "brief": ".ai/specs/product-brief.md",
+  "flow": "mentor onboarding (proposed, not in brief Key flows)",
+  "panelReport": null,
+  "verification": "passed",
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "93e881f3e02628bd841dd4b88acead2b1060b27c3a29bf3798b7afad4ea02893"
+    },
+    {
+      "path": "evidence/01-invite.png",
+      "sha256": "c4553271bfe1e2545e992b55aa72b00fd03521445bd26d5553d5583f470291de"
+    },
+    {
+      "path": "evidence/02-sign-up.png",
+      "sha256": "6cbd25ffdce38ec1716620f1283a4a66bf36446dbf9b874b2d6de5c9b59cd5a9"
+    },
+    {
+      "path": "evidence/03-email-error.png",
+      "sha256": "4246b019277cea16f1977a61390f2b977eb3fc7053250be044b6166345e8f18e"
+    },
+    {
+      "path": "evidence/04-check-email.png",
+      "sha256": "b98d3eadbd537e160b812d6825cd09b27ec338cd78388872c6b5740a53baca5e"
+    },
+    {
+      "path": "evidence/05-link-expired.png",
+      "sha256": "5218bbdda39b712f3e96216463cca937378f7162631cf803f37824ce06108d70"
+    },
+    {
+      "path": "evidence/06-profile-errors.png",
+      "sha256": "b9b59ffb8ff597644b8009ebb66032f67b5125692ed76381adcad34933d49860"
+    },
+    {
+      "path": "evidence/07-ready.png",
+      "sha256": "daf7428c12655ecdcf3eb7c26a6fc0f54a4bd6575c97c33861cfcef0922f4586"
+    },
+    {
+      "path": "evidence/08-public.png",
+      "sha256": "7c2447d25038e75de4b3da58ee6b033801036188f530793f1ff4ef16be3a0b6f"
+    },
+    {
+      "path": "evidence/09-publish-outside.png",
+      "sha256": "80ccfbec3fdd8a57887060e84e2485eadaa0e7b8454a01a694a1cccf4754f592"
+    },
+    {
+      "path": "evidence/10-not-found.png",
+      "sha256": "2ad3025aae1c15dbed5593bb88e3096cca6736c1b9995a9061595b6b5dbfd7ce"
+    },
+    {
+      "path": "evidence/11-github-wait.png",
+      "sha256": "06c57455532a97cc2ecee2ea2f5b2b94234f7fe2647c08c0101b40d3b2d304e6"
+    },
+    {
+      "path": "evidence/12-github-profile.png",
+      "sha256": "1748607b329b1611783a716a1cb8d1f7d97e9dc9e17e313c63ec179359010a3e"
+    },
+    {
+      "path": "evidence/13-narrow-profile.png",
+      "sha256": "4891231d7820a2e2c018ec100bf229133a308aecbe99479155a328dfc11a39e7"
+    },
+    {
+      "path": "evidence/snapshot-invite.txt",
+      "sha256": "286aeec8e12527342f4052f7eebd54e07d37c31599ddc8eb0bc4cd23254e99a2"
+    },
+    {
+      "path": "evidence/walk.sh",
+      "sha256": "0b56913565322734cb1dd0897e0e8aeae510013e6d51a80048f96ae1d6153980"
+    },
+    {
+      "path": "index.html",
+      "sha256": "f1e6af6997635bdb886bc96d2f143c33cf09944fbc323e2aaa21d1bb50762ac1"
+    }
+  ]
+}
