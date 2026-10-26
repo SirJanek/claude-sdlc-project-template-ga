@@ -2,7 +2,7 @@
 
 **Issue:** #20 (epic) · stories #26 (E01-S01, mentor) and #27 (E01-S02, mentee)
 **Design authority:** `.ai/specs/product-brief.md` (branch `docs/lesson-04-discovery`) — R07, R13, D11, D12, A07
-**Status:** 🟡 in progress — Phases 1–3 ✅ in `develop`; Phase 4 ✅ on PR #54 (2026-10-26), spec stays in `.ai/specs/` until the PR merges, then moves to `implemented/`; gate answered by Jan 2026-10-18; fresh-context review applied (2 critical, 3 high, 6 medium, 4 low → all addressed); **grill-me 2026-10-18 (Jan, 15 decisions, see “Grill-me outcome”)**: AC3 wording and the S02 AC3 move settled; delivery order 1 → 3 → 2 → 4 · **one spec, four phases — deliberately not split (Q1)**
+**Status:** ✅ implemented — Phases 1–4 in `develop` (Phase 4 via PR #54, merge commit `8cd9b9d`, 2026-10-26); spec moved to `implemented/` on 2026-10-26. Review gap: the Codex verdict on PR #54 was for `833a217`; the final head `ae3bb72` was not re-reviewed (recorded in the run log).
 
 ## 📝 TLDR
 
