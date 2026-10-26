@@ -1,7 +1,7 @@
 import type { UserRole } from '@mentorhub/db';
 import { getEnv, type Env } from '../config/env';
 import { withScope } from '../container/container';
-import { ForbiddenError, UnauthorizedError } from './errors';
+import { EmailUnverifiedError, ForbiddenError, UnauthorizedError } from './errors';
 import { readSessionCookie, verifySessionToken } from './session';
 
 export interface Session {
@@ -85,6 +85,24 @@ export async function requireSession(request: Request, deps: RequireSessionDeps 
   }
   if (env.ALLOW_DEV_ADMIN === '1' && env.NODE_ENV === 'development') return DEV_ADMIN_SESSION;
   throw new UnauthorizedError();
+}
+
+/**
+ * Throws EmailUnverifiedError (403 `email_unverified`) unless the session's account has a verified e-mail.
+ * Pure check on a Session, like `requireRole`; routes that need it use `requireVerifiedSession`.
+ */
+export function requireVerified(session: Session): void {
+  if (!session.emailVerified) throw new EmailUnverifiedError();
+}
+
+/**
+ * `requireSession` followed by `requireVerified`: no session → the same 401 as before; a session without
+ * a verified e-mail → 403 `email_unverified`. Consumed by E03 booking routes.
+ */
+export async function requireVerifiedSession(request: Request, deps: RequireSessionDeps = {}): Promise<Session> {
+  const session = await requireSession(request, deps);
+  requireVerified(session);
+  return session;
 }
 
 /** Throws ForbiddenError unless the session has the role. */

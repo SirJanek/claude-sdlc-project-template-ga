@@ -8,8 +8,8 @@ Fazy 1–3 (spec): ✅ zrobione, w `develop`.
 
 ## Faza 4
 
-- [ ] **T1** Walidacja `next` — helper i przekazanie przez oba przepływy (sign-in i GitHub). Test: otwarte przekierowania odrzucone.
-- [ ] **T2** `requireVerified` — sesja bez zweryfikowanego maila dostaje `403 email_unverified`. Test wg AC2. Konsumowany przez E03. (AC3 przeniesione do E03-S01.)
+- [x] **T1** Walidacja `next` — helper i przekazanie przez oba przepływy (sign-in i GitHub). Test: otwarte przekierowania odrzucone. — commit `0b3eab2`
+- [x] **T2** `requireVerified` — sesja bez zweryfikowanego maila dostaje `403 email_unverified`. Test wg AC2. Konsumowany przez E03. (AC3 przeniesione do E03-S01.) — commit `<SHA-T2>`
 - [ ] **T3** Test integracyjny — `?slot=` → logowanie → link z outboxa → powrót na dokładny adres z sesją zweryfikowaną (AC1).
 
 ## Ręczny test po fazie

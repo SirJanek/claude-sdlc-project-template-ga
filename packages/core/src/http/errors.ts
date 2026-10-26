@@ -75,3 +75,10 @@ export class GitHubEmailUnverifiedError extends AppError {
     super(message, { status: 403, code: 'github_email_unverified' });
   }
 }
+
+/** A session whose account has no verified e-mail (admin-created row) may not use verified-only routes (spec › Phase 4, AC2). */
+export class EmailUnverifiedError extends AppError {
+  constructor(message = 'Verify your e-mail address to continue — sign in with a link we send you.') {
+    super(message, { status: 403, code: 'email_unverified' });
+  }
+}

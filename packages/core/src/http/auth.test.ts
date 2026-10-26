@@ -1,7 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
 import { parseEnv } from '../config/env';
-import { DEV_ADMIN_SESSION, requireRole, requireSession, type SessionUser } from './auth';
-import { ForbiddenError, UnauthorizedError } from './errors';
+import {
+  DEV_ADMIN_SESSION,
+  requireRole,
+  requireSession,
+  requireVerified,
+  requireVerifiedSession,
+  type Session,
+  type SessionUser,
+} from './auth';
+import { EmailUnverifiedError, ForbiddenError, UnauthorizedError } from './errors';
 import { SESSION_COOKIE, signSessionToken } from './session';
 
 const withScopeMock = vi.hoisted(() => vi.fn());
@@ -158,5 +166,60 @@ describe('requireSession — default environment', () => {
   it('reads the process environment and denies without the flag', async () => {
     delete process.env.ALLOW_DEV_ADMIN;
     await expect(requireSession(req())).rejects.toThrow(UnauthorizedError);
+  });
+});
+
+describe('requireVerified — AC2 (unverified session → 403 email_unverified)', () => {
+  const verified: Session = { userId: 'u1', role: 'mentee', isDevSession: false, emailVerified: true };
+  const unverified: Session = { ...verified, emailVerified: false };
+
+  it('passes a verified session', () => {
+    expect(() => requireVerified(verified)).not.toThrow();
+  });
+
+  it('refuses an unverified session with 403 and code email_unverified', () => {
+    expect(() => requireVerified(unverified)).toThrow(EmailUnverifiedError);
+    let caught: unknown;
+    try {
+      requireVerified(unverified);
+    } catch (error) {
+      caught = error;
+    }
+    expect(caught).toMatchObject({ status: 403, code: 'email_unverified' });
+  });
+
+  it('is independent of role: an unverified admin is still refused', () => {
+    expect(() => requireVerified({ ...unverified, role: 'admin' })).toThrow(EmailUnverifiedError);
+  });
+});
+
+describe('requireVerifiedSession — requireSession + requireVerified', () => {
+  it('a verified cookie session passes and keeps the session shape', async () => {
+    await expect(
+      requireVerifiedSession(req(await cookieFor()), { env: env(), lookup: lookupOf(user) }),
+    ).resolves.toEqual({ userId: 'u1', role: 'mentee', isDevSession: false, emailVerified: true });
+  });
+
+  it('an unverified cookie session is refused with email_unverified, not 401', async () => {
+    const attempt = requireVerifiedSession(req(await cookieFor()), {
+      env: env(),
+      lookup: lookupOf({ ...user, emailVerifiedAt: null }),
+    });
+    await expect(attempt).rejects.toThrow(EmailUnverifiedError);
+    await expect(attempt).rejects.toMatchObject({ status: 403, code: 'email_unverified' });
+  });
+
+  it('no session keeps the existing unauthenticated behaviour: 401, and the user is never checked', async () => {
+    const lookup = lookupOf(user);
+    await expect(requireVerifiedSession(req(), { env: env(), lookup })).rejects.toMatchObject({
+      status: 401,
+      code: 'unauthorized',
+    });
+    expect(lookup).not.toHaveBeenCalled();
+  });
+
+  it('the local dev admin counts as verified (its account is not an admin-created row)', async () => {
+    const dev = env({ ALLOW_DEV_ADMIN: '1', NODE_ENV: 'development' });
+    await expect(requireVerifiedSession(req(), { env: dev })).resolves.toEqual(DEV_ADMIN_SESSION);
   });
 });

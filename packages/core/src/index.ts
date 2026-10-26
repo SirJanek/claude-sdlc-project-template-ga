@@ -67,6 +67,7 @@ export {
   RateLimitedError,
   ServiceUnavailableError,
   GitHubEmailUnverifiedError,
+  EmailUnverifiedError,
   type FieldErrors,
 } from './http/errors';
 export {
@@ -81,6 +82,8 @@ export { makeCrudRoute, type CrudRouteConfig } from './http/makeCrudRoute';
 export {
   requireSession,
   requireRole,
+  requireVerified,
+  requireVerifiedSession,
   DEV_ADMIN_SESSION,
   type Session,
   type SessionUser,
