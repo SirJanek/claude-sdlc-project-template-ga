@@ -19,3 +19,4 @@ tests/integration/.evidence
 lekcja-06/
 **/public/mockServiceWorker.js
 packages/ui/public/prototypes/
+prototypes/
