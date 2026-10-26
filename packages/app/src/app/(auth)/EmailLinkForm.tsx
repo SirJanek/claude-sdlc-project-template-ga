@@ -73,13 +73,13 @@ export function EmailLinkForm({
           ref={alertRef}
           role="alert"
           tabIndex={-1}
-          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-md border border-status-danger bg-status-danger-bg p-3 text-sm text-status-danger"
         >
           {error}
         </p>
       ) : null}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-slate-700">
+        <label htmlFor="email" className="block text-sm font-medium text-secondary-foreground">
           E-mail
         </label>
         <input
@@ -90,17 +90,17 @@ export function EmailLinkForm({
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-indigo-600 focus:outline-none"
+          className="mt-1 w-full rounded-lg border border-border-strong px-3 py-2 focus:border-ring focus:outline-none"
         />
       </div>
       <button
         type="submit"
         disabled={busy}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+        className="w-full rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
       >
         {submitLabel}
       </button>
-      <p className="text-sm text-slate-600">No password. We&apos;ll e-mail you a link that signs you in.</p>
+      <p className="text-sm text-muted-foreground">No password. We&apos;ll e-mail you a link that signs you in.</p>
     </form>
   );
 }

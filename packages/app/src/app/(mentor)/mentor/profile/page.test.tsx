@@ -31,7 +31,7 @@ beforeEach(() => {
   redirect.mockClear();
 });
 
-async function renderPage(params: Record<string, string | string[]> = {}) {
+async function renderPage(params: Record<string, string | string[] | undefined> = {}) {
   await act(async () => {
     render(await MentorProfilePage({ searchParams: Promise.resolve(params) }));
   });
@@ -42,6 +42,14 @@ describe('/mentor/profile', () => {
     expect(dynamic).toBe('force-dynamic');
     await renderPage();
     expect(pageAccess).toHaveBeenCalledWith(requestHeaders, { role: 'mentor', path: '/mentor/profile' });
+  });
+
+  it("E01-S02: the guard gets the visit's query, so a signed-out return lands on the same URL", async () => {
+    await renderPage({ slot: '2026-11-03T10:00', tz: 'Europe/Warsaw', pick: ['a', 'b'], empty: undefined });
+    expect(pageAccess).toHaveBeenCalledWith(requestHeaders, {
+      role: 'mentor',
+      path: '/mentor/profile?slot=2026-11-03T10%3A00&tz=Europe%2FWarsaw&pick=a&pick=b',
+    });
   });
 
   it('AC1 (#26): a mentor sees profile setup, named by e-mail until a name is set, with the header menu', async () => {

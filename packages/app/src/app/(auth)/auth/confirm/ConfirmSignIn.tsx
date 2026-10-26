@@ -51,7 +51,7 @@ export function ConfirmSignIn({
           ref={alertRef}
           role="alert"
           tabIndex={-1}
-          className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800"
+          className="rounded-md border border-status-danger bg-status-danger-bg p-3 text-sm text-status-danger"
         >
           {error}{' '}
           <a href="/sign-in" className="underline">
@@ -63,7 +63,7 @@ export function ConfirmSignIn({
         type="button"
         onClick={confirm}
         disabled={busy}
-        className="w-full rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-500 disabled:opacity-60"
+        className="w-full rounded-lg bg-primary px-4 py-2 font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-60"
       >
         Sign in as {email}
       </button>
