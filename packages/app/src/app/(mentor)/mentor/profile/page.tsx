@@ -38,10 +38,10 @@ export default async function MentorProfilePage({ searchParams }: { searchParams
     return (
       <main className="mx-auto max-w-md px-4 py-16">
         <h1 className="text-3xl font-bold tracking-tight">Mentor account required</h1>
-        <p role="alert" className="mt-4 text-slate-700">
+        <p role="alert" className="mt-4 text-secondary-foreground">
           You are signed in with an account that is not a mentor, so this page is not available to it. Mentor accounts
           are created at{' '}
-          <a href="/sign-up/mentor" className="font-medium text-indigo-700 underline">
+          <a href="/sign-up/mentor" className="font-medium text-accent-foreground underline">
             /sign-up/mentor
           </a>
           .
@@ -66,13 +66,13 @@ export default async function MentorProfilePage({ searchParams }: { searchParams
           </div>
         ) : null}
         <h1 className="text-3xl font-bold tracking-tight">Set up your mentor profile</h1>
-        <p className="mt-4 text-slate-700">
+        <p className="mt-4 text-secondary-foreground">
           Welcome, <strong data-slot="account-name">{account.name ?? account.email}</strong>. You are signed in as a
           mentor.
         </p>
-        <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <section className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <h2 className="font-semibold">Coming next</h2>
-          <p className="mt-1 text-sm text-slate-600">
+          <p className="mt-1 text-sm text-muted-foreground">
             Profile setup — your experience, topics, languages and intro availability — arrives with the next release
             (E02-S01). Nothing else is needed to get started.
           </p>

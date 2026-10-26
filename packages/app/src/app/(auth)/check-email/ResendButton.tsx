@@ -46,12 +46,12 @@ export function ResendButton({
         type="button"
         onClick={resend}
         disabled={secondsLeft > 0}
-        className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-60"
+        className="rounded-lg border border-border-strong px-4 py-2 text-sm font-medium hover:bg-background disabled:opacity-60"
       >
         {secondsLeft > 0 ? `Send a new link (${secondsLeft}s)` : 'Send a new link'}
       </button>
       {message ? (
-        <p role={status === 'error' ? 'alert' : 'status'} className="mt-3 text-sm text-slate-600">
+        <p role={status === 'error' ? 'alert' : 'status'} className="mt-3 text-sm text-muted-foreground">
           {message}
         </p>
       ) : null}

@@ -17,9 +17,9 @@ export default async function SignInPage({ searchParams }: { searchParams: Searc
       <h1 className="text-3xl font-bold tracking-tight">Sign in</h1>
       <EmailLinkForm next={nextPath} errorCode={first(params.error)} />
       {isGitHubEnabled(getEnv()) ? <GitHubSignInButton next={nextPath} /> : null}
-      <p className="mt-6 text-sm text-slate-600">
+      <p className="mt-6 text-sm text-muted-foreground">
         Want to mentor?{' '}
-        <a href="/sign-up/mentor" className="font-medium text-indigo-700 underline">
+        <a href="/sign-up/mentor" className="font-medium text-accent-foreground underline">
           Sign up as a mentor
         </a>
       </p>

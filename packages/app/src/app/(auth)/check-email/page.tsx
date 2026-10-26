@@ -15,7 +15,7 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: S
   return (
     <main className="mx-auto max-w-md px-4 py-16">
       <h1 className="text-3xl font-bold tracking-tight">Check your inbox</h1>
-      <p className="mt-4 text-slate-700">
+      <p className="mt-4 text-secondary-foreground">
         {email ? (
           <>
             We sent a sign-in link to <strong>{email}</strong>. Open it within {AUTH_LIMITS.linkTtlMinutes} minutes.
@@ -24,7 +24,9 @@ export default async function CheckEmailPage({ searchParams }: { searchParams: S
           <>We sent you a sign-in link. Open it within {AUTH_LIMITS.linkTtlMinutes} minutes.</>
         )}
       </p>
-      <p className="mt-2 text-sm text-slate-600">Nothing there? Check the spam folder, or send a new link below.</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        Nothing there? Check the spam folder, or send a new link below.
+      </p>
       {email ? (
         <ResendButton
           email={email}

@@ -20,9 +20,9 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Sear
       {link && parsed.success ? (
         <ConfirmSignIn email={link.email} token={parsed.data.token} />
       ) : (
-        <p role="alert" className="mt-4 text-slate-700">
+        <p role="alert" className="mt-4 text-secondary-foreground">
           {EXPIRED}{' '}
-          <a href="/sign-in" className="font-medium text-indigo-700 underline">
+          <a href="/sign-in" className="font-medium text-accent-foreground underline">
             Go to sign-in
           </a>
         </p>
