@@ -7,11 +7,18 @@ describe('nextPathSchema', () => {
       expect(nextPathSchema.safeParse(path).success, path).toBe(true);
   });
 
+  it('accepts the return path of a mentee coming back to a slot', () => {
+    expect(nextPathSchema.safeParse('/mentee/x?slot=1').success).toBe(true);
+  });
+
   it('rejects absolute URLs, protocol-relative, backslashes, relative segments and over-long paths (no open redirect)', () => {
     for (const path of [
       'https://evil.com',
       '//evil.com',
       '/\\evil.com',
+      '\\\\evil.com',
+      '%2F%2Fevil.com', // encoded and without a leading slash: not a path at all
+      'javascript:alert(1)',
       'evil.com',
       'mentors',
       '',
