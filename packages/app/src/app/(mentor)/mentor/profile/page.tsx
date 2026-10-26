@@ -10,12 +10,29 @@ export const dynamic = 'force-dynamic';
 const first = (value: string | string[] | undefined) => (Array.isArray(value) ? value[0] : value);
 
 /**
+ * The page's own path with the query the visitor used (E01-S02): a signed-out visit to `?slot=…` returns
+ * to exactly that URL after sign-in, so the query travels in the `next` the guard hands to `/sign-in`.
+ */
+function pathWithQuery(pathname: string, params: Record<string, string | string[] | undefined>): string {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    for (const item of Array.isArray(value) ? value : [value]) if (item !== undefined) query.append(key, item);
+  }
+  const search = query.toString();
+  return search ? `${pathname}?${search}` : pathname;
+}
+
+/**
  * Mentor profile setup — a placeholder until E02-S01 (#28) fills it. Mentor role required: signed out →
  * `/sign-in?next=/mentor/profile`, another role → a refusal (no content). R07 / decision D11: nothing
  * on this page asks for payout, bank or card details; that only comes after the first booking.
  */
 export default async function MentorProfilePage({ searchParams }: { searchParams: SearchParams }) {
-  const access = await pageAccess(await headers(), { role: 'mentor', path: MENTOR_PROFILE_PATH });
+  const params = await searchParams;
+  const access = await pageAccess(await headers(), {
+    role: 'mentor',
+    path: pathWithQuery(MENTOR_PROFILE_PATH, params),
+  });
   if (access.kind === 'sign-in') redirect(access.signInPath);
   if (access.kind === 'forbidden') {
     return (
@@ -32,7 +49,7 @@ export default async function MentorProfilePage({ searchParams }: { searchParams
       </main>
     );
   }
-  const notice = accountNoticeSchema.safeParse(first((await searchParams)[ACCOUNT_NOTICE_PARAM]));
+  const notice = accountNoticeSchema.safeParse(first(params[ACCOUNT_NOTICE_PARAM]));
   const { account } = access;
   return (
     <>
