@@ -1,0 +1,10 @@
+# Lesson 09: agent configuration is code. Changes here run on every developer's
+# machine when they open the repo with an agent, so they need an owner's review.
+# Takes effect once branch protection on develop has "Require review from Code Owners".
+
+/.claude/        @SirJanek
+/.mcp.json       @SirJanek
+/.agents/        @SirJanek
+/AGENTS.md       @SirJanek
+/CLAUDE.md       @SirJanek
+/.github/        @SirJanek
